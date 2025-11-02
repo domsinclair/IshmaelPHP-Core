@@ -7,13 +7,14 @@
 
     class Logger
     {
-        private static string $logPath;
+        private static ?string $logPath = null;
 
         public static function init(array $config): void
         {
             self::$logPath = $config['path'] ?? base_path('storage/logs/app.log');
-            if (!is_dir(dirname(self::$logPath))) {
-                mkdir(dirname(self::$logPath), 0777, true);
+            $dir = dirname(self::$logPath);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0777, true);
             }
         }
 
@@ -29,6 +30,20 @@
 
         private static function write(string $level, string $message): void
         {
+            // Lazy-initialize to a safe default if not set (e.g., during tests)
+            if (self::$logPath === null) {
+                $defaultDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs';
+                if (!is_dir($defaultDir)) {
+                    @mkdir($defaultDir, 0777, true);
+                }
+                self::$logPath = $defaultDir . DIRECTORY_SEPARATOR . 'app.log';
+            }
+
+            $dir = dirname(self::$logPath);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0777, true);
+            }
+
             $date = (new DateTime())->format('Y-m-d H:i:s');
             file_put_contents(
                 self::$logPath,
