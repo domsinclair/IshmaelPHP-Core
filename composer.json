@@ -1,0 +1,16 @@
+{
+  "name": "ishmael/framework",
+  "description": "Ishmael PHP Framework",
+  "type": "library",
+  "autoload": {
+    "psr-4": {
+      "Ishmael\\": "app/"
+    }
+  },
+  "require": {
+    "php": "^8.1",
+    "monolog/monolog": "^3.0"
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

@@ -1,0 +1,7 @@
+# Ignore environment and system files
+.env
+/vendor/
+storage/logs/*
+.idea/
+.vscode/
+*.sqlite
