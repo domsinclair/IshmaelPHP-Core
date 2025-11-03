@@ -3,8 +3,6 @@
 
     namespace Ishmael\Core;
 
-    use DateTime;
-
     use Ishmael\Core\Log\LoggerManager;
     use Psr\Log\LoggerInterface;
     use Psr\Log\LogLevel;
@@ -54,6 +52,11 @@
                     'logger' => self::$psr,
                 ]);
             }
+        }
+
+        public static function log(string $level, string $message, array $context = []): void
+        {
+            self::logger()->log($level, $message, $context);
         }
 
         public static function info(string $message, array $context = []): void

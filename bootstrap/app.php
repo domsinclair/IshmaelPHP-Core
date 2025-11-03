@@ -4,6 +4,7 @@ declare(strict_types=1);
 use Ishmael\Core\Logger;
 use Ishmael\Core\ModuleManager;
 use Ishmael\Core\Router;
+use Psr\Log\LogLevel;
 
 // --------------------------------------------------
 // 1. Autoloading
@@ -34,6 +35,101 @@ Logger::init($loggingConfig);
 Logger::info('Bootstrapping Ishmael (Kernel v1)');
 
 // --------------------------------------------------
+// 4.1 Global Error/Exception/Shutdown Handlers (idempotent)
+// --------------------------------------------------
+$ishTesting = $_SERVER['ISH_TESTING'] ?? null;
+if (!defined('ISH_ERROR_HANDLERS_REGISTERED') && !$ishTesting) {
+    define('ISH_ERROR_HANDLERS_REGISTERED', true);
+
+    // preserve existing handlers to respect test environments
+    $previousErrorHandler = set_error_handler(function (int $errno, string $errstr, ?string $errfile = null, ?int $errline = null) use ($appConfig, &$previousErrorHandler): bool {
+        // Respect error_reporting mask
+        if (!(error_reporting() & $errno)) {
+            return false; // allow PHP internal handling
+        }
+
+        $level = match (true) {
+            ($errno & (E_ERROR | E_USER_ERROR | E_RECOVERABLE_ERROR)) === $errno => LogLevel::ERROR,
+            ($errno & (E_WARNING | E_USER_WARNING)) === $errno => LogLevel::WARNING,
+            ($errno & (E_NOTICE | E_USER_NOTICE | E_DEPRECATED | E_USER_DEPRECATED | E_STRICT)) === $errno => LogLevel::NOTICE,
+            default => LogLevel::ERROR,
+        };
+
+        $context = [
+            'type' => $errno,
+            'file' => $errfile,
+            'line' => $errline,
+        ];
+        // lightweight backtrace for debugging mode
+        if (($appConfig['debug'] ?? false) === true) {
+            $context['trace'] = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        }
+
+        Logger::log($level, $errstr, $context);
+
+        // Chain to previous handler if it exists
+        if (is_callable($previousErrorHandler)) {
+            return (bool) $previousErrorHandler($errno, $errstr, (string)$errfile, (int)$errline);
+        }
+        // return false to allow PHP internal handler, but we already logged
+        return false;
+    });
+
+    $previousExceptionHandler = set_exception_handler(function (Throwable $e) use ($appConfig, &$previousExceptionHandler): void {
+        // Log as critical with stack trace
+        Logger::log(LogLevel::CRITICAL, 'Uncaught exception: ' . $e->getMessage(), [
+            'exception' => get_class($e),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTrace(),
+        ]);
+
+        // Render response based on debug flag (CLI-safe)
+        if (php_sapi_name() !== 'cli') {
+            http_response_code(500);
+            if (($appConfig['debug'] ?? false) === true) {
+                echo '<h1>Uncaught Exception</h1>';
+                echo '<pre>' . htmlspecialchars((string)$e) . '</pre>';
+            } else {
+                echo '<h1>Internal Server Error</h1>';
+            }
+        }
+
+        // Chain to previous handler if any
+        if (is_callable($previousExceptionHandler)) {
+            $previousExceptionHandler($e);
+        }
+    });
+
+    register_shutdown_function(function () use ($appConfig) {
+        $error = error_get_last();
+        if ($error === null) {
+            return;
+        }
+        $fatalTypes = E_ERROR | E_PARSE | E_CORE_ERROR | E_COMPILE_ERROR | E_USER_ERROR;
+        if (($error['type'] & $fatalTypes) !== 0) {
+            Logger::log(LogLevel::CRITICAL, 'Fatal error: ' . $error['message'], [
+                'type' => $error['type'] ?? null,
+                'file' => $error['file'] ?? null,
+                'line' => $error['line'] ?? null,
+            ]);
+            if (php_sapi_name() !== 'cli') {
+                // Avoid sending output if headers already sent; best effort simple output
+                if (!headers_sent()) {
+                    http_response_code(500);
+                }
+                if (($appConfig['debug'] ?? false) === true) {
+                    echo '<h1>Fatal Error</h1>';
+                    echo '<pre>' . htmlspecialchars($error['message'] . "\n\n" . ($error['file'] ?? '') . ':' . ($error['line'] ?? '')) . '</pre>';
+                } else {
+                    echo '<h1>Internal Server Error</h1>';
+                }
+            }
+        }
+    });
+}
+
+// --------------------------------------------------
 // 5. Module Discovery
 // --------------------------------------------------
 $modulesPath = $appConfig['paths']['modules'] ?? (function () {
@@ -60,15 +156,7 @@ if ($uri === '/' || $uri === '') {
 
 // Allow consumers to opt-in to "bootstrap only" mode by defining ISH_BOOTSTRAP_ONLY
 if (!defined('ISH_BOOTSTRAP_ONLY') || ISH_BOOTSTRAP_ONLY !== true) {
-    try {
-        $router = new Router();
-        $router->dispatch($uri);
-    } catch (Throwable $e) {
-        Logger::error('Unhandled Exception during bootstrap dispatch: ' . $e->getMessage());
-        http_response_code(500);
-        echo '<h1>Internal Server Error</h1>';
-        if (($appConfig['debug'] ?? false) === true) {
-            echo '<pre>' . htmlspecialchars((string)$e) . '</pre>';
-        }
-    }
+    $router = new Router();
+    // Let exceptions bubble to global handler
+    $router->dispatch($uri);
 }
