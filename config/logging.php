@@ -21,14 +21,14 @@
 
             'single' => [
                 'driver' => 'single',
-                'path'   => base_path('storage/logs/ishmael.log'),
+                'path'   => storage_path('logs/ishmael.log'),
                 'level'  => env('LOG_LEVEL', 'debug'),
                 'format' => 'json',
             ],
 
             'daily' => [
                 'driver' => 'daily',
-                'path'   => base_path('storage/logs/ishmael.log'),
+                'path'   => storage_path('logs/ishmael.log'),
                 'days'   => 7,
                 'level'  => env('LOG_LEVEL', 'info'),
             ],
@@ -39,7 +39,7 @@
                 // Supported handlers: stream, rotating_file, error_log, syslog
                 'handler' => env('MONOLOG_HANDLER', 'stream'),
                 // For stream/rotating_file handlers
-                'path' => base_path('storage/logs/ishmael.log'),
+                'path' => storage_path('logs/ishmael.log'),
                 // For rotating_file handler
                 'days' => 7,
                 // Syslog options

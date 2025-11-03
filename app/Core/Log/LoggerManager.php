@@ -100,7 +100,7 @@ final class LoggerManager
         $handler = null;
         switch ($handlerType) {
             case 'rotating_file':
-                $path = (string)($cfg['path'] ?? (storage_path('logs' . DIRECTORY_SEPARATOR . 'ishmael.log')));
+                $path = (string)($cfg['path'] ?? (storage_path('logs/ishmael.log')));
                 $days = (int)($cfg['days'] ?? 7);
                 $this->ensureDirExists($path);
                 $handler = new \Monolog\Handler\RotatingFileHandler($path, $days, $minLevel);

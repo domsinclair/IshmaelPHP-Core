@@ -30,7 +30,13 @@
     if (!function_exists('storage_path')) {
         function storage_path(string $path = ''): string
         {
-            return base_path('storage') . ($path ? DIRECTORY_SEPARATOR . $path : '');
+            $base = base_path('storage');
+            if ($path === '') {
+                return $base;
+            }
+            // Normalize provided subpath for Windows/Linux and avoid duplicate separators
+            $normalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, trim($path, "\\/"));
+            return $base . DIRECTORY_SEPARATOR . $normalized;
         }
     }
 
