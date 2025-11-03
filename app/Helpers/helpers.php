@@ -20,7 +20,10 @@
     if (!function_exists('base_path')) {
         function base_path(string $path = ''): string
         {
-            return dirname(__DIR__, 2) . ($path ? DIRECTORY_SEPARATOR . $path : '');
+            // Allow applications to override the framework base when installed as a vendor package
+            // by defining ISH_APP_BASE in their front controller before including the bootstrap.
+            $base = defined('ISH_APP_BASE') && ISH_APP_BASE ? (string)ISH_APP_BASE : dirname(__DIR__, 2);
+            return $base . ($path ? DIRECTORY_SEPARATOR . $path : '');
         }
     }
 

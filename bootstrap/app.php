@@ -58,14 +58,17 @@ if ($uri === '/' || $uri === '') {
     $uri = "/{$defaultModule}/{$defaultController}/{$defaultAction}";
 }
 
-try {
-    $router = new Router();
-    $router->dispatch($uri);
-} catch (Throwable $e) {
-    Logger::error('Unhandled Exception during bootstrap dispatch: ' . $e->getMessage());
-    http_response_code(500);
-    echo '<h1>Internal Server Error</h1>';
-    if (($appConfig['debug'] ?? false) === true) {
-        echo '<pre>' . htmlspecialchars((string)$e) . '</pre>';
+// Allow consumers to opt-in to "bootstrap only" mode by defining ISH_BOOTSTRAP_ONLY
+if (!defined('ISH_BOOTSTRAP_ONLY') || ISH_BOOTSTRAP_ONLY !== true) {
+    try {
+        $router = new Router();
+        $router->dispatch($uri);
+    } catch (Throwable $e) {
+        Logger::error('Unhandled Exception during bootstrap dispatch: ' . $e->getMessage());
+        http_response_code(500);
+        echo '<h1>Internal Server Error</h1>';
+        if (($appConfig['debug'] ?? false) === true) {
+            echo '<pre>' . htmlspecialchars((string)$e) . '</pre>';
+        }
     }
 }
