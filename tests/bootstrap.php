@@ -1,14 +1,19 @@
 <?php
 declare(strict_types=1);
 
-// Composer autoloader
-require __DIR__ . '/../vendor/autoload.php';
-
-// Load global helper functions (base_path, env, config, etc.)
-require_once __DIR__ . '/../app/Helpers/helpers.php';
+// Force base_path() to resolve to the IshmaelPHP-Core root during tests to avoid vendor/helper shadowing
+if (!defined('ISH_APP_BASE')) {
+    define('ISH_APP_BASE', realpath(__DIR__ . '/..'));
+}
 
 // Mark testing environment for framework conditionals if any
 $_SERVER['ISH_TESTING'] = $_SERVER['ISH_TESTING'] ?? '1';
+
+// Load global helper functions (base_path, env, config, etc.) first so test helpers take precedence
+require_once __DIR__ . '/../app/Helpers/helpers.php';
+
+// Composer autoloader (may include a vendor copy of helpers, but our functions are already defined)
+require __DIR__ . '/../vendor/autoload.php';
 
 use Ishmael\Core\Logger;
 

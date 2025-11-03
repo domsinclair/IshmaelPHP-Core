@@ -10,6 +10,11 @@
      * with JSON formatting for structured logging.
      */
 
+    $testMode = (($_SERVER['ISH_TESTING'] ?? null) === '1');
+    $psrPath = $testMode
+        ? (sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs_tests' . DIRECTORY_SEPARATOR . 'app.psr.log')
+        : storage_path('logs/ishmael.log');
+
     return [
         'default' => env('LOG_CHANNEL', 'stack'),
 
@@ -21,14 +26,14 @@
 
             'single' => [
                 'driver' => 'single',
-                'path'   => storage_path('logs/ishmael.log'),
+                'path'   => $psrPath,
                 'level'  => env('LOG_LEVEL', 'debug'),
                 'format' => 'json',
             ],
 
             'daily' => [
                 'driver' => 'daily',
-                'path'   => storage_path('logs/ishmael.log'),
+                'path'   => $psrPath,
                 'days'   => 7,
                 'level'  => env('LOG_LEVEL', 'info'),
             ],
@@ -39,7 +44,7 @@
                 // Supported handlers: stream, rotating_file, error_log, syslog
                 'handler' => env('MONOLOG_HANDLER', 'stream'),
                 // For stream/rotating_file handlers
-                'path' => storage_path('logs/ishmael.log'),
+                'path' => $psrPath,
                 // For rotating_file handler
                 'days' => 7,
                 // Syslog options

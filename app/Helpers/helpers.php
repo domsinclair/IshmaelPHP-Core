@@ -20,9 +20,36 @@
     if (!function_exists('base_path')) {
         function base_path(string $path = ''): string
         {
-            // Allow applications to override the framework base when installed as a vendor package
-            // by defining ISH_APP_BASE in their front controller before including the bootstrap.
-            $base = defined('ISH_APP_BASE') && ISH_APP_BASE ? (string)ISH_APP_BASE : dirname(__DIR__, 2);
+            // Determine base in a robust, environment-aware way
+            $base = null;
+
+            // 1) Explicit constant takes precedence
+            if (defined('ISH_APP_BASE') && ISH_APP_BASE) {
+                $base = (string) ISH_APP_BASE;
+            }
+
+            // 2) Environment/server variable fallback (allows phpunit.xml <server> config)
+            if ($base === null) {
+                $envBase = $_SERVER['ISH_APP_BASE'] ?? getenv('ISH_APP_BASE') ?: null;
+                if ($envBase) {
+                    // Resolve relative paths against current working directory
+                    $base = realpath($envBase) ?: realpath(getcwd() . DIRECTORY_SEPARATOR . $envBase) ?: $envBase;
+                }
+            }
+
+            // 3) In test mode, prefer repository core path if present (avoids vendor-shadow issues)
+            if ($base === null && (($_SERVER['ISH_TESTING'] ?? null) === '1')) {
+                $candidate = getcwd() . DIRECTORY_SEPARATOR . 'IshmaelPHP-Core';
+                if (is_dir($candidate)) {
+                    $base = realpath($candidate) ?: $candidate;
+                }
+            }
+
+            // 4) Fallback to path relative to this helpers.php file (works for both core and vendor install)
+            if ($base === null) {
+                $base = dirname(__DIR__, 2);
+            }
+
             return $base . ($path ? DIRECTORY_SEPARATOR . $path : '');
         }
     }
@@ -47,20 +74,40 @@
         function log_message(string $level, string $message): void
         {
             $logDir = storage_path('logs');
+            $createdDir = true;
             if (!is_dir($logDir)) {
-                @mkdir($logDir, 0777, true);
+                $createdDir = @mkdir($logDir, 0777, true);
             }
 
             $logFile = $logDir . DIRECTORY_SEPARATOR . 'ishmael.log';
             // Ensure the file exists before attempting to append (test relies on existence)
-            @touch($logFile);
+            $touched = @touch($logFile);
+            $touchErr = $touched ? null : (function_exists('error_get_last') ? error_get_last() : null);
             clearstatcache(true, $logFile);
 
             $timestamp = date('Y-m-d H:i:s');
             $entry = sprintf("[%s] %s: %s\n", $timestamp, strtoupper($level), $message);
 
             // Append atomically; this will create the file if missing in most environments
-            @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+            $written = @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
+            $writeErr = (is_int($written)) ? null : (function_exists('error_get_last') ? error_get_last() : null);
+
+            // In test mode, drop a tiny probe with diagnostics to help identify path resolution issues
+            if (($_SERVER['ISH_TESTING'] ?? null) === '1') {
+                $probe = $logDir . DIRECTORY_SEPARATOR . '__log_probe.txt';
+                $diag = [
+                    'base_path()' => base_path(),
+                    'logDir' => $logDir,
+                    'logFile' => $logFile,
+                    'createdDir' => $createdDir ? 'yes' : 'no',
+                    'touched' => $touched ? 'yes' : 'no',
+                    'touchError' => $touchErr ? ($touchErr['message'] ?? json_encode($touchErr)) : null,
+                    'writtenBytes' => is_int($written) ? (string)$written : 'false',
+                    'writeError' => $writeErr ? ($writeErr['message'] ?? json_encode($writeErr)) : null,
+                    'existsAfter' => file_exists($logFile) ? 'yes' : 'no',
+                ];
+                @file_put_contents($probe, json_encode($diag, JSON_PRETTY_PRINT));
+            }
         }
     }
 
