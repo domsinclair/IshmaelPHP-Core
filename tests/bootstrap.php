@@ -4,6 +4,9 @@ declare(strict_types=1);
 // Composer autoloader
 require __DIR__ . '/../vendor/autoload.php';
 
+// Load global helper functions (base_path, env, config, etc.)
+require_once __DIR__ . '/../app/Helpers/helpers.php';
+
 // Mark testing environment for framework conditionals if any
 $_SERVER['ISH_TESTING'] = $_SERVER['ISH_TESTING'] ?? '1';
 
