@@ -46,6 +46,8 @@ final class App
 
         // Prepare router
         $this->router = new Router();
+        // Set active router for static facade usage in route files
+        Router::setActive($this->router);
 
         $this->booted = true;
     }

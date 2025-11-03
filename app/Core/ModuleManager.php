@@ -20,12 +20,13 @@
 
             foreach (glob($modulesPath . '/*', GLOB_ONLYDIR) as $moduleDir) {
                 $moduleName = basename($moduleDir);
-                $routes = self::loadRoutes($moduleDir);
+                [$routes, $routeClosure] = self::loadRoutesInfo($moduleDir);
 
                 self::$modules[$moduleName] = [
                     'name'   => $moduleName,
                     'path'   => realpath($moduleDir),
                     'routes' => $routes,
+                    'routeClosure' => $routeClosure,
                 ];
 
                 Logger::info("✅ Discovered module: {$moduleName} (routes: " . count($routes) . ")");
@@ -38,23 +39,27 @@
 
         /**
          * Load the module's route definitions from routes.php, if present.
-         * The routes.php file should return an array of 'pattern' => 'Controller@action'.
+         * Supports BC array and a Closure that accepts a Router instance.
+         * @return array{0: array, 1: ?\Closure}
          */
-        private static function loadRoutes(string $moduleDir): array
+        private static function loadRoutesInfo(string $moduleDir): array
         {
             $routesFile = $moduleDir . '/routes.php';
 
             if (file_exists($routesFile)) {
-                $routes = require $routesFile;
+                $result = require $routesFile;
 
-                if (is_array($routes)) {
-                    return $routes;
+                if (is_array($result)) {
+                    return [$result, null];
+                }
+                if ($result instanceof \Closure) {
+                    return [[], $result];
                 }
 
-                Logger::error("❌ Invalid routes.php in {$moduleDir} — must return an array.");
+                Logger::error("❌ Invalid routes.php in {$moduleDir} — must return an array or a Closure.");
             }
 
-            return [];
+            return [[], null];
         }
 
         /**
