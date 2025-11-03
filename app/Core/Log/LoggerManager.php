@@ -63,6 +63,9 @@ final class LoggerManager
             case 'null':
                 $logger = new NullChannel();
                 break;
+            case 'monolog':
+                $logger = $this->makeMonologLogger($cfg, $level);
+                break;
             case 'single':
             default:
                 $path = (string)($cfg['path'] ?? (sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs' . DIRECTORY_SEPARATOR . 'app.log'));
@@ -78,5 +81,61 @@ final class LoggerManager
     private function makeFormatter(string $format): FormatterInterface
     {
         return $format === 'line' ? new LineFormatter() : new JsonLinesFormatter();
+    }
+
+    /**
+     * Build a Monolog-backed channel based on config.
+     * @param array<string,mixed> $cfg
+     */
+    private function makeMonologLogger(array $cfg, string $minLevel): LoggerInterface
+    {
+        if (!class_exists(\Monolog\Logger::class)) {
+            throw new \RuntimeException("Monolog is not installed. Run 'composer require monolog/monolog' or switch LOG_CHANNEL to a non-monolog driver.");
+        }
+
+        $name = (string)($cfg['name'] ?? 'ishmael');
+        $logger = new \Monolog\Logger($name);
+
+        $handlerType = (string)($cfg['handler'] ?? 'stream');
+        $handler = null;
+        switch ($handlerType) {
+            case 'rotating_file':
+                $path = (string)($cfg['path'] ?? (storage_path('logs' . DIRECTORY_SEPARATOR . 'ishmael.log')));
+                $days = (int)($cfg['days'] ?? 7);
+                $this->ensureDirExists($path);
+                $handler = new \Monolog\Handler\RotatingFileHandler($path, $days, $minLevel);
+                break;
+            case 'error_log':
+                $handler = new \Monolog\Handler\ErrorLogHandler(\Monolog\Handler\ErrorLogHandler::OPERATING_SYSTEM, $minLevel);
+                break;
+            case 'syslog':
+                $ident = (string)($cfg['ident'] ?? 'ishmael');
+                $facility = defined('LOG_USER') ? constant('LOG_USER') : 1; // LOG_USER fallback
+                $handler = new \Monolog\Handler\SyslogHandler($ident, $facility, $minLevel);
+                break;
+            case 'stream':
+            default:
+                $path = (string)($cfg['path'] ?? (storage_path('logs' . DIRECTORY_SEPARATOR . 'ishmael.log')));
+                $this->ensureDirExists($path);
+                $handler = new \Monolog\Handler\StreamHandler($path, $minLevel);
+                break;
+        }
+
+        // Apply JSON Lines formatter by default
+        $formatter = new \Ishmael\Core\Log\Monolog\JsonLinesFormatter();
+        if (method_exists($handler, 'setFormatter')) {
+            $handler->setFormatter($formatter);
+        }
+        $logger->pushHandler($handler);
+
+        return new MonologChannel($logger);
+    }
+
+    private function ensureDirExists(string $filePath): void
+    {
+        $dir = dirname($filePath);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
     }
 }

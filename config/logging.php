@@ -32,5 +32,20 @@
                 'days'   => 7,
                 'level'  => env('LOG_LEVEL', 'info'),
             ],
+
+            // Monolog bridge channel. Enable by setting LOG_CHANNEL=monolog
+            'monolog' => [
+                'driver' => 'monolog',
+                // Supported handlers: stream, rotating_file, error_log, syslog
+                'handler' => env('MONOLOG_HANDLER', 'stream'),
+                // For stream/rotating_file handlers
+                'path' => base_path('storage/logs/ishmael.log'),
+                // For rotating_file handler
+                'days' => 7,
+                // Syslog options
+                'ident' => env('MONOLOG_SYSLOG_IDENT', 'ishmael'),
+                // Minimum level for handler
+                'level' => env('LOG_LEVEL', 'debug'),
+            ],
         ],
     ];
