@@ -40,6 +40,18 @@
         }
 
         /**
+         * Issue a simple HTTP redirect (302 by default).
+         * Returns a minimal Response with Location header for new pipeline.
+         */
+        protected function redirect(string $location, int $status = 302): \Ishmael\Core\Http\Response
+        {
+            // For pipeline-aware callers, return a Response object
+            return (new \Ishmael\Core\Http\Response())
+                ->setStatusCode($status)
+                ->header('Location', $location);
+        }
+
+        /**
          * Alias for render()
          */
         protected function view(string $view, array $vars = []): void

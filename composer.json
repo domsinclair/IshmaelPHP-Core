@@ -29,7 +29,12 @@
     "docs:serve": "python -m mkdocs serve -a 127.0.0.1:8001 -f ../mkdocs.yml",
     "docs:check": [
       "@docs:gen",
+      "@docs:api",
       "@docs:build"
+    ],
+    "docs:all": [
+      "@docs:check",
+      "@docs:serve"
     ]
   }
 }

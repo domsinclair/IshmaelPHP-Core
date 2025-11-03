@@ -140,7 +140,7 @@ class Router
                 ? [$handler[0], $handler[1] ?? 'index']
                 : explode('@', (string)$handler);
 
-            return $this->invokeControllerHandler($module, $controller, $action, $params, $res);
+            return $this->invokeControllerHandler($module, $controller, $action, $params, $req, $res);
         };
 
         // Build middleware pipeline
@@ -163,7 +163,7 @@ class Router
         echo $result->getBody();
     }
 
-    private function invokeControllerHandler(?string $module, string $controller, string $action, array $params, Response $res): Response
+    private function invokeControllerHandler(?string $module, string $controller, string $action, array $params, Request $req, Response $res): Response
     {
         // Ensure controller suffix
         if (substr($controller, -10) !== 'Controller' && !str_contains($controller, '\\')) {
@@ -194,7 +194,44 @@ class Router
             echo "Action not found: {$action}";
             return $res->setStatusCode(http_response_code() ?: 404)->setBody(ob_get_clean() ?: '');
         }
-        $ret = call_user_func_array([$ctrl, $action], $params);
+
+        // Build argument list supporting (Request $req, Response $res, ...$params)
+        $args = [];
+        try {
+            $ref = new \ReflectionMethod($ctrl, $action);
+            $methodParams = $ref->getParameters();
+            $positionals = array_values($params);
+            $i = 0;
+            foreach ($methodParams as $mp) {
+                $type = $mp->getType();
+                $typeName = $type instanceof \ReflectionNamedType ? $type->getName() : null;
+                if ($typeName === Request::class) {
+                    $args[] = $req;
+                    continue;
+                }
+                if ($typeName === Response::class) {
+                    $args[] = $res;
+                    continue;
+                }
+                // Fill remaining user params positionally
+                if (array_key_exists($i, $positionals)) {
+                    $args[] = $positionals[$i++];
+                    continue;
+                }
+                // Default if available
+                if ($mp->isDefaultValueAvailable()) {
+                    $args[] = $mp->getDefaultValue();
+                    continue;
+                }
+                // No value available; break and let call handle missing args (will error) or supply null
+                $args[] = null;
+            }
+            $ret = $ref->invokeArgs($ctrl, $args);
+        } catch (\Throwable $e) {
+            // Fallback to legacy behavior with positional params only
+            $ret = call_user_func_array([$ctrl, $action], array_values($params));
+        }
+
         $echoed = ob_get_clean() ?: '';
 
         if ($ret instanceof Response) {

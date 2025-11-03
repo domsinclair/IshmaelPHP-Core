@@ -9,6 +9,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [Database](Database.md) | `Ishmael\Core` | class |
 | [DatabaseAdapterFactory](DatabaseAdapterFactory.md) | `Ishmael\Core\DatabaseAdapters` | class |
 | [DatabaseAdapterInterface](DatabaseAdapterInterface.md) | `Ishmael\Core\DatabaseAdapters` | interface |
+| [Emitter](Emitter.md) | `Ishmael\Core\Http` | class |
 | [Logger](Logger.md) | `Ishmael\Core` | class |
 | [ModuleManager](ModuleManager.md) | `Ishmael\Core` | class |
 | [MySQLAdapter](MySQLAdapter.md) | `Ishmael\Core\DatabaseAdapters` | class |
