@@ -24,5 +24,4 @@ This page is generated from files under `IshmaelPHP-Core/config/`.
 
 ## logging
 
-- default
-- channels
+- <error reading file>

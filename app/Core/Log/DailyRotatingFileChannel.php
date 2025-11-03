@@ -14,6 +14,9 @@ final class DailyRotatingFileChannel implements LoggerInterface
     private int $days;
     private FormatterInterface $formatter;
     private bool $retentionApplied = false;
+    /** @var resource|null */
+    private $handle = null;
+    private ?string $currentFile = null;
 
     public function __construct(string $basePath, int $days = 7, string $minLevel = LogLevel::DEBUG, ?FormatterInterface $formatter = null)
     {
@@ -25,6 +28,14 @@ final class DailyRotatingFileChannel implements LoggerInterface
         if (!is_dir($dir)) {
             @mkdir($dir, 0777, true);
         }
+        register_shutdown_function(function () {
+            $this->closeHandle();
+        });
+    }
+
+    public function __destruct()
+    {
+        $this->closeHandle();
     }
 
     public function emergency($message, array $context = []): void { $this->log(LogLevel::EMERGENCY, $message, $context); }
@@ -68,20 +79,36 @@ final class DailyRotatingFileChannel implements LoggerInterface
         return $dir . DIRECTORY_SEPARATOR . $new;
     }
 
+    private function getHandle(string $path)
+    {
+        // Rotate handle if date changed
+        if (!is_resource($this->handle) || $this->currentFile !== $path) {
+            $this->closeHandle();
+            $this->handle = @fopen($path, 'ab');
+            $this->currentFile = $path;
+        }
+        return $this->handle;
+    }
+
+    private function closeHandle(): void
+    {
+        if (is_resource($this->handle)) {
+            @fclose($this->handle);
+            $this->handle = null;
+            $this->currentFile = null;
+        }
+    }
+
     private function write(string $path, string $line): void
     {
-        $fh = @fopen($path, 'ab');
+        $fh = $this->getHandle($path);
         if (!$fh) {
             return;
         }
-        try {
-            @flock($fh, LOCK_EX);
-            @fwrite($fh, $line);
-            @fflush($fh);
-        } finally {
-            @flock($fh, LOCK_UN);
-            @fclose($fh);
-        }
+        @flock($fh, LOCK_EX);
+        @fwrite($fh, $line);
+        @fflush($fh);
+        @flock($fh, LOCK_UN);
     }
 
     private function applyRetention(): void

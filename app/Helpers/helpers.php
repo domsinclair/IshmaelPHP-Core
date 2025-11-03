@@ -46,15 +46,21 @@
     if (!function_exists('log_message')) {
         function log_message(string $level, string $message): void
         {
-            $logDir = base_path('storage/logs');
+            $logDir = storage_path('logs');
             if (!is_dir($logDir)) {
-                mkdir($logDir, 0755, true);
+                @mkdir($logDir, 0777, true);
             }
 
-            $logFile = $logDir . '/ishmael.log';
+            $logFile = $logDir . DIRECTORY_SEPARATOR . 'ishmael.log';
+            // Ensure the file exists before attempting to append (test relies on existence)
+            @touch($logFile);
+            clearstatcache(true, $logFile);
+
             $timestamp = date('Y-m-d H:i:s');
             $entry = sprintf("[%s] %s: %s\n", $timestamp, strtoupper($level), $message);
-            file_put_contents($logFile, $entry, FILE_APPEND);
+
+            // Append atomically; this will create the file if missing in most environments
+            @file_put_contents($logFile, $entry, FILE_APPEND | LOCK_EX);
         }
     }
 

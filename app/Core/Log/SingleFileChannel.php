@@ -12,6 +12,8 @@ final class SingleFileChannel implements LoggerInterface
 
     private string $path;
     private FormatterInterface $formatter;
+    /** @var resource|null */
+    private $handle = null;
 
     public function __construct(string $path, string $minLevel = LogLevel::DEBUG, ?FormatterInterface $formatter = null)
     {
@@ -22,6 +24,15 @@ final class SingleFileChannel implements LoggerInterface
         if (!is_dir($dir)) {
             @mkdir($dir, 0777, true);
         }
+        // Ensure handle closed at end of request
+        register_shutdown_function(function () {
+            $this->closeHandle();
+        });
+    }
+
+    public function __destruct()
+    {
+        $this->closeHandle();
     }
 
     public function emergency($message, array $context = []): void { $this->log(LogLevel::EMERGENCY, $message, $context); }
@@ -44,19 +55,31 @@ final class SingleFileChannel implements LoggerInterface
         $this->write($line);
     }
 
+    private function getHandle()
+    {
+        if (!is_resource($this->handle)) {
+            $this->handle = @fopen($this->path, 'ab');
+        }
+        return $this->handle;
+    }
+
+    private function closeHandle(): void
+    {
+        if (is_resource($this->handle)) {
+            @fclose($this->handle);
+            $this->handle = null;
+        }
+    }
+
     private function write(string $line): void
     {
-        $fh = @fopen($this->path, 'ab');
+        $fh = $this->getHandle();
         if (!$fh) {
             return;
         }
-        try {
-            @flock($fh, LOCK_EX);
-            @fwrite($fh, $line);
-            @fflush($fh);
-        } finally {
-            @flock($fh, LOCK_UN);
-            @fclose($fh);
-        }
+        @flock($fh, LOCK_EX);
+        @fwrite($fh, $line);
+        @fflush($fh);
+        @flock($fh, LOCK_UN);
     }
 }
