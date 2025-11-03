@@ -59,7 +59,7 @@ final class App
 
         // Dispatch via the existing Router which echoes output.
         // Capture output and status code to build a Response value object.
-        $uri = $request->uri;
+        $uri = $request->getUri();
         $level = ob_get_level();
         ob_start();
         try {

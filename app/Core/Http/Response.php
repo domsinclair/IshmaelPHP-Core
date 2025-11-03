@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace Ishmael\Core\Http;
 
 /**
- * Minimal HTTP Response container for Kernel v1.
+ * Lightweight HTTP Response container with helpers.
  */
 class Response
 {
@@ -13,6 +13,7 @@ class Response
     private array $headers = [];
     private string $body = '';
 
+    /** @param array<string,string> $headers */
     public function __construct(string $body = '', int $statusCode = 200, array $headers = [])
     {
         $this->body = $body;
@@ -20,6 +21,33 @@ class Response
         foreach ($headers as $k => $v) {
             $this->headers[(string)$k] = (string)$v;
         }
+    }
+
+    public static function text(string $body, int $status = 200, array $headers = []): self
+    {
+        $headers = ['Content-Type' => 'text/plain; charset=UTF-8'] + $headers;
+        return new self($body, $status, $headers);
+    }
+
+    /**
+     * @param mixed $data Serializable data
+     * @param int $status
+     * @param array<string,string> $headers
+     */
+    public static function json(mixed $data, int $status = 200, array $headers = []): self
+    {
+        $body = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($body === false) {
+            $body = 'null';
+        }
+        $headers = ['Content-Type' => 'application/json; charset=UTF-8'] + $headers;
+        return new self($body, $status, $headers);
+    }
+
+    public static function html(string $body, int $status = 200, array $headers = []): self
+    {
+        $headers = ['Content-Type' => 'text/html; charset=UTF-8'] + $headers;
+        return new self($body, $status, $headers);
     }
 
     public function setStatusCode(int $code): self
