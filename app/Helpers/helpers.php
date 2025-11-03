@@ -109,8 +109,14 @@ ENV;
         function load_env(): array
         {
             static $env = null;
-            if ($env !== null) {
-                return $env;
+
+            // In testing, always reload .env to avoid stale cache between tests
+            if (!($_SERVER['ISH_TESTING'] ?? null)) {
+                if ($env !== null) {
+                    return $env;
+                }
+            } else {
+                $env = null; // force reload
             }
 
             ensure_env_file(); // ✅ ensure file exists first
