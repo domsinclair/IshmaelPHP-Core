@@ -5,50 +5,73 @@
 
     use DateTime;
 
+    use Ishmael\Core\Log\LoggerManager;
+    use Psr\Log\LoggerInterface;
+    use Psr\Log\LogLevel;
+
     class Logger
     {
-        private static ?string $logPath = null;
+        private static ?LoggerInterface $psr = null;
+        private static ?LoggerManager $manager = null;
 
+        /**
+         * Back-compat init. Accepts either a single-channel config with 'path' or a full logging config array.
+         */
         public static function init(array $config): void
         {
-            self::$logPath = $config['path'] ?? base_path('storage/logs/app.log');
-            $dir = dirname(self::$logPath);
-            if (!is_dir($dir)) {
-                @mkdir($dir, 0777, true);
-            }
-        }
-
-        public static function info(string $message): void
-        {
-            self::write('INFO', $message);
-        }
-
-        public static function error(string $message): void
-        {
-            self::write('ERROR', $message);
-        }
-
-        private static function write(string $level, string $message): void
-        {
-            // Lazy-initialize to a safe default if not set (e.g., during tests)
-            if (self::$logPath === null) {
-                $defaultDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs';
-                if (!is_dir($defaultDir)) {
-                    @mkdir($defaultDir, 0777, true);
+            // Detect if this looks like full logging.php config (has 'channels')
+            if (isset($config['channels'])) {
+                self::$manager = new LoggerManager($config);
+                self::$psr = self::$manager->default();
+                // register into service locator for DI access
+                if (function_exists('app')) {
+                    app([
+                        LoggerManager::class => self::$manager,
+                        LoggerInterface::class => self::$psr,
+                        'logger' => self::$psr,
+                    ]);
                 }
-                self::$logPath = $defaultDir . DIRECTORY_SEPARATOR . 'app.log';
+                return;
             }
 
-            $dir = dirname(self::$logPath);
-            if (!is_dir($dir)) {
-                @mkdir($dir, 0777, true);
+            // Fallback: single file path config
+            $path = $config['path'] ?? base_path('storage/logs/app.log');
+            self::$manager = new LoggerManager([
+                'default' => 'single',
+                'channels' => [
+                    'single' => [
+                        'driver' => 'single',
+                        'path' => $path,
+                        'level' => $config['level'] ?? LogLevel::DEBUG,
+                    ],
+                ],
+            ]);
+            self::$psr = self::$manager->default();
+            if (function_exists('app')) {
+                app([
+                    LoggerManager::class => self::$manager,
+                    LoggerInterface::class => self::$psr,
+                    'logger' => self::$psr,
+                ]);
             }
+        }
 
-            $date = (new DateTime())->format('Y-m-d H:i:s');
-            file_put_contents(
-                self::$logPath,
-                "[{$date}] {$level}: {$message}\n",
-                FILE_APPEND
-            );
+        public static function info(string $message, array $context = []): void
+        {
+            self::logger()->info($message, $context);
+        }
+
+        public static function error(string $message, array $context = []): void
+        {
+            self::logger()->error($message, $context);
+        }
+
+        private static function logger(): LoggerInterface
+        {
+            if (!self::$psr) {
+                // Lazy init to temp file
+                self::init(['path' => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs' . DIRECTORY_SEPARATOR . 'app.log']);
+            }
+            return self::$psr;
         }
     }

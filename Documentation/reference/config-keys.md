@@ -5,12 +5,24 @@ This page is generated from files under `IshmaelPHP-Core/config/`.
 
 ## app
 
-- <error reading file>
+- name
+- env
+- debug
+- url
+- routing
+- default_module
+- default_controller
+- default_action
+- timezone
+- locale
+- paths
 
 ## database
 
-- <error reading file>
+- default
+- connections
 
 ## logging
 
-- <error reading file>
+- default
+- channels

@@ -28,9 +28,9 @@ $appConfig      = require __DIR__ . '/../config/app.php';
 $loggingConfig  = require __DIR__ . '/../config/logging.php';
 
 // --------------------------------------------------
-// 4. Logger Init (kept simple for now)
+// 4. Logger Init (PSR-3 via LoggerManager)
 // --------------------------------------------------
-Logger::init($loggingConfig['channels']['single'] ?? ['path' => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs' . DIRECTORY_SEPARATOR . 'app.log']);
+Logger::init($loggingConfig);
 Logger::info('Bootstrapping Ishmael (Kernel v1)');
 
 // --------------------------------------------------

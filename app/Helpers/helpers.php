@@ -106,6 +106,35 @@ ENV;
     }
 
     /**
+     * Simple service locator for early phases.
+     */
+    if (!function_exists('app')) {
+        /**
+         * Resolve or register services.
+         * - app(FQCN|string): resolve service by key
+         * - app(): returns array of all services (for debugging)
+         * - app(['key' => $service, ...]): register one or more services
+         * This is a minimal placeholder until a full container arrives.
+         * @return mixed
+         */
+        function app($key = null)
+        {
+            static $services = [];
+            if ($key === null) {
+                return $services;
+            }
+            if (is_array($key)) {
+                foreach ($key as $k => $v) {
+                    $services[(string)$k] = $v;
+                }
+                return null;
+            }
+            $id = (string)$key;
+            return $services[$id] ?? null;
+        }
+    }
+
+    /**
      * Load .env file into global environment array.
      */
     if (!function_exists('load_env')) {
