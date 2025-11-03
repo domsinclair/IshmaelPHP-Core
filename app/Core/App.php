@@ -33,6 +33,13 @@ final class App
         // Load environment and core config
         load_env();
         $this->config = require base_path('config/app.php');
+        // Normalize debug flag to boolean in case env returns string values
+        if (array_key_exists('debug', $this->config)) {
+            $this->config['debug'] = filter_var((string)$this->config['debug'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            if ($this->config['debug'] === null) {
+                $this->config['debug'] = (bool)$this->config['debug'];
+            }
+        }
         $logging = require base_path('config/logging.php');
 
         // Initialize logger with a safe default if config incomplete
@@ -64,15 +71,17 @@ final class App
         $uri = $request->getUri();
         $level = ob_get_level();
         ob_start();
+        $thrown = null;
         try {
             $this->router?->dispatch($uri);
         } catch (\Throwable $e) {
+            $thrown = $e;
             Logger::error('Kernel handle exception: ' . $e->getMessage());
-            http_response_code(500);
-            echo '<h1>Internal Server Error</h1>';
-            if (($this->config['debug'] ?? false) === true) {
-                echo '<pre>' . htmlspecialchars((string)$e) . '</pre>';
-            }
+            // Build an error response instead of echoing directly
+            $debug = ($this->config['debug'] ?? false) === true;
+            $err = Response::fromThrowable($e, $debug);
+            http_response_code($err->getStatusCode());
+            echo $err->getBody();
         }
         $body = ob_get_clean();
         // Ensure output buffer is balanced in case of errors

@@ -16,6 +16,12 @@
         'debug'     => env('APP_DEBUG', true),
         'url'       => env('APP_URL', 'http://ishmaelphp.test'),
 
+        // Routing options
+        'routing' => [
+            // If true, requests to <appName>.test are treated as base (Laravel Herd style)
+            'herd_base' => env('ROUTING_HERD_BASE', true),
+        ],
+
         // The default module and controller to load if no route is matched
         'default_module'     => 'HelloWorld',
         'default_controller' => 'Home',

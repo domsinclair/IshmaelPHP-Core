@@ -50,6 +50,18 @@ class Response
         return new self($body, $status, $headers);
     }
 
+    public static function fromThrowable(\Throwable $e, bool $debug = false): self
+    {
+        $safeMessage = 'Internal Server Error';
+        if ($debug) {
+            $body = '<h1>Internal Server Error</h1>'
+                . '<p>' . htmlspecialchars($e->getMessage()) . '</p>'
+                . '<pre>' . htmlspecialchars((string)$e) . '</pre>';
+            return self::html($body, 500);
+        }
+        return self::html('<h1>' . $safeMessage . '</h1>', 500);
+    }
+
     public function setStatusCode(int $code): self
     {
         $this->statusCode = $code;
