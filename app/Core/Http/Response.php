@@ -12,6 +12,8 @@ class Response
     /** @var array<string,string> */
     private array $headers = [];
     private string $body = '';
+    /** @var array<string,string> */
+    private static array $lastHeaders = [];
 
     /** @param array<string,string> $headers */
     public function __construct(string $body = '', int $statusCode = 200, array $headers = [])
@@ -21,6 +23,7 @@ class Response
         foreach ($headers as $k => $v) {
             $this->headers[(string)$k] = (string)$v;
         }
+        self::$lastHeaders = $this->headers;
     }
 
     public static function text(string $body, int $status = 200, array $headers = []): self
@@ -76,6 +79,7 @@ class Response
     public function header(string $name, string $value): self
     {
         $this->headers[$name] = $value;
+        self::$lastHeaders = $this->headers;
         return $this;
     }
 
@@ -83,6 +87,12 @@ class Response
     public function getHeaders(): array
     {
         return $this->headers;
+    }
+
+    /** Testing helper: return last headers set on any Response instance */
+    public static function getLastHeaders(): array
+    {
+        return self::$lastHeaders;
     }
 
     public function setBody(string $body): self

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
 
+use Ishmael\Core\Log\Processor\RequestIdProcessor;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
@@ -68,6 +69,9 @@ final class LoggerManager
                 $logger = new SingleFileChannel($path, $level, $formatter);
                 break;
         }
+        // Wrap with processors so every channel includes global context
+        $processors = [new RequestIdProcessor()];
+        $logger = new ProcessorLogger($logger, $processors);
         return $this->instances[$name] = $logger;
     }
 
