@@ -11,12 +11,25 @@
     ]
   },
   "require": {
-    "php": "^8.4",
+    "php": "^8.2",
     "monolog/monolog": "^3.0"
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
+  "conflict": {
+    "erusev/parsedown": "*"
+  },
   "require-dev": {
-    "phpunit/phpunit": "11.3"
+    "phpunit/phpunit": "^11.0"
+  },
+  "scripts": {
+    "docs:gen": "@php ../bin/docgen",
+    "docs:api": "@php ../bin/docgen",
+    "docs:build": "python -m mkdocs build --strict -f ../mkdocs.yml",
+    "docs:serve": "python -m mkdocs serve -a 127.0.0.1:8001 -f ../mkdocs.yml",
+    "docs:check": [
+      "@docs:gen",
+      "@docs:build"
+    ]
   }
 }
