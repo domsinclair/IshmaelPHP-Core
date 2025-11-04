@@ -318,12 +318,27 @@ final class SchemaManager
         $defs = [];
         foreach ($modelClasses as $class) {
             if (!is_string($class) || !class_exists($class)) { continue; }
-            if (!property_exists($class, 'table') || !method_exists($class, 'schema')) { continue; }
-            /** @var TableDefinition $td */
+            if (!method_exists($class, 'schema')) { continue; }
+            /** @var TableDefinition|null $td */
             $td = $class::schema();
             if (!$td instanceof TableDefinition) { continue; }
-            // Ensure name matches $table if possible
-            $tableName = (string)($class::$table ?? $td->name);
+            // Ensure name matches declared table if present
+            $tableName = '';
+            // Prefer schema-declared name
+            $tableName = $td->name ?: $tableName;
+            // If model exposes a static $table (may be protected), read via reflection
+            if (property_exists($class, 'table')) {
+                try {
+                    $ref = new \ReflectionProperty($class, 'table');
+                    if ($ref->isStatic()) {
+                        $ref->setAccessible(true);
+                        $val = (string)$ref->getValue();
+                        if ($val !== '') { $tableName = $val; }
+                    }
+                } catch (\ReflectionException $e) {
+                    // ignore; fall back to any prior value
+                }
+            }
             if ($tableName !== '') {
                 $td->name = $tableName;
             }

@@ -21,6 +21,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [Log](Log.md) | `Ishmael\Core\Support` | class |
 | [Logger](Logger.md) | `Ishmael\Core` | class |
 | [LoggerManager](LoggerManager.md) | `Ishmael\Core\Log` | class |
+| [Model](Model.md) | `Ishmael\Core` | class |
 | [ModuleManager](ModuleManager.md) | `Ishmael\Core` | class |
 | [MonologChannel](MonologChannel.md) | `Ishmael\Core\Log` | class |
 | [MySQLAdapter](MySQLAdapter.md) | `Ishmael\Core\DatabaseAdapters` | class |
