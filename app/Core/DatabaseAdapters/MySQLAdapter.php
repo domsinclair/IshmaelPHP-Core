@@ -75,17 +75,62 @@
         }
 
         public function createTable(TableDefinition $def): void
-        { throw new \LogicException('Schema operations not yet implemented for MySQL'); }
+        {
+            $cols = [];
+            foreach ($def->columns as $c) {
+                if (!$c instanceof ColumnDefinition) continue;
+                $col = $this->quoteIdent($c->name) . ' ' . $this->mapType($c);
+                if (!$c->nullable) {
+                    $col .= ' NOT NULL';
+                }
+                if ($c->default !== null) {
+                    $default = is_string($c->default) ? "'" . str_replace("'", "''", $c->default) . "'" : (string)$c->default;
+                    $col .= ' DEFAULT ' . $default;
+                }
+                if ($c->autoIncrement) {
+                    $col .= ' AUTO_INCREMENT';
+                }
+                $cols[] = $col;
+            }
+            // If there is a single autoIncrement INT column, make it primary key implicitly
+            $pk = null;
+            foreach ($def->columns as $c) {
+                if ($c instanceof ColumnDefinition && $c->autoIncrement) { $pk = $c->name; break; }
+            }
+            if ($pk) {
+                $cols[] = 'PRIMARY KEY (' . $this->quoteIdent($pk) . ')';
+            }
+            $sql = 'CREATE TABLE ' . $this->quoteIdent($def->name) . ' (' . implode(', ', $cols) . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
+            $this->runSql($sql);
+        }
         public function dropTable(string $table): void
         { $this->runSql('DROP TABLE IF EXISTS ' . $this->quoteIdent($table)); }
         public function addColumn(string $table, ColumnDefinition $def): void
-        { throw new \LogicException('Schema operations not yet implemented for MySQL'); }
+        {
+            $sql = 'ALTER TABLE ' . $this->quoteIdent($table) . ' ADD COLUMN ' . $this->quoteIdent($def->name) . ' ' . $this->mapType($def);
+            if (!$def->nullable) { $sql .= ' NOT NULL'; }
+            if ($def->default !== null) {
+                $default = is_string($def->default) ? "'" . str_replace("'", "''", $def->default) . "'" : (string)$def->default;
+                $sql .= ' DEFAULT ' . $default;
+            }
+            $this->runSql($sql);
+        }
         public function alterColumn(string $table, ColumnDefinition $def): void
-        { throw new \LogicException('Schema operations not yet implemented for MySQL'); }
+        { throw new \LogicException('Altering columns is unsafe; write an explicit migration for MySQL.'); }
         public function dropColumn(string $table, string $column): void
         { $this->runSql('ALTER TABLE ' . $this->quoteIdent($table) . ' DROP COLUMN ' . $this->quoteIdent($column)); }
         public function addIndex(string $table, IndexDefinition $def): void
-        { throw new \LogicException('Schema operations not yet implemented for MySQL'); }
+        {
+            $type = strtolower($def->type);
+            if ($type === 'primary') {
+                $sql = 'ALTER TABLE ' . $this->quoteIdent($table) . ' ADD PRIMARY KEY (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)) . ')';
+            } elseif ($type === 'unique') {
+                $sql = 'CREATE UNIQUE INDEX ' . $this->quoteIdent($def->name) . ' ON ' . $this->quoteIdent($table) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)) . ')';
+            } else {
+                $sql = 'CREATE INDEX ' . $this->quoteIdent($def->name) . ' ON ' . $this->quoteIdent($table) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)) . ')';
+            }
+            $this->runSql($sql);
+        }
         public function dropIndex(string $table, string $name): void
         { $this->runSql('DROP INDEX ' . $this->quoteIdent($name) . ' ON ' . $this->quoteIdent($table)); }
         public function tableExists(string $table): bool

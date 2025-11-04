@@ -34,6 +34,8 @@ Auto-generated stubs for public types in Ishmael Core.
 | [Response](Response.md) | `Ishmael\Core\Http` | class |
 | [Result](Result.md) | `Ishmael\Core\Database` | class |
 | [Router](Router.md) | `Ishmael\Core` | class |
+| [SchemaDiff](SchemaDiff.md) | `Ishmael\Core\Database\Schema` | class |
+| [SchemaManager](SchemaManager.md) | `Ishmael\Core\Database` | class |
 | [SimpleFileLogger](SimpleFileLogger.md) | `Ishmael\Core\Log` | class |
 | [SingleFileChannel](SingleFileChannel.md) | `Ishmael\Core\Log` | class |
 | [SQLiteAdapter](SQLiteAdapter.md) | `Ishmael\Core\DatabaseAdapters` | class |
