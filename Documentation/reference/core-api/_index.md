@@ -6,6 +6,7 @@ Auto-generated stubs for public types in Ishmael Core.
 |---|---|---|
 | [App](App.md) | `Ishmael\Core` | class |
 | [BaseLoggerTrait](BaseLoggerTrait.md) | `Ishmael\Core\Log` | trait |
+| [ColumnDefinition](ColumnDefinition.md) | `Ishmael\Core\Database\Schema` | class |
 | [Controller](Controller.md) | `Ishmael\Core` | class |
 | [DailyRotatingFileChannel](DailyRotatingFileChannel.md) | `Ishmael\Core\Log` | class |
 | [Database](Database.md) | `Ishmael\Core` | class |
@@ -13,6 +14,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [DatabaseAdapterInterface](DatabaseAdapterInterface.md) | `Ishmael\Core\DatabaseAdapters` | interface |
 | [Emitter](Emitter.md) | `Ishmael\Core\Http` | class |
 | [FormatterInterface](FormatterInterface.md) | `Ishmael\Core\Log` | interface |
+| [IndexDefinition](IndexDefinition.md) | `Ishmael\Core\Database\Schema` | class |
 | [JsonLinesFormatter](JsonLinesFormatter.md) | `Ishmael\Core\Log` | class |
 | [JsonLinesFormatter](JsonLinesFormatter.md) | `Ishmael\Core\Log\Monolog` | class |
 | [LineFormatter](LineFormatter.md) | `Ishmael\Core\Log` | class |
@@ -30,10 +32,11 @@ Auto-generated stubs for public types in Ishmael Core.
 | [RequestIdProcessor](RequestIdProcessor.md) | `Ishmael\Core\Log\Processor` | class |
 | [RequestLoggingMiddleware](RequestLoggingMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [Response](Response.md) | `Ishmael\Core\Http` | class |
+| [Result](Result.md) | `Ishmael\Core\Database` | class |
 | [Router](Router.md) | `Ishmael\Core` | class |
 | [SimpleFileLogger](SimpleFileLogger.md) | `Ishmael\Core\Log` | class |
 | [SingleFileChannel](SingleFileChannel.md) | `Ishmael\Core\Log` | class |
 | [SQLiteAdapter](SQLiteAdapter.md) | `Ishmael\Core\DatabaseAdapters` | class |
 | [StackChannel](StackChannel.md) | `Ishmael\Core\Log` | class |
 | [StderrChannel](StderrChannel.md) | `Ishmael\Core\Log` | class |
-| [to](to.md) | `Ishmael\Core\Log\Processor` | interface |
+| [TableDefinition](TableDefinition.md) | `Ishmael\Core\Database\Schema` | class |

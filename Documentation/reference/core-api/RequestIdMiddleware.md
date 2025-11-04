@@ -4,7 +4,6 @@ Namespace: `Ishmael\Core\Http\Middleware`
 Source: `IshmaelPHP-Core\app\Core\Http\Middleware\RequestIdMiddleware.php`
 
 RequestIdMiddleware
-- Accepts incoming X-Request-Id or generates a UUIDv4
-- Stores it in a global accessor (app('request_id')) for processors to use
-- Adds X-Request-Id response header
 
+### Public methods
+- `__invoke(Ishmael\Core\Http\Request $req, Ishmael\Core\Http\Response $res, callable $next): Ishmael\Core\Http\Response` — Middleware signature: function(Request $req, Response $res, callable $next): Response

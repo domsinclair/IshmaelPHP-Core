@@ -3,16 +3,27 @@ declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
 
+/**
+ * Formatter that renders normalized records as JSON Lines (one JSON object per line).
+ *
+ * Keys are emitted in a stable order and the resulting string always ends with a newline.
+ */
 final class JsonLinesFormatter implements FormatterInterface
 {
-    /** @var int */
+    /** @var int JSON encoding flags applied to json_encode */
     private int $jsonFlags;
 
+    /**
+     * @param int $jsonFlags json_encode flags (defaults to UNESCAPED_SLASHES | UNESCAPED_UNICODE)
+     */
     public function __construct(int $jsonFlags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)
     {
         $this->jsonFlags = $jsonFlags;
     }
 
+    /**
+     * @param array<string,mixed> $record Normalized record with keys: ts, lvl, msg, app, env, request_id, context
+     */
     public function format(array $record): string
     {
         // Keep stable key order

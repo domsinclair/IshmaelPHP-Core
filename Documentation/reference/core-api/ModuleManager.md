@@ -3,6 +3,6 @@
 Namespace: `Ishmael\Core`  
 Source: `IshmaelPHP-Core\app\Core\ModuleManager.php`
 
-Discover all modules within the provided path.
-Each module must be a directory containing Controllers/, Models/, Views/, etc.
-
+### Public methods
+- `discover(string $modulesPath): void` — Discover all modules within the provided path.
+- `get(string $moduleName): ?array` — Optional: Get a specific module's info.

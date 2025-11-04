@@ -4,5 +4,6 @@ Namespace: `Ishmael\Core\Http`
 Source: `IshmaelPHP-Core\app\Core\Http\Emitter.php`
 
 Emits a Response to the client: status line, headers, and body.
-In unit tests, this can be bypassed by asserting on the Response directly.
 
+### Public methods
+- `emit(Ishmael\Core\Http\Response $response): void`

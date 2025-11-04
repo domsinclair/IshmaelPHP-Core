@@ -6,6 +6,12 @@ namespace Ishmael\Core;
 use Ishmael\Core\Http\Request;
 use Ishmael\Core\Http\Response;
 
+/**
+ * Minimal HTTP router supporting fluent route definitions, groups, and module-aware dispatch.
+ *
+ * Exposes both static and instance APIs to allow route registration during module discovery
+ * and conventional routing fallbacks for controller actions.
+ */
 class Router
 {
     /** @var array<int, array{methods:string[], regex:string, paramNames:string[], handler:mixed, middleware:callable[], module?:string}> */

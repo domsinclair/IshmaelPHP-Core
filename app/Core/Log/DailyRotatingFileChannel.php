@@ -6,6 +6,12 @@ namespace Ishmael\Core\Log;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
+/**
+ * File channel that rotates logs daily and enforces a retention policy.
+ *
+ * Appends newline-terminated formatted records to files named with a
+ * -YYYY-MM-DD suffix derived from a base path (e.g., app.log → app-2025-11-04.log).
+ */
 final class DailyRotatingFileChannel implements LoggerInterface
 {
     use BaseLoggerTrait;
@@ -14,10 +20,16 @@ final class DailyRotatingFileChannel implements LoggerInterface
     private int $days;
     private FormatterInterface $formatter;
     private bool $retentionApplied = false;
-    /** @var resource|null */
+    /** @var resource|null File handle for the current day file */
     private $handle = null;
     private ?string $currentFile = null;
 
+    /**
+     * @param string $basePath Base path used to build the dated filename.
+     * @param int $days Number of days to retain old files (min 1).
+     * @param string $minLevel Minimum level name for records to be written.
+     * @param FormatterInterface|null $formatter Formatter converting records to lines.
+     */
     public function __construct(string $basePath, int $days = 7, string $minLevel = LogLevel::DEBUG, ?FormatterInterface $formatter = null)
     {
         $this->basePath = $basePath;
@@ -38,15 +50,30 @@ final class DailyRotatingFileChannel implements LoggerInterface
         $this->closeHandle();
     }
 
+    /** @inheritDoc */
     public function emergency($message, array $context = []): void { $this->log(LogLevel::EMERGENCY, $message, $context); }
+    /** @inheritDoc */
     public function alert($message, array $context = []): void     { $this->log(LogLevel::ALERT, $message, $context); }
+    /** @inheritDoc */
     public function critical($message, array $context = []): void  { $this->log(LogLevel::CRITICAL, $message, $context); }
+    /** @inheritDoc */
     public function error($message, array $context = []): void     { $this->log(LogLevel::ERROR, $message, $context); }
+    /** @inheritDoc */
     public function warning($message, array $context = []): void   { $this->log(LogLevel::WARNING, $message, $context); }
+    /** @inheritDoc */
     public function notice($message, array $context = []): void    { $this->log(LogLevel::NOTICE, $message, $context); }
+    /** @inheritDoc */
     public function info($message, array $context = []): void      { $this->log(LogLevel::INFO, $message, $context); }
+    /** @inheritDoc */
     public function debug($message, array $context = []): void     { $this->log(LogLevel::DEBUG, $message, $context); }
 
+    /**
+     * Write a record to the current day's file and apply retention once per run.
+     *
+     * @param string $level PSR-3 level name.
+     * @param string|\Stringable $message Log message or object with __toString().
+     * @param array<string,mixed> $context Context values for interpolation.
+     */
     public function log($level, $message, array $context = []): void
     {
         $lvl = strtolower((string)$level);
@@ -63,6 +90,7 @@ final class DailyRotatingFileChannel implements LoggerInterface
         $this->write($path, $line);
     }
 
+    /** Compute the dated log file path for the current day. */
     private function currentPath(): string
     {
         $dir = \dirname($this->basePath);
@@ -79,6 +107,7 @@ final class DailyRotatingFileChannel implements LoggerInterface
         return $dir . DIRECTORY_SEPARATOR . $new;
     }
 
+    /** Get or open the file handle for the given path, rotating when the day changes. */
     private function getHandle(string $path)
     {
         // Rotate handle if date changed
@@ -90,6 +119,7 @@ final class DailyRotatingFileChannel implements LoggerInterface
         return $this->handle;
     }
 
+    /** Close the current file handle if open. */
     private function closeHandle(): void
     {
         if (is_resource($this->handle)) {
@@ -99,6 +129,7 @@ final class DailyRotatingFileChannel implements LoggerInterface
         }
     }
 
+    /** Write a single line to the current day's file with basic locking. */
     private function write(string $path, string $line): void
     {
         $fh = $this->getHandle($path);
@@ -111,6 +142,9 @@ final class DailyRotatingFileChannel implements LoggerInterface
         @flock($fh, LOCK_UN);
     }
 
+    /**
+     * Remove outdated rotated files older than the retention window.
+     */
     private function applyRetention(): void
     {
         $dir = \dirname($this->basePath);
