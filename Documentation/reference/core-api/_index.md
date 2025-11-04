@@ -21,6 +21,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [Log](Log.md) | `Ishmael\Core\Support` | class |
 | [Logger](Logger.md) | `Ishmael\Core` | class |
 | [LoggerManager](LoggerManager.md) | `Ishmael\Core\Log` | class |
+| [Migrator](Migrator.md) | `Ishmael\Core\Database\Migrations` | class |
 | [Model](Model.md) | `Ishmael\Core` | class |
 | [ModuleManager](ModuleManager.md) | `Ishmael\Core` | class |
 | [MonologChannel](MonologChannel.md) | `Ishmael\Core\Log` | class |
@@ -38,6 +39,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [SchemaDiff](SchemaDiff.md) | `Ishmael\Core\Database\Schema` | class |
 | [SchemaManager](SchemaManager.md) | `Ishmael\Core\Database` | class |
 | [SeederInterface](SeederInterface.md) | `Ishmael\Core\Database\Seeders` | interface |
+| [SeedManager](SeedManager.md) | `Ishmael\Core\Database\Seeding` | class |
 | [SimpleFileLogger](SimpleFileLogger.md) | `Ishmael\Core\Log` | class |
 | [SingleFileChannel](SingleFileChannel.md) | `Ishmael\Core\Log` | class |
 | [SQLiteAdapter](SQLiteAdapter.md) | `Ishmael\Core\DatabaseAdapters` | class |

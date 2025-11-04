@@ -11,7 +11,7 @@ Source: `IshmaelPHP-Core\app\Core\DatabaseAdapters\SQLiteAdapter.php`
 - `columnExists(string $table, string $column): bool`
 - `commit(): void`
 - `connect(array $config): PDO`
-- `createTable(Ishmael\Core\Database\Schema\TableDefinition $def): void`
+- `createTable(Ishmael\Core\Database\Schema\TableDefinition $def): void` — Create a table in SQLite from a TableDefinition.
 - `disconnect(): void`
 - `dropColumn(string $table, string $column): void`
 - `dropIndex(string $table, string $name): void`

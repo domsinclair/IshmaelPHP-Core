@@ -141,7 +141,8 @@ final class SeederRunner
         // Normalize names and dependencies
         $nameMap = []; // short name => FQCN
         foreach ($seeders as $fqcn => $obj) {
-            $short = substr(strrchr($fqcn, '\\') ?: $fqcn, 1) ?: $fqcn;
+            $pos = strrpos($fqcn, '\\');
+            $short = ($pos !== false) ? substr($fqcn, $pos + 1) : $fqcn;
             $nameMap[$short] = $fqcn;
         }
 

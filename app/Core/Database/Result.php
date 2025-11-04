@@ -41,6 +41,17 @@ class Result
     }
 
     /**
+     * BC alias: return all rows as associative arrays.
+     * Some callers expect Result::all(); delegate to fetchAll().
+     *
+     * @return array<int, array<string,mixed>>
+     */
+    public function all(): array
+    {
+        return $this->fetchAll();
+    }
+
+    /**
      * Return the number of affected rows (for UPDATE/DELETE) or rows in the result set if supported.
      */
     public function rowCount(): int
