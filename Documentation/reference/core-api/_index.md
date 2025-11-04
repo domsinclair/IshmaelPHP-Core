@@ -36,6 +36,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [Router](Router.md) | `Ishmael\Core` | class |
 | [SchemaDiff](SchemaDiff.md) | `Ishmael\Core\Database\Schema` | class |
 | [SchemaManager](SchemaManager.md) | `Ishmael\Core\Database` | class |
+| [SeederInterface](SeederInterface.md) | `Ishmael\Core\Database\Seeders` | interface |
 | [SimpleFileLogger](SimpleFileLogger.md) | `Ishmael\Core\Log` | class |
 | [SingleFileChannel](SingleFileChannel.md) | `Ishmael\Core\Log` | class |
 | [SQLiteAdapter](SQLiteAdapter.md) | `Ishmael\Core\DatabaseAdapters` | class |
