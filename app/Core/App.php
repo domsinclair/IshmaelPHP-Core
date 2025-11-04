@@ -89,7 +89,20 @@ final class App
             ob_end_clean();
         }
 
-        $status = http_response_code() ?: 200;
+        // Prefer status from Router's last Response when available (CLI-safe)
+        $status = 200;
+        if ($thrown instanceof \Throwable) {
+            $status = 500;
+        } elseif ($this->router && method_exists($this->router, 'getLastResponse')) {
+            $last = $this->router->getLastResponse();
+            if ($last instanceof Response) {
+                $status = $last->getStatusCode();
+            } else {
+                $status = http_response_code() ?: 200;
+            }
+        } else {
+            $status = http_response_code() ?: 200;
+        }
         return new Response($body ?? '', $status);
     }
 

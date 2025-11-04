@@ -13,9 +13,16 @@ class Router
     /** @var array<int, array{prefix:string, middleware:callable[], module?:string}> */
     private array $groupStack = [];
     private bool $appliedModuleClosures = false;
+    /** Last dispatched Response instance */
+    private ?Response $lastResponse = null;
 
     /** Static facade active instance */
     private static ?self $active = null;
+
+    public function getLastResponse(): ?Response
+    {
+        return $this->lastResponse;
+    }
 
     public static function setActive(?self $router): void
     {
@@ -155,7 +162,8 @@ class Router
         );
 
         $result = $pipeline($request, $response);
-        // Emit into current SAPI (consistent with existing router behavior)
+        // Track last response and emit into current SAPI (consistent with existing router behavior)
+        $this->lastResponse = $result;
         http_response_code($result->getStatusCode());
         foreach ($result->getHeaders() as $k => $v) {
             header($k . ': ' . $v, true);
@@ -333,14 +341,16 @@ class Router
         // Check controller exists
         if (!class_exists($controllerClass)) {
             http_response_code(404);
-            echo "Controller not found: {$controllerClass}";
+            $this->lastResponse = Response::text("Controller not found: {$controllerClass}", 404);
+            echo $this->lastResponse->getBody();
             return;
         }
         $ctrl = new $controllerClass();
         // Check action exists
         if (!method_exists($ctrl, $action)) {
             http_response_code(404);
-            echo "Action not found: {$action}";
+            $this->lastResponse = Response::text("Action not found: {$action}", 404);
+            echo $this->lastResponse->getBody();
             return;
         }
         // Call action
