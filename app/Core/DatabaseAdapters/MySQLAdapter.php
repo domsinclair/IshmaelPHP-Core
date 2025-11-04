@@ -145,7 +145,7 @@
         public function getCapabilities(): array
         {
             return [
-                self::CAP_ALTER_TABLE_ALTER_COLUMN,
+                // MySQL can drop columns; altering column definitions is not uniformly safe
                 self::CAP_DROP_COLUMN,
                 // No transactional DDL guaranteed
             ];
@@ -155,6 +155,51 @@
         {
             if (!$this->pdo) { throw new \RuntimeException('Adapter not connected'); }
             return $this->pdo;
+        }
+
+        /**
+         * Map a ColumnDefinition to a MySQL column type clause.
+         *
+         * Supports common types: INT, BIGINT, VARCHAR(n), CHAR(n), TEXT, DATETIME, TIMESTAMP, BOOLEAN (as TINYINT(1)),
+         * DECIMAL(p,s). Falls back to raw type if unrecognized.
+         *
+         * @param ColumnDefinition $c
+         * @return string
+         */
+        private function mapType(ColumnDefinition $c): string
+        {
+            $t = strtoupper($c->type);
+            switch (true) {
+                case str_contains($t, 'BIGINT'):
+                    return 'BIGINT' . ($c->unsigned ? ' UNSIGNED' : '');
+                case $t === 'INT' || str_contains($t, 'INTEGER'):
+                    return 'INT' . ($c->unsigned ? ' UNSIGNED' : '');
+                case str_starts_with($t, 'VARCHAR'):
+                    $len = $c->length ?? 255;
+                    return 'VARCHAR(' . $len . ')';
+                case str_starts_with($t, 'CHAR'):
+                    $len = $c->length ?? 1;
+                    return 'CHAR(' . $len . ')';
+                case $t === 'TEXT' || str_contains($t, 'TEXT'):
+                    return 'TEXT';
+                case $t === 'DATETIME':
+                    return 'DATETIME';
+                case $t === 'TIMESTAMP':
+                    return 'TIMESTAMP';
+                case $t === 'DATE':
+                    return 'DATE';
+                case str_starts_with($t, 'DECIMAL') || $t === 'NUMERIC':
+                    $p = $c->precision ?? 10; $s = $c->scale ?? 0;
+                    return 'DECIMAL(' . $p . ',' . $s . ')';
+                case $t === 'BOOLEAN' || $t === 'BOOL':
+                    return 'TINYINT(1)';
+                default:
+                    // Allow passthrough, append length if provided
+                    if ($c->length !== null && preg_match('/^\\w+$/', $c->type)) {
+                        return $c->type . '(' . $c->length . ')';
+                    }
+                    return $c->type;
+            }
         }
 
         private function quoteIdent(string $name): string

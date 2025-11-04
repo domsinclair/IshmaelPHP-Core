@@ -101,14 +101,29 @@
             return true;
         }
 
+        /**
+         * Create a table in SQLite from a TableDefinition.
+         *
+         * Supports: basic types, NULL/NOT NULL, DEFAULT values, and a single INTEGER PRIMARY KEY AUTOINCREMENT.
+         *
+         * @param TableDefinition $def Table definition to create.
+         */
         public function createTable(TableDefinition $def): void
         {
-            // Minimal implementation: build simple CREATE TABLE with basic columns
             $cols = [];
+            $autoPkSet = false;
             foreach ($def->columns as $c) {
                 if (!$c instanceof ColumnDefinition) continue;
-                $col = $this->quoteIdent($c->name) . ' ' . strtoupper($c->type);
-                if ($c->length !== null && !str_contains(strtoupper($c->type), 'INT')) {
+                $type = strtoupper($c->type);
+                // SQLite affinity; use INTEGER for auto-increment primary key
+                if ($c->autoIncrement && !$autoPkSet) {
+                    $col = $this->quoteIdent($c->name) . ' INTEGER PRIMARY KEY AUTOINCREMENT';
+                    $autoPkSet = true;
+                    $cols[] = $col;
+                    continue;
+                }
+                $col = $this->quoteIdent($c->name) . ' ' . $type;
+                if ($c->length !== null && !str_contains($type, 'INT')) {
                     $col .= '(' . $c->length . ')';
                 }
                 if ($c->autoIncrement) {
