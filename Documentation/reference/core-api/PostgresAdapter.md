@@ -15,7 +15,7 @@ Source: `IshmaelPHP-Core\app\Core\DatabaseAdapters\PostgresAdapter.php`
 - `disconnect(): void`
 - `dropColumn(string $table, string $column): void`
 - `dropIndex(string $table, string $name): void`
-- `dropTable(string $table): void`
+- `dropTable(string $table): void` — Drop a table if it exists.
 - `execute(string $sql, array $params = array (
 )): int`
 - `getCapabilities(): array`
