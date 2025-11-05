@@ -14,13 +14,21 @@ use Ishmael\Core\Http\Response;
  */
 class Router
 {
-    /** @var array<int, array{methods:string[], regex:string, paramNames:string[], handler:mixed, middleware:callable[], module?:string}> */
+    /** @var array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:callable[], pattern:string, module?:string, name?:string}> */
     private array $routes = [];
     /** @var array<int, array{prefix:string, middleware:callable[], module?:string}> */
     private array $groupStack = [];
+    /** @var array<int, callable> */
+    private array $globalMiddleware = [];
     private bool $appliedModuleClosures = false;
     /** Last dispatched Response instance */
     private ?Response $lastResponse = null;
+    /** Index of the most recently added route for chaining (e.g., ->name()) */
+    private ?int $lastAddedIndex = null;
+    /** @var array<string,int> Map route name to index in $routes */
+    private array $nameIndex = [];
+    /** @var array<string, array{pattern: ?string, module:?string, source:string}> Named routes coming from legacy array route files */
+    private array $namedArrayRoutes = [];
 
     /** Static facade active instance */
     private static ?self $active = null;
@@ -72,27 +80,218 @@ class Router
         }
     }
 
+    /**
+     * Set the global middleware stack applied to every route.
+     * Each entry may be a callable or an invokable class string.
+     * @param array<int, callable|string> $stack
+     */
+    public function setGlobalMiddleware(array $stack): void
+    {
+        $this->globalMiddleware = $stack;
+    }
+
+    /**
+     * Static facade to set global middleware on active router.
+     * @param array<int, callable|string> $stack
+     */
+    public static function useGlobal(array $stack): void
+    {
+        self::forwards()->setGlobalMiddleware($stack);
+    }
+
+    /**
+     * Add a single global middleware.
+     * @param callable|string $mw
+     */
+    public function addGlobalMiddleware($mw): void
+    {
+        $this->globalMiddleware[] = $mw;
+    }
+
     /** instance API equivalents */
     public function add(array $methods, string $pattern, $handler, array $middleware = []): self
     {
         $ctx = $this->currentGroup();
         $prefixed = $this->joinPaths($ctx['prefix'] ?? '', $pattern);
-        [$regex, $paramNames] = $this->compilePattern($prefixed);
+        [$regex, $paramNames, $paramTypes] = $this->compilePattern($prefixed);
         $entry = [
             'methods' => array_map('strtoupper', $methods),
             'regex' => $regex,
             'paramNames' => $paramNames,
+            'paramTypes' => $paramTypes,
             'handler' => $handler,
             'middleware' => array_merge($ctx['middleware'] ?? [], $middleware),
+            'pattern' => trim($prefixed, '/'),
         ];
         if (!empty($ctx['module'])) {
             $entry['module'] = (string)$ctx['module'];
         }
         $this->routes[] = $entry;
+        $this->lastAddedIndex = count($this->routes) - 1;
         return $this;
     }
 
     public function getInstance(): self { return $this; }
+
+    /**
+     * Assign a name to the most recently added route for URL generation.
+     */
+    public function name(string $routeName): self
+    {
+        if ($this->lastAddedIndex === null) {
+            throw new \LogicException('Cannot assign a name() before adding a route.');
+        }
+        $routeName = trim($routeName);
+        if ($routeName === '') {
+            throw new \InvalidArgumentException('Route name cannot be empty.');
+        }
+        $this->routes[$this->lastAddedIndex]['name'] = $routeName;
+        $this->nameIndex[$routeName] = $this->lastAddedIndex;
+        return $this;
+    }
+
+    /**
+     * Generate a URL by route name.
+     *
+     * @param string $name Route name
+     * @param array<string,mixed> $params Parameters to fill placeholders
+     * @param array<string,mixed> $query Optional query parameters
+     * @param bool $absolute When true, include scheme and host from current request
+     */
+    public static function url(string $name, array $params = [], array $query = [], bool $absolute = false): string
+    {
+        return self::forwards()->generateUrl($name, $params, $query, $absolute);
+    }
+
+    /**
+     * Instance URL generation implementation.
+     * @param array<string,mixed> $params
+     * @param array<string,mixed> $query
+     */
+    public function generateUrl(string $name, array $params = [], array $query = [], bool $absolute = false): string
+    {
+        // Ensure any array-named legacy routes are indexed for lookup
+        $this->ensureNamedArrayRoutesIndexed();
+
+        if (isset($this->nameIndex[$name])) {
+            $idx = $this->nameIndex[$name];
+            $route = $this->routes[$idx];
+            $path = $this->interpolatePattern($route['pattern'] ?? '', $route['paramNames'] ?? [], $route['paramTypes'] ?? [], $params, $name, 'fluent');
+            return $this->finalizeUrl($path, $query, $absolute);
+        }
+
+        // Fallback to legacy named array routes
+        if (isset($this->namedArrayRoutes[$name])) {
+            $info = $this->namedArrayRoutes[$name];
+            $pattern = (string)($info['pattern'] ?? '');
+            // Only support simple static patterns from legacy arrays
+            if ($pattern === '' ) {
+                throw new \InvalidArgumentException("Cannot generate URL for named route '{$name}' — no pattern available (defined in {$info['source']}).");
+            }
+            if ($this->isSimpleStaticRegex($pattern)) {
+                $path = $this->stripRegexDelimiters($pattern);
+                return $this->finalizeUrl($path, $query, $absolute);
+            }
+            throw new \InvalidArgumentException("Cannot generate URL for named route '{$name}' defined in {$info['source']} — complex regex patterns are not supported for URL generation. Define the route via the fluent API to enable URL generation.");
+        }
+
+        throw new \InvalidArgumentException("Unknown route name '{$name}'.");
+    }
+
+    /**
+     * Replace placeholder tokens in a stored pattern with provided params, validating presence and encoding.
+     * @param array<int,string> $paramNames
+     * @param array<int,string> $paramTypes
+     * @param array<string,mixed> $params
+     */
+    private function interpolatePattern(string $storedPattern, array $paramNames, array $paramTypes, array $params, string $routeName, string $source): string
+    {
+        $missing = [];
+        foreach ($paramNames as $p) {
+            if (!array_key_exists($p, $params)) {
+                $missing[] = $p;
+            }
+        }
+        if (!empty($missing)) {
+            $list = implode(', ', $missing);
+            throw new \InvalidArgumentException("Missing parameters [{$list}] for route '{$routeName}' (source: {$source}).");
+        }
+        $replaced = $storedPattern;
+        foreach ($paramNames as $i => $p) {
+            $type = $paramTypes[$i] ?? '';
+            $val = $params[$p];
+            $segment = $this->encodeParamForType($val, $type);
+            $replaced = preg_replace('/\{' . preg_quote($p, '/') . '(?::[a-zA-Z_][a-zA-Z0-9_]*)?\}/', $segment, $replaced, 1);
+        }
+        return '/' . trim($replaced, '/');
+    }
+
+    private function encodeParamForType(mixed $value, string $type): string
+    {
+        if ($value === null) {
+            return '';
+        }
+        // For numeric/bool/uuid, cast to string directly
+        if ($type === 'int' || $type === 'numeric' || $type === 'bool' || $type === 'uuid') {
+            return (string)$value;
+        }
+        // Default and slug-like values: rawurlencode
+        return rawurlencode((string)$value);
+    }
+
+    private function finalizeUrl(string $path, array $query, bool $absolute): string
+    {
+        $path = '/' . ltrim(trim($path, '/'), '/');
+        if (!empty($query)) {
+            $qs = http_build_query($query);
+            if ($qs !== '') {
+                $path .= '?' . $qs;
+            }
+        }
+        if (!$absolute) {
+            return $path;
+        }
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
+        return $scheme . '://' . $host . $path;
+    }
+
+    private function ensureNamedArrayRoutesIndexed(): void
+    {
+        static $done = false;
+        if ($done) { return; }
+        foreach (ModuleManager::$modules as $moduleName => $moduleData) {
+            foreach ($moduleData['routes'] as $pattern => $handler) {
+                if (is_array($handler)) {
+                    $name = $handler['name'] ?? null;
+                    if ($name) {
+                        $this->namedArrayRoutes[(string)$name] = [
+                            'pattern' => is_string($pattern) ? trim($pattern, '/') : null,
+                            'module' => $moduleName,
+                            'source' => "module:{$moduleName} routes.php",
+                        ];
+                    }
+                }
+            }
+        }
+        $done = true;
+    }
+
+    private function isSimpleStaticRegex(string $pattern): bool
+    {
+        // Allow optional ^ and $ anchors and only safe path characters
+        $p = trim($pattern);
+        if ($p === '') { return false; }
+        $p = trim($p, '^$');
+        return (bool)preg_match('#^[A-Za-z0-9_\-/]+$#', $p);
+    }
+
+    private function stripRegexDelimiters(string $pattern): string
+    {
+        $p = trim($pattern);
+        $p = trim($p, '^$');
+        return '/' . ltrim($p, '/');
+    }
 
     public function dispatch(string $uri): void
     {
@@ -101,25 +300,71 @@ class Router
 
         $path = parse_url($uri, PHP_URL_PATH) ?? '/';
         $path = trim((string)$path, '/');
-        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        // Determine method; attempt override only if initial scan fails
+        $originalMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $method = $originalMethod;
+        $override = null;
+        if ($originalMethod === 'POST') {
+            $override = $_SERVER['HTTP_X_HTTP_METHOD_OVERRIDE']
+                ?? $_SERVER['X_HTTP_METHOD_OVERRIDE']
+                ?? $_SERVER['HTTP_X_METHOD_OVERRIDE']
+                ?? null;
+            if (!$override && isset($_POST['_method'])) {
+                $override = $_POST['_method'];
+            }
+            if (is_string($override)) {
+                $override = strtoupper(trim($override));
+                if (!in_array($override, ['GET','POST','PUT','PATCH','DELETE','OPTIONS','HEAD'], true)) {
+                    $override = null; // ignore invalid
+                }
+            } else {
+                $override = null;
+            }
+        }
 
-        // 1) Match API routes
-        foreach ($this->routes as $route) {
-            if (!in_array($method, $route['methods'], true)) {
-                continue;
+        $tryMatch = function(string $useMethod) use ($path): ?array {
+            foreach ($this->routes as $route) {
+                if (!in_array($useMethod, $route['methods'], true)) {
+                    continue;
+                }
+                if (preg_match('#^' . $route['regex'] . '$#', $path, $m)) {
+                    return [$route, $m];
+                }
             }
-            if (preg_match('#^' . $route['regex'] . '$#', $path, $m)) {
-                $params = $this->extractParams($route['paramNames'], $m);
-                $this->runRoute($route, $params);
-                return;
-            }
+            return null;
+        };
+
+        $match = $tryMatch($method);
+        if ($match === null && $override !== null) {
+            $match = $tryMatch($override);
+        }
+        if ($match !== null) {
+            [$route, $m] = $match;
+            $params = $this->extractParams($route['paramNames'], $m, $route['paramTypes'] ?? []);
+            $this->runRoute($route, $params);
+            return;
         }
 
         // 2) Legacy module array routes (BC)
         foreach (ModuleManager::$modules as $moduleName => $moduleData) {
             foreach ($moduleData['routes'] as $pattern => $handler) {
-                if (preg_match('#^' . trim($pattern, '/') . '$#', $path, $matches)) {
-                    [$controller, $action] = explode('@', $handler);
+                if (preg_match('#^' . trim((string)$pattern, '/') . '$#', $path, $matches)) {
+                    $h = $handler;
+                    if (is_array($handler)) {
+                        $h = $handler['handler'] ?? null;
+                        if (!is_string($h)) {
+                            continue; // invalid legacy entry; skip
+                        }
+                        // If a name is present, index it for URL generation as a static pattern
+                        if (!empty($handler['name'])) {
+                            $this->namedArrayRoutes[(string)$handler['name']] = [
+                                'pattern' => is_string($pattern) ? trim((string)$pattern, '/') : null,
+                                'module' => $moduleName,
+                                'source' => "module:{$moduleName} routes.php",
+                            ];
+                        }
+                    }
+                    [$controller, $action] = explode('@', (string)$h);
                     $this->execute($moduleName, $controller, $action, array_slice($matches, 1));
                     return;
                 }
@@ -156,9 +401,10 @@ class Router
             return $this->invokeControllerHandler($module, $controller, $action, $params, $req, $res);
         };
 
-        // Build middleware pipeline
+        // Build middleware pipeline: global -> route (group middleware already merged into route)
+        $stack = array_merge(RouterMiddleware::resolveStack($this->globalMiddleware), RouterMiddleware::resolveStack($route['middleware']));
         $pipeline = array_reduce(
-            array_reverse($route['middleware']),
+            array_reverse($stack),
             function(callable $next, callable $mw) {
                 return function(Request $req, Response $res) use ($mw, $next): Response {
                     return $mw($req, $res, $next);
@@ -168,6 +414,10 @@ class Router
         );
 
         $result = $pipeline($request, $response);
+        if (!($result instanceof Response)) {
+            // Normalize non-Response returns to a Response::text
+            $result = Response::text((string)$result);
+        }
         // Track last response and emit into current SAPI (consistent with existing router behavior)
         $this->lastResponse = $result;
         http_response_code($result->getStatusCode());
@@ -257,39 +507,67 @@ class Router
         return $res->setBody($echoed);
     }
 
-    private function extractParams(array $names, array $matches): array
+    /**
+     * Extract parameter values from regex matches and convert them according to their declared types.
+     *
+     * @param array<int,string> $names Parameter names in order of appearance
+     * @param array<int,string> $matches Full regex matches array from preg_match
+     * @param array<int,string> $types Parameter types in order (may contain empty string for default)
+     * @return array<string,mixed>
+     */
+    private function extractParams(array $names, array $matches, array $types = []): array
     {
         $out = [];
         $i = 1;
-        foreach ($names as $n) {
-            $out[$n] = $matches[$i++] ?? null;
+        foreach ($names as $idx => $n) {
+            $raw = $matches[$i++] ?? null;
+            if ($raw === null) {
+                $out[$n] = null;
+                continue;
+            }
+            // Percent-decoding is handled in converters for types that need it; default leaves as-is
+            $type = $types[$idx] ?? '';
+            if ($type !== '') {
+                $out[$n] = ConstraintRegistry::convert($type, $raw);
+            } else {
+                $out[$n] = $raw;
+            }
         }
         return $out;
     }
 
+    /**
+     * Compile a human-readable pattern into a regex and capture metadata.
+     * Returns tuple of [regex, paramNames, paramTypes].
+     *
+     * @return array{0:string,1:array<int,string>,2:array<int,string>}
+     */
     private function compilePattern(string $pattern): array
     {
         $pattern = trim($pattern, '/');
         $paramNames = [];
-        $regex = preg_replace_callback('/\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([a-zA-Z_][a-zA-Z0-9_]*))?\}/', function($m) use (&$paramNames) {
+        $paramTypes = [];
+        $regex = preg_replace_callback('/\{([a-zA-Z_][a-zA-Z0-9_]*)(?::([a-zA-Z_][a-zA-Z0-9_]*))?\}/', function($m) use (&$paramNames, &$paramTypes) {
             $name = $m[1];
             $type = $m[2] ?? '';
             $paramNames[] = $name;
-            return '(' . $this->constraintRegex($type) . ')';
+            $paramTypes[] = $type;
+            $pattern = $this->constraintRegex($type);
+            return '(' . $pattern . ')';
         }, $pattern);
         if ($regex === null) {
             $regex = $pattern;
         }
-        return [$regex, $paramNames];
+        return [$regex, $paramNames, $paramTypes];
     }
 
     private function constraintRegex(string $type): string
     {
-        if ($type === 'int') {
-            return '\\d+';
-        }
-        if ($type === 'slug') {
-            return '[A-Za-z0-9-]+';
+        if ($type !== '') {
+            $p = ConstraintRegistry::getPattern($type);
+            if ($p !== null) {
+                return $p;
+            }
         }
         return '[^/]+';
     }

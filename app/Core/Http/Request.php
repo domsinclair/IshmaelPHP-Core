@@ -52,8 +52,23 @@ class Request
         $query = $_GET ?? [];
         $post = $_POST ?? [];
         $headers = self::serverHeaders($server);
-        $rawBody = file_get_contents('php://input') ?: '';
+        // Allow tests to inject a raw body without touching php://input
+        $rawBody = (string)($server['ISH_TEST_RAW_BODY'] ?? '');
+        if ($rawBody === '') {
+            $rawBody = file_get_contents('php://input') ?: '';
+        }
         return new self($method, $uri, $server, $query, $post, $headers, $rawBody);
+    }
+
+    /**
+     * Return a new Request with a replaced parsed body array.
+     * @param array<string,mixed> $body
+     */
+    public function withParsedBody(array $body): self
+    {
+        $clone = clone $this;
+        $clone->parsedBody = $body;
+        return $clone;
     }
 
     /** @return array<string,string> */
@@ -81,6 +96,16 @@ class Request
     public function getMethod(): string
     {
         return $this->method;
+    }
+
+    /**
+     * Return a new Request with a replaced HTTP method.
+     */
+    public function withMethod(string $method): self
+    {
+        $clone = clone $this;
+        $clone->method = strtoupper($method);
+        return $clone;
     }
 
     public function getUri(): string

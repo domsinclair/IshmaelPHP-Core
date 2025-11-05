@@ -55,6 +55,13 @@ final class App
         $this->router = new Router();
         // Set active router for static facade usage in route files
         Router::setActive($this->router);
+        
+        // Apply global middleware from config if provided
+        $httpCfg = $this->config['http'] ?? [];
+        $globalStack = $httpCfg['middleware'] ?? null;
+        if (is_array($globalStack) && !empty($globalStack)) {
+            $this->router->setGlobalMiddleware($globalStack);
+        }
 
         $this->booted = true;
     }

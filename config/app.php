@@ -38,4 +38,14 @@
             'logs'     => base_path('storage/logs'),
             'cache'    => base_path('storage/cache'),
         ],
+
+        // HTTP pipeline configuration
+        'http' => [
+            // Global middleware stack (callables or invokable class names)
+            'middleware' => [
+                // Example: Ishmael\Core\Http\Middleware\RequestIdMiddleware::class,
+                // Example: Ishmael\Core\Http\Middleware\CorsMiddleware::class,
+                // Example: Ishmael\Core\Http\Middleware\JsonBodyParserMiddleware::class,
+            ],
+        ],
     ];
