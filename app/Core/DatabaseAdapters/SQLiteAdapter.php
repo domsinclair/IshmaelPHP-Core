@@ -180,7 +180,8 @@
                 // SQLite primary key must be in table definition; skip
                 throw new \LogicException('Primary key must be defined at table creation in SQLite.');
             }
-            $prefix = $type === 'unique' ? 'CREATE UNIQUE INDEX' : 'CREATE INDEX';
+            // Use IF NOT EXISTS for idempotent index creation (SQLite supports this clause)
+            $prefix = $type === 'unique' ? 'CREATE UNIQUE INDEX IF NOT EXISTS' : 'CREATE INDEX IF NOT EXISTS';
             $sql = "$prefix $name ON $tbl ($cols)";
             if ($def->where) {
                 // Partial indexes are supported since SQLite 3.8.0
@@ -215,12 +216,19 @@
             $def = new TableDefinition($table, [], []);
             $stmt = $this->requirePdo()->query('PRAGMA table_info(' . $this->quoteIdent($table) . ')');
             foreach ($stmt->fetchAll() as $row) {
+                $isPk = ((int)($row['pk'] ?? 0)) === 1;
+                $type = (string)$row['type'];
+                $nullable = ((int)$row['notnull']) === 0;
+                if ($isPk) {
+                    // In SQLite, PRIMARY KEY implies NOT NULL even if PRAGMA reports notnull=0.
+                    $nullable = false;
+                }
                 $def->addColumn(new ColumnDefinition(
                     name: (string)$row['name'],
-                    type: (string)$row['type'],
-                    nullable: ((int)$row['notnull']) === 0,
+                    type: $type,
+                    nullable: $nullable,
                     default: $row['dflt_value'] !== null ? (string)$row['dflt_value'] : null,
-                    autoIncrement: false,
+                    autoIncrement: $isPk && stripos($type, 'INT') !== false,
                 ));
             }
             return $def;

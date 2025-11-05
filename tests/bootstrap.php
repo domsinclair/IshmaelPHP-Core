@@ -15,6 +15,9 @@ require_once __DIR__ . '/../app/Helpers/helpers.php';
 // Composer autoloader (may include a vendor copy of helpers, but our functions are already defined)
 require __DIR__ . '/../vendor/autoload.php';
 
+// Ensure test utilities are loaded (not managed by Composer autoload)
+require_once __DIR__ . '/Database/AdapterTestUtil.php';
+
 use Ishmael\Core\Logger;
 
 // Initialize Logger to avoid uninitialized static property access during tests

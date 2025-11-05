@@ -31,6 +31,23 @@ final class SeederRunner
     private LoggerInterface $logger;
 
     /**
+     * Build correlation context (request/process ID) when available.
+     * @return array<string,mixed>
+     */
+    private function correlationContext(): array
+    {
+        $rid = null;
+        if (function_exists('app')) {
+            try { $rid = app('request_id'); } catch (\Throwable $_) { $rid = null; }
+        }
+        if (!is_string($rid) || $rid === '') {
+            $pid = function_exists('getmypid') ? @getmypid() : null;
+            return $pid ? ['request_id' => (string)$pid] : [];
+        }
+        return ['request_id' => $rid];
+    }
+
+    /**
      * Construct a SeederRunner.
      *
      * @param DatabaseAdapterInterface $adapter Active database adapter (connected)
@@ -79,27 +96,36 @@ final class SeederRunner
             'refresh' => $refresh,
             'env' => $envName,
             'forced' => $force,
-        ]);
+        ] + $this->correlationContext());
 
         $total = 0;
         foreach ($modules as $mod) {
             $plan = $this->buildExecutionPlan($mod, $class);
             if (empty($plan)) {
-                $this->logger->info('No seeders to run', ['module' => $mod]);
+                $this->logger->info('No seeders to run', ['module' => $mod] + $this->correlationContext());
                 continue;
             }
-            $this->logger->info('Seeder plan', ['module' => $mod, 'count' => count($plan), 'seeders' => array_map(fn($c) => $c['name'], $plan)]);
+            $this->logger->info('Seeder plan', ['module' => $mod, 'count' => count($plan), 'seeders' => array_map(fn($c) => $c['name'], $plan)] + $this->correlationContext());
             foreach ($plan as $entry) {
                 /** @var SeederInterface $instance */
                 $instance = $entry['instance'];
-                $this->logger->info('Running seeder', ['module' => $mod, 'seeder' => $entry['name']]);
-                $instance->run($this->adapter, $this->logger);
-                $this->logger->info('Finished seeder', ['module' => $mod, 'seeder' => $entry['name']]);
-                $total++;
+                $ctx = ['module' => $mod, 'seeder' => $entry['name']] + $this->correlationContext();
+                $this->logger->info('Running seeder', $ctx);
+                try {
+                    $instance->run($this->adapter, $this->logger);
+                    $this->logger->info('Finished seeder', $ctx);
+                    $total++;
+                } catch (\Throwable $e) {
+                    $this->logger->error('Seeder failed', $ctx + [
+                        'error' => $e->getMessage(),
+                        'exception' => get_class($e),
+                    ]);
+                    throw $e;
+                }
             }
         }
 
-        $this->logger->info('Finished seeding', ['total_seeders_run' => $total]);
+        $this->logger->info('Finished seeding', ['total_seeders_run' => $total] + $this->correlationContext());
     }
 
     // ----- discovery and planning -----
@@ -195,15 +221,28 @@ final class SeederRunner
         }
         $declaredAfter = get_declared_classes();
         $diff = array_values(array_diff($declaredAfter, $declaredBefore));
+
+        // Normalize module directories for robust Windows/Unix path comparison
+        $normDirs = [];
+        foreach ($dirs as $d) {
+            $rp = realpath($d) ?: $d;
+            $rp = rtrim(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $rp), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+            $normDirs[] = $rp;
+        }
+
         $out = [];
-        foreach ($diff as $class) {
+        // Consider all declared classes so repeated runs (require_once no-ops) still discover seeders
+        foreach ($declaredAfter as $class) {
             if (is_subclass_of($class, SeederInterface::class) || in_array(SeederInterface::class, class_implements($class) ?: [], true)) {
                 // Instantiate only if class is in one of the module directories by reflection file name
                 try {
                     $ref = new \ReflectionClass($class);
                     $file = $ref->getFileName() ?: '';
+                    $filePath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string)$file);
                     $isInModule = false;
-                    foreach ($dirs as $d) { if ($file && str_starts_with((string)$file, $d)) { $isInModule = true; break; } }
+                    foreach ($normDirs as $nd) {
+                        if ($filePath !== '' && str_starts_with($filePath, $nd)) { $isInModule = true; break; }
+                    }
                     if ($isInModule && !$ref->isAbstract()) {
                         /** @var SeederInterface $obj */
                         $obj = $ref->newInstanceWithoutConstructor();
@@ -293,7 +332,8 @@ final class SeederRunner
     {
         $shortMap = [];
         foreach (array_keys($seeders) as $k) {
-            $short = substr(strrchr($k, '\\') ?: $k, 1) ?: $k;
+            $pos = strrpos($k, '\\');
+            $short = ($pos !== false) ? substr($k, $pos + 1) : $k;
             $shortMap[$short] = $k;
         }
         $declared = [];

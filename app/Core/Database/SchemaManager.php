@@ -25,6 +25,23 @@ final class SchemaManager
     private LoggerInterface $logger;
 
     /**
+     * Build correlation context (request/process ID) when available.
+     * @return array<string,mixed>
+     */
+    private function correlationContext(): array
+    {
+        $rid = null;
+        if (function_exists('app')) {
+            try { $rid = app('request_id'); } catch (\Throwable $_) { $rid = null; }
+        }
+        if (!is_string($rid) || $rid === '') {
+            $pid = function_exists('getmypid') ? @getmypid() : null;
+            return $pid ? ['request_id' => (string)$pid] : [];
+        }
+        return ['request_id' => $rid];
+    }
+
+    /**
      * Construct a SchemaManager.
      *
      * @param DatabaseAdapterInterface $adapter Database adapter to inspect/apply schema changes.
@@ -47,15 +64,18 @@ final class SchemaManager
     public function applyModuleSchema(string $modulePath): void
     {
         $schemaFile = rtrim($modulePath, "\\/ ") . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'schema.php';
+        $moduleName = basename(rtrim($modulePath, "\\/ "));
         if (!is_file($schemaFile)) {
-            $this->logger->debug('No module schema file found; nothing to apply', ['modulePath' => $modulePath]);
+            $this->logger->debug('No module schema file found; nothing to apply', ['module' => $moduleName, 'modulePath' => $modulePath] + $this->correlationContext());
             return;
         }
         $defs = require $schemaFile;
         if (!is_array($defs)) {
+            $this->logger->error('Module schema file did not return an array', ['module' => $moduleName, 'modulePath' => $modulePath] + $this->correlationContext());
             throw new \RuntimeException("Module schema file must return an array of TableDefinition instances: {$schemaFile}");
         }
 
+        $this->logger->info('Starting module schema apply', ['module' => $moduleName] + $this->correlationContext());
         // Normalize to a flat list of TableDefinition
         $tables = [];
         foreach ($defs as $k => $v) {
@@ -68,7 +88,13 @@ final class SchemaManager
                 $tables[] = $k; // unlikely, but be permissive
             }
         }
-        $this->synchronize($tables);
+        try {
+            $this->synchronize($tables);
+            $this->logger->info('Finished module schema apply', ['module' => $moduleName, 'tables' => array_map(fn($t) => $t instanceof TableDefinition ? $t->name : null, $tables)] + $this->correlationContext());
+        } catch (\Throwable $e) {
+            $this->logger->error('Module schema apply failed', ['module' => $moduleName, 'error' => $e->getMessage(), 'exception' => get_class($e)] + $this->correlationContext());
+            throw $e;
+        }
     }
 
     /**
@@ -204,7 +230,7 @@ final class SchemaManager
                     $this->logger->warning('Unsafe schema changes detected. Aborting.', [
                         'table' => $table,
                         'unsafe' => $diff->unsafeChanges,
-                    ]);
+                    ] + $this->correlationContext());
                     throw new \RuntimeException(
                         "Unsafe schema changes for table '{$table}'. Write an explicit migration. Issues: "
                         . implode(' | ', $diff->unsafeChanges)
@@ -216,6 +242,11 @@ final class SchemaManager
                     $this->adapter->createTable($def);
                 }
                 foreach ($diff->addColumns as $col) {
+                    // Double-check at apply-time to avoid race/duplication (especially for primary keys)
+                    if ($this->adapter->columnExists($table, $col->name)) {
+                        $this->logger->debug('Column already exists at apply-time; skipping', ['table' => $table, 'column' => $col->name]);
+                        continue;
+                    }
                     $this->logger->info('Adding column', ['table' => $table, 'column' => $col->name]);
                     $this->adapter->addColumn($table, $col);
                 }

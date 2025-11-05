@@ -156,12 +156,20 @@
                 $this->addIndex($def->name, $idx);
             }
         }
+        /**
+         * Drop a table if it exists.
+         *
+         * @param string $table Table name.
+         */
         public function dropTable(string $table): void
         { $this->runSql('DROP TABLE IF EXISTS ' . $this->quoteIdent($table)); }
         /**
          * Add a column to an existing table.
          *
          * Note: Adding auto-increment columns post-creation is not supported here; use explicit migrations.
+         *
+         * @param string $table Table name.
+         * @param ColumnDefinition $def Column definition to add.
          */
         public function addColumn(string $table, ColumnDefinition $def): void
         {

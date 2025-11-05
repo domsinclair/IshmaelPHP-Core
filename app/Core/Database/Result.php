@@ -58,4 +58,16 @@ class Result
     {
         return $this->stmt->rowCount();
     }
+
+    /**
+     * Convenience: fetch the first row as an associative array or null if none.
+     * Does not rewind the cursor; simply performs one fetch() call.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function first(): ?array
+    {
+        $row = $this->fetch();
+        return $row === false ? null : $row;
+    }
 }

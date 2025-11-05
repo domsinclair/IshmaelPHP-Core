@@ -35,6 +35,24 @@ final class MigrationRunner
     private LoggerInterface $logger;
 
     /**
+     * Build correlation context (request/process ID) when available.
+     * @return array<string,mixed>
+     */
+    private function correlationContext(): array
+    {
+        $rid = null;
+        if (function_exists('app')) {
+            try { $rid = app('request_id'); } catch (\Throwable $_) { $rid = null; }
+        }
+        if (!is_string($rid) || $rid === '') {
+            // As a fallback include process id for offline runs to help correlate lines
+            $pid = function_exists('getmypid') ? @getmypid() : null;
+            return $pid ? ['request_id' => (string)$pid] : [];
+        }
+        return ['request_id' => $rid];
+    }
+
+    /**
      * Construct a MigrationRunner.
      *
      * @param DatabaseAdapterInterface $adapter Active database adapter (connected)
@@ -71,7 +89,8 @@ final class MigrationRunner
         $this->ensureBookkeepingTable();
         $modules = $module ? [$module] : $this->discoverModules();
         $batch = $this->nextBatchNumber();
-        $this->logger->info('Starting migration batch', ['batch' => $batch, 'modules' => $modules, 'pretend' => $pretend]);
+        $base = ['batch' => $batch, 'modules' => $modules, 'pretend' => $pretend] + $this->correlationContext();
+        $this->logger->info('Starting migration batch', $base);
 
         foreach ($modules as $mod) {
             $pending = $this->pendingMigrations($mod);
@@ -80,17 +99,27 @@ final class MigrationRunner
             }
             foreach ($pending as $mig) {
                 [$name, $file] = $mig;
-                $this->logger->info('Running migration', ['module' => $mod, 'name' => $name, 'batch' => $batch, 'pretend' => $pretend]);
+                $ctx = ['module' => $mod, 'migration' => $name, 'batch' => $batch, 'pretend' => $pretend] + $this->correlationContext();
+                $this->logger->info('Running migration', $ctx);
                 if ($pretend) {
                     continue;
                 }
-                $instance = $this->instantiateMigration($file);
-                $this->executeSafely(function() use ($instance) { $instance->up(); });
-                $this->recordApplied($mod, $name, $batch);
-                $this->logger->info('Finished migration', ['module' => $mod, 'name' => $name]);
+                try {
+                    $instance = $this->instantiateMigration($file);
+                    $ctx['migration_class'] = get_class($instance);
+                    $this->executeSafely(function() use ($instance) { $instance->up(); });
+                    $this->recordApplied($mod, $name, $batch);
+                    $this->logger->info('Finished migration', $ctx);
+                } catch (\Throwable $e) {
+                    $this->logger->error('Migration failed', $ctx + [
+                        'error' => $e->getMessage(),
+                        'exception' => get_class($e),
+                    ]);
+                    throw $e;
+                }
             }
         }
-        $this->logger->info('Finished migration batch', ['batch' => $batch]);
+        $this->logger->info('Finished migration batch', ['batch' => $batch] + $this->correlationContext());
     }
 
     /**
@@ -113,22 +142,31 @@ final class MigrationRunner
             $toRollback = $this->appliedByBatch($latestBatch);
         }
         if (!$toRollback) { return; }
-        $this->logger->info('Starting rollback', ['module' => $module, 'count' => count($toRollback)]);
+        $this->logger->info('Starting rollback', ['module' => $module, 'count' => count($toRollback)] + $this->correlationContext());
         foreach ($toRollback as $row) {
             $mod = $row['module'];
             $name = $row['name'];
             $file = $this->findMigrationFile($mod, $name);
+            $ctx = ['module' => $mod, 'migration' => $name] + $this->correlationContext();
             if (!$file) {
-                $this->logger->error('Migration file not found for rollback', ['module' => $mod, 'name' => $name]);
+                $this->logger->error('Migration file not found for rollback', $ctx);
                 continue;
             }
-            $this->logger->info('Rolling back migration', ['module' => $mod, 'name' => $name]);
-            $instance = $this->instantiateMigration($file);
-            $this->executeSafely(function() use ($instance) { $instance->down(); });
-            $this->removeAppliedRecord($mod, $name);
-            $this->logger->info('Rolled back migration', ['module' => $mod, 'name' => $name]);
+            $this->logger->info('Rolling back migration', $ctx);
+            try {
+                $instance = $this->instantiateMigration($file);
+                $this->executeSafely(function() use ($instance) { $instance->down(); });
+                $this->removeAppliedRecord($mod, $name);
+                $this->logger->info('Rolled back migration', $ctx);
+            } catch (\Throwable $e) {
+                $this->logger->error('Rollback failed', $ctx + [
+                    'error' => $e->getMessage(),
+                    'exception' => get_class($e),
+                ]);
+                throw $e;
+            }
         }
-        $this->logger->info('Finished rollback');
+        $this->logger->info('Finished rollback', $this->correlationContext());
     }
 
     /** Reset all migrations (rollback everything). */
@@ -343,7 +381,12 @@ final class MigrationRunner
     private function instantiateMigration(string $file): BaseMigration
     {
         $before = get_declared_classes();
-        require_once $file;
+        $ret = (static function($__f){ return require $__f; })($file);
+        // If file returns an instance (e.g., anonymous class extending BaseMigration), use it directly
+        if ($ret instanceof BaseMigration) {
+            $ret->setAdapter($this->adapter);
+            return $ret;
+        }
         $after = get_declared_classes();
         $diff = array_values(array_diff($after, $before));
         foreach (array_reverse($diff) as $class) { // newest first
