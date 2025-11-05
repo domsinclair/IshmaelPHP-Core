@@ -1,0 +1,383 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+/**
+ * Ishmael Core CLI (Composer bin)
+ *
+ * This CLI is distribution‑safe: it does not reference SkeletonApp. It resolves the
+ * end‑user application's Composer autoload, loads its config, and dispatches to the
+ * programmatic Core APIs (Migrator, SeedManager).
+ *
+ * Commands:
+ *  - ish help
+ *  - ish make:module <Name> [--templates=PATH]
+ *  - ish make:migration <name> [--module=Name]
+ *  - ish migrate [--module=Name] [--steps=N] [--pretend]
+ *  - ish migrate:rollback [--module=Name] [--steps=N]
+ *  - ish status [--module=Name]
+ *  - ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV]
+ */
+
+use Ishmael\Core\Database;
+use Ishmael\Core\Database\Migrations\Migrator;
+use Ishmael\Core\Database\Seeding\SeedManager;
+
+/**
+ * Locate the Composer autoloader.
+ *
+ * Search strategy:
+ * 1) <appRoot>/vendor/autoload.php (when invoked from project root)
+ * 2) vendor/.. hops for installed package locations
+ *
+ * @param string $appRoot Caller app root (usually getcwd()).
+ * @return string Absolute path to autoload.php
+ */
+function resolveAutoloadPath(string $appRoot): string
+{
+    $candidates = [
+        $appRoot . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php',
+        // When executed as vendor/bin/ish inside a Composer project
+        __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'autoload.php',
+        __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'autoload.php',
+    ];
+    foreach ($candidates as $path) {
+        if (is_file($path)) {
+            return $path;
+        }
+    }
+    fwrite(STDERR, "Unable to locate Composer autoload.php. Run 'composer install'.\n");
+    exit(1);
+}
+
+/**
+ * Parse command‑line options of the form --key=value and boolean flags like --pretend.
+ *
+ * @param array<int,string> $argv Raw argv list (excluding the command itself is fine)
+ * @return array<string,mixed> Parsed options
+ */
+function parseOptions(array $argv): array
+{
+    $options = [];
+    foreach ($argv as $arg) {
+        if (str_starts_with($arg, '--')) {
+            $arg = substr($arg, 2);
+            if (str_contains($arg, '=')) {
+                [$k, $v] = explode('=', $arg, 2);
+                $options[$k] = $v;
+            } else {
+                $options[$arg] = true; // boolean flag
+            }
+        }
+    }
+    return $options;
+}
+
+/**
+ * Convert a string to StudlyCase (PascalCase).
+ *
+ * @param string $value Input string
+ * @return string StudlyCase string
+ */
+function toStudlyCase(string $value): string
+{
+    $value = str_replace(['-', '_'], ' ', $value);
+    $value = ucwords(strtolower($value));
+    return str_replace(' ', '', $value);
+}
+
+/**
+ * Convert a string to snake_case.
+ *
+ * @param string $value Input string
+ * @return string snake_case string
+ */
+function toSnake(string $value): string
+{
+    $value = preg_replace('/[^a-zA-Z0-9]+/', ' ', $value) ?? $value;
+    $value = trim($value);
+    $value = preg_replace('/([a-z])([A-Z])/', '$1_$2', $value) ?? $value;
+    $value = strtolower(str_replace(' ', '_', $value));
+    return $value;
+}
+
+/**
+ * Ensure a directory exists; create recursively if missing.
+ *
+ * @param string $path Directory path
+ * @return void
+ */
+function ensureDirectory(string $path): void
+{
+    if (!is_dir($path)) {
+        if (!mkdir($path, 0777, true) && !is_dir($path)) {
+            throw new RuntimeException('Failed to create directory: ' . $path);
+        }
+    }
+}
+
+/**
+ * Refuse to overwrite files unless explicitly allowed.
+ *
+ * @param string $path File path
+ * @param string $contents File contents
+ * @param bool $overwrite Whether to allow overwriting existing file
+ * @return void
+ */
+function writeFile(string $path, string $contents, bool $overwrite = false): void
+{
+    if (file_exists($path) && !$overwrite) {
+        throw new RuntimeException('File already exists: ' . $path);
+    }
+    ensureDirectory(dirname($path));
+    $bytes = file_put_contents($path, $contents);
+    if ($bytes === false) {
+        throw new RuntimeException('Failed to write file: ' . $path);
+    }
+}
+
+/**
+ * Copy a directory tree recursively.
+ *
+ * @param string $source Source directory
+ * @param string $destination Destination directory
+ * @return void
+ */
+function copyDirectoryRecursive(string $source, string $destination): void
+{
+    if (!is_dir($source)) {
+        throw new RuntimeException('Template directory not found: ' . $source);
+    }
+    ensureDirectory($destination);
+    $iterator = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($source, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::SELF_FIRST
+    );
+    foreach ($iterator as $item) {
+        $destPath = $destination . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
+        if ($item->isDir()) {
+            ensureDirectory($destPath);
+        } else {
+            $contents = file_get_contents($item->getPathname());
+            if ($contents === false) {
+                throw new RuntimeException('Failed to read template file: ' . $item->getPathname());
+            }
+            writeFile($destPath, $contents);
+        }
+    }
+}
+
+/**
+ * Create the contents of a new migration file.
+ *
+ * @param string $className Class name for the migration
+ * @param string $table Optional table name hint
+ * @return string PHP file contents
+ */
+function createMigrationContent(string $className, string $table = ''): string
+{
+    $tableComment = $table !== '' ? " // Table: {$table}" : '';
+    $now = date('Y-m-d H:i:s');
+    return <<<PHP
+<?php
+declare(strict_types=1);
+
+use Ishmael\\Core\\Database\\Migrations\\BaseMigration;
+
+/**
+ * Auto-generated migration{$tableComment}
+ * Generated at {$now}
+ */
+final class {$className} extends BaseMigration
+{
+    /**
+     * Apply the migration.
+     * @return void
+     */
+    public function up(): void
+    {
+        // TODO: Use SchemaManager (when available) or raw SQL via:
+        // \$this->sql('...');
+    }
+
+    /**
+     * Revert the migration.
+     * @return void
+     */
+    public function down(): void
+    {
+        // TODO: implement reversal
+    }
+}
+PHP;
+}
+
+// 1) Resolve app root and autoload
+$appRoot = getcwd();
+$autoload = resolveAutoloadPath($appRoot);
+
+// Guard to prevent HTTP router dispatch
+if (!defined('ISH_BOOTSTRAP_ONLY')) {
+    define('ISH_BOOTSTRAP_ONLY', true);
+}
+
+require $autoload; // app vendor/autoload.php
+
+// 2) Load database config from app unless overridden
+$options = parseOptions(array_slice($argv, 2));
+$configPath = isset($options['config']) ? (string)$options['config'] : ($appRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php');
+if (!is_file($configPath)) {
+    fwrite(STDERR, 'Database config not found at: ' . $configPath . PHP_EOL);
+    exit(1);
+}
+$databaseConfig = require $configPath;
+
+// 3) Boot Core and initialize DB
+if (!class_exists(Database::class)) {
+    // In case Core requires a bootstrap, try a relative path within the package
+    $maybeBootstrap = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'bootstrap' . DIRECTORY_SEPARATOR . 'app.php';
+    if (is_file($maybeBootstrap)) {
+        require $maybeBootstrap;
+    }
+}
+Database::init($databaseConfig);
+
+// 4) Resolve template directory order (app overrides → core stubs)
+/**
+ * Resolve a template bundle directory by name.
+ * Lookup order: <appRoot>/Templates/<Name> then <core>/Resources/stubs/<Name>.
+ *
+ * @param string $name Template bundle name (e.g., 'Module')
+ * @param string $appRoot Application root
+ * @param string|null $override Optional absolute override via --templates
+ * @return string Resolved directory path
+ */
+function resolveTemplateDir(string $name, string $appRoot, ?string $override = null): string
+{
+    if ($override !== null) {
+        if (!is_dir($override)) {
+            throw new RuntimeException('Templates override not found: ' . $override);
+        }
+        return $override;
+    }
+    $appTpl = $appRoot . DIRECTORY_SEPARATOR . 'Templates' . DIRECTORY_SEPARATOR . $name;
+    if (is_dir($appTpl)) {
+        return $appTpl;
+    }
+    $coreTpl = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'Resources' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . $name;
+    if (is_dir($coreTpl)) {
+        return $coreTpl;
+    }
+    throw new RuntimeException("No templates found for '{$name}'.");
+}
+
+// 5) Dispatch
+$command = $argv[1] ?? 'help';
+
+try {
+    switch ($command) {
+        case 'help':
+        case '--help':
+        case '-h':
+            echo <<<TXT
+Ishmael CLI (Core distribution)
+
+Usage:
+  ish help
+  ish make:module <Name> [--templates=PATH]
+  ish make:migration <name> [--module=Name]
+  ish migrate [--module=Name] [--steps=N] [--pretend]
+  ish migrate:rollback [--module=Name] [--steps=N]
+  ish status [--module=Name]
+  ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV]
+
+Options:
+  --config=PATH      Path to database config (defaults to <appRoot>/config/database.php)
+  --templates=PATH   Override template source directory completely
+  --app-root=PATH    Override application root (defaults to current working directory)
+TXT;
+            exit(0);
+
+        case 'make:module': {
+            $name = $argv[2] ?? '';
+            if ($name === '') {
+                throw new InvalidArgumentException('Module name is required: ish make:module <Name>');
+            }
+            $studly = toStudlyCase($name);
+            $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $studly;
+            $templateRoot = resolveTemplateDir('Module', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+            copyDirectoryRecursive($templateRoot, $dest);
+            echo 'Module scaffolded at: ' . $dest . PHP_EOL;
+            exit(0);
+        }
+
+        case 'make:migration': {
+            $nameArg = $argv[2] ?? '';
+            if ($nameArg === '') {
+                throw new InvalidArgumentException('Migration name is required: ish make:migration <name> [--module=Name]');
+            }
+            $module = $options['module'] ?? null;
+            $snake = toSnake($nameArg);
+            $timestamp = date('YmdHis');
+            $fileName = $timestamp . '__' . $snake . '.php';
+            $className = toStudlyCase($nameArg);
+            if ($module) {
+                $dir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . toStudlyCase((string)$module) . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations';
+            } else {
+                $dir = $appRoot . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations';
+            }
+            ensureDirectory($dir);
+            $path = $dir . DIRECTORY_SEPARATOR . $fileName;
+            $contents = createMigrationContent($className);
+            writeFile($path, $contents);
+            echo 'Created migration: ' . $path . PHP_EOL;
+            exit(0);
+        }
+
+        case 'migrate': {
+            $module  = $options['module'] ?? null;
+            $steps   = isset($options['steps']) ? (int)$options['steps'] : 0;
+            $pretend = isset($options['pretend']) ? (bool)filter_var((string)$options['pretend'], FILTER_VALIDATE_BOOL) : false;
+            $migrator = new Migrator(Database::adapter());
+            $migrator->migrate($module ? (string)$module : null, $steps, $pretend);
+            echo 'Migrations complete' . PHP_EOL;
+            exit(0);
+        }
+
+        case 'migrate:rollback': {
+            $module = $options['module'] ?? null;
+            $steps  = isset($options['steps']) ? (int)$options['steps'] : 1;
+            $migrator = new Migrator(Database::adapter());
+            $migrator->rollback($module ? (string)$module : null, $steps);
+            echo 'Rollback complete' . PHP_EOL;
+            exit(0);
+        }
+
+        case 'status': {
+            $module = $options['module'] ?? null;
+            $migrator = new Migrator(Database::adapter());
+            $status = $migrator->status($module ? (string)$module : null);
+            echo json_encode($status, JSON_PRETTY_PRINT) . PHP_EOL;
+            exit(0);
+        }
+
+        case 'seed': {
+            $module = $options['module'] ?? null;
+            $class  = $options['class'] ?? null;
+            $force  = isset($options['force']) ? (bool)filter_var((string)$options['force'], FILTER_VALIDATE_BOOL) : false;
+            $env    = $options['env'] ?? null;
+            $seeder = new SeedManager(Database::adapter());
+            $seeder->seed($module ? (string)$module : null, $class ? (string)$class : null, false, $env ? (string)$env : null, $force);
+            echo 'Seeding complete' . PHP_EOL;
+            exit(0);
+        }
+
+        default:
+            fwrite(STDERR, 'Unknown command: ' . $command . PHP_EOL . PHP_EOL);
+            fwrite(STDERR, "Run 'ish help' for usage.\n");
+            exit(1);
+    }
+} catch (Throwable $e) {
+    fwrite(STDERR, '[Error] ' . $e->getMessage() . PHP_EOL);
+    exit(1);
+}

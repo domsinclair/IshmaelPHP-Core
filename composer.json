@@ -2,6 +2,9 @@
   "name": "ishmael/framework",
   "description": "Ishmael PHP Framework",
   "type": "library",
+  "bin": [
+    "bin/ish"
+  ],
   "autoload": {
     "psr-4": {
       "Ishmael\\": "app/"

@@ -1,85 +1,62 @@
 # Ishmael CLI
 
-The Ishmael CLI provides a single entrypoint to common developer workflows like running migrations and seeders. It lives at `bin/ish` in the repository root and boots the SkeletonApp and Core libraries before dispatching commands.
+There are two ways to use the Ishmael CLI, serving two audiences:
 
-## Installation
+- Mono‑repo development (this repository): a repo‑root CLI at `bin/ish` that boots the SkeletonApp for fast local iteration.
+- End‑user distribution (Composer install): a Core‑shipped CLI exposed as `vendor/bin/ish` that works in any application without SkeletonApp.
 
-No extra installation is required when working inside this repository. Ensure you have installed SkeletonApp dependencies:
+## Quick start
 
-```bash
-cd SkeletonApp
-composer install
-```
+- In this repository (with SkeletonApp):
+  - Windows: `php bin\ish help`
+  - macOS/Linux: `./bin/ish help`
 
-On Windows, invoke the CLI with PHP:
+- In an end‑user app (after `composer require ishmael/ishmael-core`):
+  - All platforms: `php vendor/bin/ish help`
 
-```bash
-php bin\ish help
-```
+## Why two CLIs?
 
-On macOS/Linux (if executable bit is set):
+- This repository includes a Skeleton application used to develop and test the framework quickly. The repo‑root CLI assumes that layout and reads config from `SkeletonApp/config/database.php`.
+- End users install only the Core package. The Composer‑installed CLI must discover the caller app, read `config/database.php` from the project, and copy scaffolding from Core if the app has no overrides.
 
-```bash
-./bin/ish help
-```
+## Commands
 
-## Usage
+Common to both CLIs:
 
-```
-ish help
-ish migrate [--module=Name] [--steps=N] [--pretend]
-ish migrate:rollback [--module=Name] [--steps=N]
-ish status [--module=Name]
-ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV]
-```
+ish help ish make:module <Name> ish make:migration <name> [--module=Name] ish migrate [--module=Name] [--steps=N] [--pretend] ish migrate:rollback [--module=Name] [--steps=N] ish status [--module=Name] ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV]
 
-### Commands
+## Configuration discovery
 
-- help: Prints usage information and examples.
-- migrate: Applies pending migrations. When `--module` is omitted, all discovered modules are processed. Use `--steps` to limit how many migrations are applied for a specific module. Use `--pretend` to print what would be done without executing.
-- migrate:rollback: Rolls back migrations. With `--module`, rolls back the last `--steps` applied for that module (default 1). Without `--module`, rolls back the last batch applied globally (behavior delegated to the core migrator).
-- status: Outputs JSON with migration status information. Accepts `--module` to scope the status view.
-- seed: Runs database seeders via the SeedManager. Use `--class` to run a specific seeder (e.g., `DatabaseSeeder`). Use `--module` to scope seeding to a module. Use `--env` to specify the current environment and `--force` to bypass the environment guard for CI or special cases.
+- Repo‑root CLI: uses `SkeletonApp/config/database.php` and `SkeletonApp/vendor/autoload.php`.
+- Composer CLI: treats your current working directory as the app root and loads `<appRoot>/config/database.php`. Override with `--config=PATH`.
 
-## Configuration
+## Templates (scaffolding) lookup order
 
-The CLI initializes the database adapter using `SkeletonApp/config/database.php`. Ensure this file points to your desired database (e.g., SQLite files in `storage/`).
+1. App overrides: `<appRoot>/Templates/<Bundle>` (if present)
+2. Core defaults: `vendor/ishmael/ishmael-core/IshmaelPHP-Core/Resources/stubs/<Bundle>`
 
-Environment variables are loaded using the core helper `load_env()`. You can set `APP_ENV` to influence the seeding environment guard.
+Override entirely with `--templates=PATH`.
 
 ## Examples
 
-- Apply all pending migrations across all modules:
+- Apply pending migrations across all modules (Composer CLI):
   ```bash
-  php bin\ish migrate
+  php vendor/bin/ish migrate
+  ```
+- Create a module with app override templates:
+  ```bash
+  php vendor/bin/ish make:module Blog
+  ```
+- Dry run migrations (no DB changes):
+  ```bash
+  php vendor/bin/ish migrate --pretend
+  ```
+- Seed with environment guard override (CI):
+  ```bash
+  php vendor/bin/ish seed --class=DatabaseSeeder --force --env=ci
   ```
 
-- Apply two migrations for the HelloWorld module:
-  ```bash
-  php bin\ish migrate --module=HelloWorld --steps=2
-  ```
+## Notes and roadmap
 
-- Dry run of all migrations to see planned actions:
-  ```bash
-  php bin\ish migrate --pretend
-  ```
-
-- Roll back the last migration for HelloWorld:
-  ```bash
-  php bin\ish migrate:rollback --module=HelloWorld --steps=1
-  ```
-
-- Show status for all modules:
-  ```bash
-  php bin\ish status
-  ```
-
-- Run the default database seeder for all modules (forcing in CI):
-  ```bash
-  php bin\ish seed --class=DatabaseSeeder --force --env=ci
-  ```
-
-## Notes and Roadmap
-
-- Future versions will add migration batching, checksums, and additional scaffolding commands per the Phase‑5 plan.
-- Raw programmatic APIs remain available (`Migrator`, `SeedManager`) for scenarios where a CLI is not desired.
+- Upcoming: migration batching, checksums, transactional execution (adapter‑aware), and SchemaManager v0 in templates.
+- Programmatic APIs remain available: Ishmael\\Core\\Database\\Migrations\\Migrator, Ishmael\\Core\\Database\\Seeding\\SeedManager.
