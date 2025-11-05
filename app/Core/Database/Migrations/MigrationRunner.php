@@ -84,12 +84,16 @@ final class MigrationRunner
      * migrations for that module will be executed. When $pretend is true, no changes are applied; the
      * runner only logs what would be executed.
      */
-    public function migrate(?string $module = null, int $steps = 0, bool $pretend = false): void
+    public function migrate(?string $module = null, int $steps = 0, bool $pretend = false, bool $force = false): void
     {
         $this->ensureBookkeepingTable();
+        $this->ensureChecksumColumn();
+        // Verify checksums for already applied migrations before proceeding
+        $this->verifyChecksums($module, $force);
+
         $modules = $module ? [$module] : $this->discoverModules();
         $batch = $this->nextBatchNumber();
-        $base = ['batch' => $batch, 'modules' => $modules, 'pretend' => $pretend] + $this->correlationContext();
+        $base = ['batch' => $batch, 'modules' => $modules, 'pretend' => $pretend, 'force' => $force] + $this->correlationContext();
         $this->logger->info('Starting migration batch', $base);
 
         foreach ($modules as $mod) {
@@ -108,7 +112,8 @@ final class MigrationRunner
                     $instance = $this->instantiateMigration($file);
                     $ctx['migration_class'] = get_class($instance);
                     $this->executeSafely(function() use ($instance) { $instance->up(); });
-                    $this->recordApplied($mod, $name, $batch);
+                    $checksum = $this->fileChecksum($file);
+                    $this->recordApplied($mod, $name, $batch, $checksum);
                     $this->logger->info('Finished migration', $ctx);
                 } catch (\Throwable $e) {
                     $this->logger->error('Migration failed', $ctx + [
@@ -196,19 +201,39 @@ final class MigrationRunner
      */
     public function status(?string $module = null): array
     {
+        $this->ensureBookkeepingTable();
+        $this->ensureChecksumColumn();
         $modules = $module ? [$module] : $this->discoverModules();
         $out = [];
         foreach ($modules as $mod) {
             $all = $this->discoverMigrations($mod);
-            $applied = $this->appliedByModuleLookup($mod);
+            // Load applied rows including checksum
+            $rows = $this->adapter->query('SELECT name,batch,applied_at,checksum FROM ishmael_migrations WHERE module = :m', [':m' => $mod])->all();
+            $applied = [];
+            foreach ($rows as $r) { $applied[$r['name']] = $r; }
             $items = [];
-            foreach ($all as [$name, $_file]) {
+            foreach ($all as [$name, $file]) {
                 $row = $applied[$name] ?? null;
+                $checksum = null;
+                $mismatch = false;
+                if ($row !== null) {
+                    $checksum = $row['checksum'] ?? null;
+                    try {
+                        $onDisk = $this->fileChecksum($file);
+                        if ($checksum !== null && !hash_equals((string)$checksum, $onDisk)) {
+                            $mismatch = true;
+                        }
+                    } catch (\Throwable $_) {
+                        // ignore hashing errors in status
+                    }
+                }
                 $items[] = [
                     'name' => $name,
                     'applied' => $row !== null,
                     'batch' => $row['batch'] ?? null,
                     'applied_at' => $row['applied_at'] ?? null,
+                    'checksum' => $checksum,
+                    'mismatch' => $mismatch,
                 ];
             }
             $out[$mod] = $items;
@@ -226,7 +251,8 @@ final class MigrationRunner
             "module VARCHAR(100) NOT NULL,\n" .
             "name VARCHAR(255) NOT NULL,\n" .
             "batch INTEGER NOT NULL,\n" .
-            "applied_at DATETIME NOT NULL\n" .
+            "applied_at DATETIME NOT NULL,\n" .
+            "checksum VARCHAR(64) NULL\n" .
         ")";
         try {
             $this->adapter->runSql($sqlSqlite);
@@ -238,9 +264,70 @@ final class MigrationRunner
                 "`name` VARCHAR(255) NOT NULL,\n" .
                 "`batch` INT NOT NULL,\n" .
                 "`applied_at` DATETIME NOT NULL,\n" .
+                "`checksum` VARCHAR(64) NULL,\n" .
                 "PRIMARY KEY (id)\n" .
             ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
             $this->adapter->runSql($sqlMysql);
+        }
+    }
+
+    /**
+     * Best-effort ensure checksum column exists for backward compatibility.
+     * @return void
+     */
+    private function ensureChecksumColumn(): void
+    {
+        try {
+            $this->adapter->runSql("ALTER TABLE ishmael_migrations ADD COLUMN checksum VARCHAR(64) NULL");
+        } catch (\Throwable $e) {
+            // Ignore if column already exists or engine path differs
+        }
+    }
+
+    /**
+     * Compute SHA-256 checksum for a file.
+     * @param string $file Absolute path to file
+     * @return string 64-char hex digest
+     */
+    private function fileChecksum(string $file): string
+    {
+        $h = @hash_file('sha256', $file);
+        if ($h === false) {
+            throw new \RuntimeException("Failed to hash migration file: {$file}");
+        }
+        return $h;
+    }
+
+    /**
+     * Verify stored checksums for applied migrations and optionally backfill.
+     * @param string|null $module Specific module or all
+     * @param bool $force Continue on mismatch when true
+     * @return void
+     */
+    private function verifyChecksums(?string $module, bool $force): void
+    {
+        $mods = $module ? [$module] : $this->discoverModules();
+        $mismatches = [];
+        foreach ($mods as $mod) {
+            $rows = $this->adapter->query('SELECT name, checksum FROM ishmael_migrations WHERE module = :m', [':m' => $mod])->all();
+            $byName = [];
+            foreach ($rows as $r) { $byName[$r['name']] = $r; }
+            foreach ($this->discoverMigrations($mod) as [$name, $file]) {
+                if (!isset($byName[$name])) { continue; }
+                $onDisk = $this->fileChecksum($file);
+                $stored = $byName[$name]['checksum'] ?? null;
+                if ($stored === null) {
+                    // Backfill silently
+                    $this->adapter->execute('UPDATE ishmael_migrations SET checksum = :c WHERE module = :m AND name = :n', [':c' => $onDisk, ':m' => $mod, ':n' => $name]);
+                    continue;
+                }
+                if (!hash_equals((string)$stored, $onDisk)) {
+                    $mismatches[] = ['module' => $mod, 'name' => $name];
+                }
+            }
+        }
+        if ($mismatches && !$force) {
+            throw new \RuntimeException('Checksum mismatch detected for applied migrations: ' . json_encode($mismatches));
         }
     }
 
@@ -263,11 +350,11 @@ final class MigrationRunner
         return $row && isset($row['m']) ? (int)$row['m'] : 0;
     }
 
-    private function recordApplied(string $module, string $name, int $batch): void
+    private function recordApplied(string $module, string $name, int $batch, ?string $checksum): void
     {
         $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
-        $this->adapter->execute('INSERT INTO ishmael_migrations (module,name,batch,applied_at) VALUES (:m,:n,:b,:t)', [
-            ':m' => $module, ':n' => $name, ':b' => $batch, ':t' => $now,
+        $this->adapter->execute('INSERT INTO ishmael_migrations (module,name,batch,applied_at,checksum) VALUES (:m,:n,:b,:t,:c)', [
+            ':m' => $module, ':n' => $name, ':b' => $batch, ':t' => $now, ':c' => $checksum,
         ]);
     }
 

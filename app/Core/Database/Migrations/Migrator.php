@@ -40,9 +40,18 @@ final class Migrator
      * @param bool $pretend If true, do not apply changes; only log planned operations.
      * @return void
      */
-    public function migrate(?string $module = null, int $steps = 0, bool $pretend = false): void
+    /**
+     * Apply pending migrations.
+     *
+     * @param string|null $module Module name to target or null to process all modules.
+     * @param int $steps Limit the number of migrations for a specific module (0 = all pending).
+     * @param bool $pretend If true, do not apply changes; only log planned operations.
+     * @param bool $force Override checksum drift guard and proceed when true.
+     * @return void
+     */
+    public function migrate(?string $module = null, int $steps = 0, bool $pretend = false, bool $force = false): void
     {
-        $this->runner->migrate($module, $steps, $pretend);
+        $this->runner->migrate($module, $steps, $pretend, $force);
     }
 
     /**
