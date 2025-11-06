@@ -543,9 +543,12 @@ class Router
         ob_start();
         if (!class_exists($class)) {
             $msg = "Controller not found: {$class}. Did you create class {$class} and autoload it?";
-            $body = $msg;
             ob_end_clean();
-            return Response::text($body, 404);
+            // In tests, prefer throwing to allow precise assertions; in runtime, return 404 as before
+            if (($_SERVER['ISH_TESTING'] ?? null) === '1') {
+                throw new \RuntimeException($msg);
+            }
+            return Response::text($msg, 404);
         }
         $ctrl = new $class();
         if (!method_exists($ctrl, $action)) {

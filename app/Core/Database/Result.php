@@ -31,6 +31,30 @@ class Result
     }
 
     /**
+     * Fetch a single row as an associative array or null if none.
+     * Back-compat for older call sites that used fetchAssoc().
+     *
+     * @return array<string,mixed>|null
+     */
+    public function fetchAssoc(): ?array
+    {
+        $row = $this->stmt->fetch();
+        return $row === false ? null : $row;
+    }
+
+    /**
+     * Fetch the first column of the next row in the result set.
+     * Useful for EXISTS checks and scalar queries.
+     *
+     * @param int $column Zero-based column index
+     * @return mixed
+     */
+    public function fetchColumn(int $column = 0): mixed
+    {
+        return $this->stmt->fetchColumn($column);
+    }
+
+    /**
      * Fetch all remaining rows from the result set.
      *
      * @return array<int, array<string,mixed>> List of rows as associative arrays.

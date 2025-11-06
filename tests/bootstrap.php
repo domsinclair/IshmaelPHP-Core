@@ -27,3 +27,19 @@ if (!is_dir($logDir)) {
 }
 $logPath = $logDir . DIRECTORY_SEPARATOR . 'app.test.log';
 Logger::init(['path' => $logPath]);
+
+// Ensure a clean Database static state at suite start to avoid cross-test leakage
+if (class_exists(\Ishmael\Core\Database::class)) {
+    try {
+        $ref = new ReflectionClass(\Ishmael\Core\Database::class);
+        foreach (['connection', 'adapter'] as $prop) {
+            if ($ref->hasProperty($prop)) {
+                $p = $ref->getProperty($prop);
+                $p->setAccessible(true);
+                $p->setValue(null, null);
+            }
+        }
+    } catch (Throwable $e) {
+        // non-fatal in tests
+    }
+}

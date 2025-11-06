@@ -20,10 +20,19 @@
         /**
          * Initialize the default database connection and adapter.
          *
+         * In test mode (ISH_TESTING=1), this method will always reset any existing
+         * connection/adapter first so each test can call init() safely without
+         * leaking state across tests.
+         *
          * @param array<string,mixed> $config Database configuration array with keys: default, connections.
          */
         public static function init(array $config): void
         {
+            // In tests, always reset before (re)initializing to ensure isolation
+            if ((($_SERVER['ISH_TESTING'] ?? null) === '1') && (self::$connection !== null || self::$adapter !== null)) {
+                self::reset();
+            }
+
             if (self::$connection) {
                 return;
             }
@@ -68,6 +77,23 @@
                 throw new \RuntimeException('Database not initialized');
             }
             return self::$adapter;
+        }
+
+        /**
+         * Reset the static Database state, disconnecting any active adapter and clearing
+         * the stored PDO connection. Safe to call multiple times. Intended primarily for tests.
+         */
+        public static function reset(): void
+        {
+            try {
+                if (self::$adapter !== null) {
+                    self::$adapter->disconnect();
+                }
+            } catch (\Throwable $e) {
+                // ignore during reset
+            }
+            self::$connection = null;
+            self::$adapter = null;
         }
 
         /**

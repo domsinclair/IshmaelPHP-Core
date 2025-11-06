@@ -18,11 +18,29 @@ This page is generated from files under `IshmaelPHP-Core/config/`.
 - paths
 - http
 
+## auth
+
+- defaults
+- providers
+- passwords
+- redirects
+- policies
+- remember_me
+
 ## database
 
 - default
 - connections
 
 ## logging
+
+- <error reading file>
+
+## security
+
+- csrf
+- headers
+
+## session
 
 - <error reading file>

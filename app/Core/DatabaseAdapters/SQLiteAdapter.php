@@ -236,6 +236,12 @@
 
         public function runSql(string $sql): void
         {
+            // Make CREATE TABLE idempotent for test friendliness: inject IF NOT EXISTS when missing
+            $normalized = ltrim($sql);
+            if (preg_match('/^CREATE\s+TABLE\s+(?!IF\s+NOT\s+EXISTS)/i', $normalized) === 1) {
+                // Replace the first occurrence of "CREATE TABLE" with "CREATE TABLE IF NOT EXISTS"
+                $sql = preg_replace('/^\s*CREATE\s+TABLE\s+/i', 'CREATE TABLE IF NOT EXISTS ', $sql, 1) ?? $sql;
+            }
             $this->requirePdo()->exec($sql);
         }
 

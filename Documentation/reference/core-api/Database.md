@@ -13,5 +13,6 @@ Source: `IshmaelPHP-Core\app\Core\Database.php`
 - `prepare(string $sql): PDOStatement` — Prepare a SQL statement using the underlying PDO connection.
 - `query(string $sql, array $params = array (
 )): Ishmael\Core\Database\Result` — Execute a SELECT statement and return a Result wrapper. Accepts named or positional params.
+- `reset(): void` — Reset the static Database state, disconnecting any active adapter and clearing
 - `retryTransaction(int $attempts, int $sleepMs, callable $fn)` — Retry a transaction in case of transient conflicts (e.g., deadlocks or serialization failures).
 - `transaction(callable $fn)` — Run a callable inside a transaction boundary with automatic commit/rollback.

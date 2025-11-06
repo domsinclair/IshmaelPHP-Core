@@ -354,3 +354,118 @@ ENV;
             die();
         }
     }
+
+/**
+     * Return the current CSRF token for this session (generating one if missing).
+     * Requires StartSessionMiddleware to be active in the pipeline or a session
+     * manager to be registered manually via app('session').
+     *
+     * @return string CSRF token string
+     */
+    if (!function_exists('csrfToken')) {
+        function csrfToken(): string
+        {
+            $manager = new \Ishmael\Core\Security\CsrfTokenManager();
+            return $manager->getToken();
+        }
+    }
+
+    /**
+     * Render a hidden input field carrying the CSRF token for HTML forms.
+     *
+     * @return string HTML input element markup
+     */
+    if (!function_exists('csrfField')) {
+        function csrfField(): string
+        {
+            $cfg = (array)(config('security.csrf') ?? []);
+            $name = (string)($cfg['field_name'] ?? '_token');
+            $token = csrfToken();
+            $nameEsc = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
+            $tokenEsc = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+            return '<input type="hidden" name="' . $nameEsc . '" value="' . $tokenEsc . '">';
+        }
+    }
+
+
+    /**
+     * Resolve the password hasher service.
+     * @return \Ishmael\Core\Auth\HasherInterface
+     */
+    if (!function_exists('hasher')) {
+        function hasher(): \Ishmael\Core\Auth\HasherInterface
+        {
+            $h = app('hasher');
+            if ($h instanceof \Ishmael\Core\Auth\HasherInterface) {
+                return $h;
+            }
+            $h = new \Ishmael\Core\Auth\PhpPasswordHasher();
+            app(['hasher' => $h]);
+            return $h;
+        }
+    }
+
+    /**
+     * Resolve the authentication manager.
+     * @return \Ishmael\Core\Auth\AuthManager
+     */
+    if (!function_exists('auth')) {
+        function auth(): \Ishmael\Core\Auth\AuthManager
+        {
+            $a = app('auth');
+            if ($a instanceof \Ishmael\Core\Auth\AuthManager) {
+                return $a;
+            }
+            // Ensure user provider as well
+            if (!(app('user_provider') instanceof \Ishmael\Core\Auth\UserProviderInterface)) {
+                app(['user_provider' => new \Ishmael\Core\Auth\DatabaseUserProvider()]);
+            }
+            $a = new \Ishmael\Core\Auth\AuthManager();
+            app(['auth' => $a]);
+            return $a;
+        }
+    }
+
+    /**
+     * Validate the current request input using the Validator and return sanitized data.
+     * Throws ValidationException on failure.
+     *
+     * @param array<string,string|array<int,string>> $rules
+     * @return array<string,mixed>
+     * @throws \Ishmael\Core\Validation\ValidationException
+     */
+    if (!function_exists('validate')) {
+        function validate(array $rules, ?\Ishmael\Core\Http\Request $request = null): array
+        {
+            $v = new \Ishmael\Core\Validation\Validator();
+            return $v->validateRequest($rules, $request);
+        }
+    }
+
+    /**
+     * Resolve the authorization gate service.
+     * @return \Ishmael\Core\Authz\Gate
+     */
+    if (!function_exists('gate')) {
+        function gate(): \Ishmael\Core\Authz\Gate
+        {
+            $g = app('gate');
+            if ($g instanceof \Ishmael\Core\Authz\Gate) {
+                return $g;
+            }
+            $g = new \Ishmael\Core\Authz\Gate();
+            app(['gate' => $g]);
+            return $g;
+        }
+    }
+
+    /**
+     * Authorize an ability for the current user, throwing on denial.
+     * @throws \Ishmael\Core\Authz\AuthorizationException
+     */
+    if (!function_exists('authorize')) {
+        function authorize(string $ability, mixed $resource = null, string $message = 'Forbidden'): void
+        {
+            gate()->authorize($ability, $resource, $message);
+        }
+    }
