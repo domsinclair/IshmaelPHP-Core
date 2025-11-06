@@ -7,7 +7,7 @@ Minimal HTTP router supporting fluent route definitions, groups, and module-awar
 
 ### Public methods
 - `add(array $methods, string $pattern, $handler, array $middleware = array (
-)): self` — instance API equivalents
+)): self` — Register a route on this router instance.
 - `addGlobalMiddleware($mw): void` — Add a single global middleware.
 - `any(string $pattern, $handler, array $middleware = array (
 )): self`

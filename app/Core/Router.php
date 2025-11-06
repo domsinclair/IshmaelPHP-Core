@@ -108,14 +108,61 @@ class Router
         $this->globalMiddleware[] = $mw;
     }
 
-    /** instance API equivalents */
+    /**
+     * Register a route on this router instance.
+     *
+     * Performs compile-time collision detection against existing routes sharing any HTTP method.
+     *
+     * @param array<int,string> $methods HTTP methods (e.g., ['GET'])
+     * @param string $pattern Route pattern, may include {param} or {param:type}
+     * @param mixed $handler Controller string "Controller@action", [Controller, action], or callable
+     * @param array<int, callable|string|array{0:class-string,1?:string}> $middleware Middleware stack for this route
+     * @return self
+     * @throws \LogicException When a conflicting route is detected for one or more methods
+     */
     public function add(array $methods, string $pattern, $handler, array $middleware = []): self
     {
         $ctx = $this->currentGroup();
         $prefixed = $this->joinPaths($ctx['prefix'] ?? '', $pattern);
         [$regex, $paramNames, $paramTypes] = $this->compilePattern($prefixed);
+
+        // Collision detection: prevent conflicting static/param routes with same method
+        $newMethods = array_map('strtoupper', $methods);
+        foreach ($this->routes as $existing) {
+            // Quick reject: no method overlap
+            if (empty(array_intersect($newMethods, $existing['methods']))) {
+                continue;
+            }
+            // 1) Collision if compiled regex is identical → would match same paths
+            $conflict = ($existing['regex'] === $regex);
+
+            // 2) Static vs param collision: if either side is static (no params) and the other's regex matches that static path
+            if (!$conflict) {
+                $existingIsStatic = empty($existing['paramNames']);
+                $newIsStatic = empty($paramNames);
+                $existingPath = '/' . trim((string)($existing['pattern'] ?? ''), '/');
+                $newPath = '/' . trim($prefixed, '/');
+                if ($existingIsStatic && preg_match('#^' . $regex . '$#', trim($existingPath, '/'))) {
+                    $conflict = true;
+                } elseif ($newIsStatic && preg_match('#^' . $existing['regex'] . '$#', trim($newPath, '/'))) {
+                    $conflict = true;
+                }
+            }
+
+            if ($conflict) {
+                $confModule = $existing['module'] ?? ($ctx['module'] ?? 'App');
+                $newModule = $ctx['module'] ?? 'App';
+                $confName = $existing['name'] ?? '';
+                $methodsStr = implode(',', array_intersect($newMethods, $existing['methods']));
+                $msg = "Route collision detected for method(s) {$methodsStr}: '{$prefixed}' conflicts with existing pattern '{$existing['pattern']}'";
+                $msg .= " (modules: new={$newModule}, existing={$confModule})";
+                if ($confName !== '') { $msg .= " [existing name: {$confName}]"; }
+                throw new \LogicException($msg);
+            }
+        }
+
         $entry = [
-            'methods' => array_map('strtoupper', $methods),
+            'methods' => $newMethods,
             'regex' => $regex,
             'paramNames' => $paramNames,
             'paramTypes' => $paramTypes,
@@ -374,6 +421,24 @@ class Router
             return;
         }
 
+        // If path matches any route with different method(s), return 405 with Allow header
+        $allowed = [];
+        foreach ($this->routes as $route) {
+            if (preg_match('#^' . $route['regex'] . '$#', $path)) {
+                foreach ($route['methods'] as $mth) { $allowed[$mth] = true; }
+            }
+        }
+        if (!empty($allowed)) {
+            $allowHeader = implode(', ', array_keys($allowed));
+            $res = Response::text('Method Not Allowed', 405);
+            $res->header('Allow', $allowHeader);
+            $this->lastResponse = $res;
+            http_response_code(405);
+            header('Allow: ' . $allowHeader, true);
+            echo $res->getBody();
+            return;
+        }
+
         // 2) Legacy module array routes (BC)
         foreach (ModuleManager::$modules as $moduleName => $moduleData) {
             foreach ($moduleData['routes'] as $pattern => $handler) {
@@ -458,11 +523,11 @@ class Router
 
     private function invokeControllerHandler(?string $module, string $controller, string $action, array $params, Request $req, Response $res): Response
     {
-        // Ensure controller suffix
+        // Ensure controller suffix for non-FQCN
         if (substr($controller, -10) !== 'Controller' && !str_contains($controller, '\\')) {
             $controller .= 'Controller';
         }
-        // Build FQCN
+        // Build FQCN from module hint or fully-qualified name
         if ($module === 'App') {
             $class = "App\\Controllers\\{$controller}";
         } elseif ($module) {
@@ -477,15 +542,22 @@ class Router
         // Call via capturing output to preserve legacy echo-style controllers
         ob_start();
         if (!class_exists($class)) {
-            http_response_code(404);
-            echo "Controller not found: {$class}";
-            return $res->setStatusCode(http_response_code() ?: 404)->setBody(ob_get_clean() ?: '');
+            $msg = "Controller not found: {$class}. Did you create class {$class} and autoload it?";
+            $body = $msg;
+            ob_end_clean();
+            return Response::text($body, 404);
         }
         $ctrl = new $class();
         if (!method_exists($ctrl, $action)) {
-            http_response_code(404);
-            echo "Action not found: {$action}";
-            return $res->setStatusCode(http_response_code() ?: 404)->setBody(ob_get_clean() ?: '');
+            // Suggest available public methods (excluding magic/constructor)
+            $refClass = new \ReflectionClass($ctrl);
+            $methods = array_values(array_filter(
+                array_map(fn($m) => $m->getName(), $refClass->getMethods(\ReflectionMethod::IS_PUBLIC)),
+                fn($n) => $n[0] !== '_' && $n !== '__invoke' && $n !== '__construct'
+            ));
+            $suggest = $methods ? (' Available actions: ' . implode(', ', $methods)) : '';
+            ob_end_clean();
+            return Response::text("Action not found: {$action} on {$class}." . $suggest, 404);
         }
 
         // Build argument list supporting (Request $req, Response $res, ...$params)
@@ -495,16 +567,29 @@ class Router
             $methodParams = $ref->getParameters();
             $positionals = array_values($params);
             $i = 0;
+            $seenReq = false; $seenRes = false;
             foreach ($methodParams as $mp) {
                 $type = $mp->getType();
                 $typeName = $type instanceof \ReflectionNamedType ? $type->getName() : null;
                 if ($typeName === Request::class) {
+                    if ($seenReq) {
+                        throw new \InvalidArgumentException("Invalid handler signature: multiple Request parameters in {$class}::{$action}.");
+                    }
+                    $seenReq = true;
                     $args[] = $req;
                     continue;
                 }
                 if ($typeName === Response::class) {
+                    if ($seenRes) {
+                        throw new \InvalidArgumentException("Invalid handler signature: multiple Response parameters in {$class}::{$action}.");
+                    }
+                    $seenRes = true;
                     $args[] = $res;
                     continue;
+                }
+                // If a class-typed parameter is present that we cannot resolve, error early with a nice message
+                if ($typeName && class_exists($typeName)) {
+                    throw new \InvalidArgumentException("Invalid handler parameter type '{$typeName}' in {$class}::{$action}. Only Request and Response are auto-injected; other parameters must be scalars mapped from route segments.");
                 }
                 // Fill remaining user params positionally
                 if (array_key_exists($i, $positionals)) {
@@ -516,10 +601,13 @@ class Router
                     $args[] = $mp->getDefaultValue();
                     continue;
                 }
-                // No value available; break and let call handle missing args (will error) or supply null
+                // No value available; supply null
                 $args[] = null;
             }
             $ret = $ref->invokeArgs($ctrl, $args);
+        } catch (\InvalidArgumentException $ex) {
+            ob_end_clean();
+            return Response::text($ex->getMessage(), 500);
         } catch (\Throwable $e) {
             // Fallback to legacy behavior with positional params only
             $ret = call_user_func_array([$ctrl, $action], array_values($params));
