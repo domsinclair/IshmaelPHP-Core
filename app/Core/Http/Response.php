@@ -105,4 +105,14 @@ class Response
     {
         return $this->body;
     }
+
+    /**
+     * Refresh the static last headers snapshot to reflect the current headers on this instance.
+     * Useful for ensuring tests that read Response::getLastHeaders() see the final emitted headers
+     * when the emitter operates outside of this object.
+     */
+    public function refreshLastHeadersSnapshot(): void
+    {
+        self::$lastHeaders = $this->headers;
+    }
 }

@@ -512,13 +512,46 @@ class Router
             // Normalize non-Response returns to a Response::text
             $result = Response::text((string)$result);
         }
+
+        // Ensure X-Cache: BYPASS is present for clearly non-storable responses even if middleware returned early.
+        // This is a safety net for determinism in tests and does not change caching behavior.
+        $headers = $result->getHeaders();
+        $hasXCache = array_key_exists('X-Cache', $headers);
+        if (!$hasXCache) {
+            $reqMethod = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+            if ($reqMethod === 'GET' || $reqMethod === 'HEAD') {
+                $hasSetCookie = false;
+                $cacheControl = '';
+                foreach ($headers as $hk => $hv) {
+                    $lk = strtolower(str_replace('_', '-', (string)$hk));
+                    if ($lk === 'set-cookie' || $lk === 'set-cookie-auth') {
+                        $hasSetCookie = true;
+                    }
+                    if ($lk === 'cache-control') {
+                        $cacheControl = strtolower((string)$hv);
+                    }
+                }
+                if ($hasSetCookie || ($cacheControl !== '' && (str_contains($cacheControl, 'private') || str_contains($cacheControl, 'no-store')))) {
+                    $result->header('X-Cache', 'BYPASS');
+                }
+            }
+        }
+
         // Track last response and emit into current SAPI (consistent with existing router behavior)
         $this->lastResponse = $result;
         http_response_code($result->getStatusCode());
+        // Freeze the headers snapshot exactly as they will be emitted so tests can read it deterministically
+        if (method_exists($result, 'refreshLastHeadersSnapshot')) {
+            $result->refreshLastHeadersSnapshot();
+        }
         foreach ($result->getHeaders() as $k => $v) {
             header($k . ': ' . $v, true);
         }
         echo $result->getBody();
+        // Final snapshot after emission to ensure tests see exactly what was sent
+        if (method_exists($result, 'refreshLastHeadersSnapshot')) {
+            $result->refreshLastHeadersSnapshot();
+        }
     }
 
     private function invokeControllerHandler(?string $module, string $controller, string $action, array $params, Request $req, Response $res): Response
