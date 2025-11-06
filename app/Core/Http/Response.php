@@ -76,11 +76,49 @@ class Response
         return $this->statusCode;
     }
 
+    /**
+     * Set or replace a response header.
+     */
     public function header(string $name, string $value): self
     {
         $this->headers[$name] = $value;
         self::$lastHeaders = $this->headers;
         return $this;
+    }
+
+    /**
+     * Convenience: set the ETag header.
+     *
+     * @param string $etag ETag value; quotes or W/ prefix may be included. If bare value is provided, quotes will be added.
+     * @param bool $weak When true and $etag has no prefix, prefixes with W/ to produce a weak ETag.
+     * @return self
+     */
+    public function withEtag(string $etag, bool $weak = false): self
+    {
+        $etag = trim($etag);
+        $isWeak = str_starts_with($etag, 'W/');
+        $value = $etag;
+        if (!$isWeak) {
+            // Ensure quoted
+            if (!str_starts_with($etag, '"') && !str_ends_with($etag, '"') && !(preg_match('/^\".*\"$/', $etag) === 1)) {
+                $value = '"' . trim($etag, '"') . '"';
+            }
+            if ($weak) {
+                $value = 'W/' . $value;
+            }
+        }
+        return $this->header('ETag', $value);
+    }
+
+    /**
+     * Convenience: set the Last-Modified header using an RFC7231 date format.
+     * @param \DateTimeInterface $dt
+     * @return self
+     */
+    public function withLastModified(\DateTimeInterface $dt): self
+    {
+        $value = HttpValidators::formatHttpDate($dt);
+        return $this->header('Last-Modified', $value);
     }
 
     /** @return array<string,string> */
