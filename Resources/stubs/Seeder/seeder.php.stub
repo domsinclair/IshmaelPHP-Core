@@ -1,0 +1,38 @@
+<?php
+declare(strict_types=1);
+
+use Ishmael\Core\Database\Seeders\BaseSeeder;
+use Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Seeder stub (Core)
+ * ------------------
+ * Deterministic, re-runnable seeding using adapter + logger.
+ */
+final class <ClassName> extends BaseSeeder
+{
+    /**
+     * Declare dependencies if this seeder requires others to run first.
+     *
+     * @return string[]
+     */
+    public function dependsOn(): array
+    {
+        return [];
+    }
+
+    /**
+     * Execute the seeding routine.
+     *
+     * @param DatabaseAdapterInterface $adapter Connected adapter.
+     * @param LoggerInterface $logger PSR-3 logger.
+     * @return void
+     */
+    public function run(DatabaseAdapterInterface $adapter, LoggerInterface $logger): void
+    {
+        // Example deterministic insert/update
+        // $adapter->execute('INSERT INTO posts (id, title) VALUES (?, ?) ON CONFLICT(id) DO UPDATE SET title = excluded.title', [1, 'Hello']);
+        $logger->info('<ClassName> completed (core stub)');
+    }
+}

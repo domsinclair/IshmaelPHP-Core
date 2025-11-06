@@ -48,3 +48,11 @@ Monolog’s JsonFormatter supports newline-terminated JSON. Ishmael configures t
 
 ## 7) Rollback
 Set `LOG_CHANNEL` back to `daily` (or `single`) to use the lightweight native channels again.
+
+
+---
+
+## Related reference
+- Reference: [Logging](../reference/logging.md)
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

@@ -1,0 +1,37 @@
+<?php
+declare(strict_types=1);
+
+use Ishmael\Core\Database\Migrations\BaseMigration;
+
+/**
+ * Migration stub (Core)
+ * ---------------------
+ * Use SchemaManager for safe, explicit schema changes, or fall back to raw SQL.
+ */
+final class <ClassName> extends BaseMigration
+{
+    /**
+     * Apply the migration.
+     * @return void
+     */
+    public function up(): void
+    {
+        // Example (SchemaManager):
+        // use Ishmael\Core\Database\SchemaManager;
+        // $sm = new SchemaManager($this->adapter());
+        // $sm->createTables([...]);
+
+        // Or raw SQL:
+        // $this->sql('CREATE TABLE example (id INTEGER PRIMARY KEY, title TEXT NOT NULL)');
+    }
+
+    /**
+     * Revert the migration.
+     * @return void
+     */
+    public function down(): void
+    {
+        // Example:
+        // $this->sql('DROP TABLE IF EXISTS example');
+    }
+}

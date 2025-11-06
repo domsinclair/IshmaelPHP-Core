@@ -61,3 +61,10 @@ ish route:clear            # remove cache file
 ```
 
 Learn more in Guide → Route Cache.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)

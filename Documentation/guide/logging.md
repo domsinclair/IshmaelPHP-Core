@@ -57,3 +57,11 @@ Set `LOG_CHANNEL=monolog` and add the channel configuration. Monolog supports JS
 
 ## Windows/macOS/Linux
 The framework uses `DIRECTORY_SEPARATOR` to ensure paths like `storage/logs` work across platforms. When running in containers, prefer the `stderr` channel in production for centralized log collection.
+
+
+---
+
+## Related reference
+- Reference: [Logging](../reference/logging.md)
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

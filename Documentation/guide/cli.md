@@ -60,3 +60,11 @@ Override entirely with `--templates=PATH`.
 
 - Upcoming: migration batching, checksums, transactional execution (adapter‑aware), and SchemaManager v0 in templates.
 - Programmatic APIs remain available: Ishmael\\Core\\Database\\Migrations\\Migrator, Ishmael\\Core\\Database\\Seeding\\SeedManager.
+
+
+---
+
+## Related reference
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)
+- Reference: [CLI Cache Commands](../reference/cli-cache-commands.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

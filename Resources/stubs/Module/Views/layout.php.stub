@@ -1,0 +1,38 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Module layout (Tailwind-friendly, non-prescriptive)
+ *
+ * Available variables:
+ * - $sections Ishmael\Core\ViewSections helper
+ * - $data     array of controller data
+ * - $request  Ishmael\Core\Http\Request|null
+ * - $response Ishmael\Core\Http\Response|null
+ */
+?>
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><?= $sections->yield('title', '<ModuleName>') ?></title>
+    <!-- Tailwind-friendly: add your Tailwind build or CDN if desired -->
+    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
+</head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
+<div class="mx-auto max-w-5xl px-4 py-6">
+    <header class="mb-6">
+        <h1 class="text-2xl font-semibold"><?= $sections->yield('header', '<ModuleName>') ?></h1>
+        <?php if ($sections->has('subheader')): ?>
+            <p class="text-gray-600"><?= $sections->yield('subheader') ?></p>
+        <?php endif; ?>
+        <?php include __DIR__ . DIRECTORY_SEPARATOR . '_flash.php'; ?>
+    </header>
+
+    <main class="prose max-w-none">
+        <?= $sections->yield('content') ?>
+    </main>
+</div>
+</body>
+</html>

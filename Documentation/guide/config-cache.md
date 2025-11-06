@@ -66,3 +66,10 @@ php bin/ish config:cache
 
 - If a key is missing after caching, ensure that the config file returns an array and that file names (e.g., logging.php) match how you access them via config('logging').
 - In development, if changes don't reflect, verify APP_DEBUG=false is not set in your .env; otherwise the cache will be used even when stale.
+
+
+---
+
+## Related reference
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [CLI Cache Commands](../reference/cli-cache-commands.md)

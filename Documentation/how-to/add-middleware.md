@@ -77,3 +77,11 @@ $r->get('/posts', [PostsController::class, 'index'], [PostsGateMiddleware::class
 ```
 
 See also: Guide → Route Cache, Guide → Routing.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

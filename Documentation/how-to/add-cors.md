@@ -34,3 +34,10 @@ Router::useGlobal([CorsMiddleware::class]);
 ```
 
 For production, restrict origins and methods to match your security policy.
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

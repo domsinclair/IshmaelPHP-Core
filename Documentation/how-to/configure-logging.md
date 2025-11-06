@@ -71,3 +71,11 @@ Paths use `DIRECTORY_SEPARATOR` so that `storage/logs` resolves correctly across
 - Hit a route in your app.
 - Check `storage/logs/` for new log files.
 - Tail the file and confirm JSON per line.
+
+
+---
+
+## Related reference
+- Reference: [Logging](../reference/logging.md)
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

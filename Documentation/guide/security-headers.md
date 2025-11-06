@@ -90,3 +90,10 @@ Router::get('legacy', 'HomeController@legacy', [
 - HSTS is only emitted when `SECURITY_HSTS=true` and the request is HTTPS (unless `only_https=false`).
 - If testing locally over HTTP, HSTS will not be added with the default settings.
 
+
+
+---
+
+## Related reference
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

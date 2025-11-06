@@ -49,3 +49,11 @@ Missing parameters [id] for route 'posts.show' (source: fluent).
 ```php
 $url = Router::url('posts.show', ['id' => 42], [], true); // includes scheme and host
 ```
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

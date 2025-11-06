@@ -96,3 +96,11 @@ Troubleshooting
 
 - "Seeding is disabled" error: you are outside the allowed environments; pass force: true to override.
 - Cyclic dependency detected: resolve the cycle in dependsOn() declarations.
+
+
+---
+
+## Related reference
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

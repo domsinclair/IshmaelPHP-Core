@@ -1,0 +1,59 @@
+<?php
+declare(strict_types=1);
+
+namespace Modules\<ModuleName>\Controllers;
+
+use Ishmael\Core\Controller;
+
+/**
+ * <ResourceName>Controller (scaffold stub)
+ * ---------------------------------------
+ * Conventional CRUD actions for <ResourceName>.
+ */
+final class <ResourceName>Controller extends Controller
+{
+    /** List all <resourcePlural>. */
+    public function index(): void
+    {
+        $this->render('<resource>/index');
+    }
+
+    /** Show a single <resource>. */
+    public function show(string $id): void
+    {
+        $this->render('<resource>/show', ['id' => $id]);
+    }
+
+    /** Show create form. */
+    public function create(): void
+    {
+        $this->render('<resource>/create');
+    }
+
+    /** Persist new <resource>. */
+    public function store(): void
+    {
+        // TODO: validate and persist
+        $this->render('<resource>/index', ['flash' => ['success' => '<ResourceName> created.']]);
+    }
+
+    /** Show edit form. */
+    public function edit(string $id): void
+    {
+        $this->render('<resource>/edit', ['id' => $id]);
+    }
+
+    /** Update existing <resource>. */
+    public function update(string $id): void
+    {
+        // TODO: validate and persist
+        $this->render('<resource>/show', ['id' => $id, 'flash' => ['success' => '<ResourceName> updated.']]);
+    }
+
+    /** Delete a <resource>. */
+    public function destroy(string $id): void
+    {
+        // TODO: delete
+        $this->render('<resource>/index', ['flash' => ['success' => '<ResourceName> deleted.']]);
+    }
+}

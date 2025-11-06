@@ -15,3 +15,11 @@ Welcome to Ishmael PHP. This guide helps you run the SkeletonApp and explore the
 ## Next steps
 - Read the Routing guide.
 - Explore Modules under `SkeletonApp/Modules`.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

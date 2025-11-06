@@ -94,3 +94,10 @@ Router::get('/posts', [PostsController::class, 'index'], [[PostsGateMiddleware::
 
 - CLI: see Guide → CLI for running commands.
 - Routing details and examples: see Guide → Routing.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [CLI Cache Commands](../reference/cli-cache-commands.md)

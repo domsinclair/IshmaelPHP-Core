@@ -1,0 +1,22 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Routes for the <ModuleName> module (Core stub)
+ *
+ * This closure is discovered by the Router during module boot.
+ * Replace <ModuleName> with your actual module name.
+ */
+
+use Ishmael\Core\Router;
+use Ishmael\Core\Http\Response;
+
+return function (Router $router): void {
+    // Home page for the module
+    $router->get('/', '<ModuleName>HomeController@index')->name('<module>.home');
+
+    // Example JSON endpoint
+    $router->get('api/health', function($req, Response $res): Response {
+        return Response::json(['status' => 'ok', 'module' => '<ModuleName>']);
+    })->name('<module>.health');
+};

@@ -8,6 +8,19 @@
      * ----------------
      * Provides common functionality for all controllers.
      * Handles view rendering, JSON responses, and shared helpers.
+     *
+     * View Conventions
+     * - View files are plain PHP located under: Modules/{Module}/Views/{resource}/{view}.php
+     * - Common view names: index.php, show.php, create.php, edit.php, _form.php, _flash.php, layout.php
+     * - The render() method accepts the view path relative to the module's Views/ directory (without .php)
+     * - Layouts are optional. A child view can opt into a layout by setting $layoutFile inside the view.
+     *
+     * Variables exposed to views
+     * - $sections  Ishmael\Core\ViewSections instance available for defining/yielding sections.
+     * - $data      Array of controller-scoped data (from $this->data), convenient for layouts/partials.
+     * - $request   Current HTTP request when available; may be null in legacy dispatch paths.
+     * - $response  Current HTTP response when available; may be null in legacy dispatch paths.
+     * - $route     Callable helper for URL generation by named routes: fn(string $name, array $params = [], array $query = [], bool $absolute = false): string
      */
     abstract class Controller
     {
@@ -16,6 +29,20 @@
 
         /**
          * Render a view file from within the current module or app.
+         *
+         * Backward compatibility:
+         * - If no layout is requested by the child view, rendering behaves as before (direct output).
+         *
+         * Layouts (optional):
+         * - Inside the child view, set a variable $layoutFile (relative to Views/, without .php or with .php).
+         * - Use the minimal sections helper $sections to define blocks via start()/end() and consume via yield() in layout.
+         * - If no 'content' section is defined by the child view, the entire child output becomes the 'content' section.
+         *
+         * Variables available inside views:
+         * - $sections  Ishmael\Core\ViewSections instance.
+         * - $data      Array copy of $this->data from the controller instance.
+         * - $request   Current request when available (best-effort, may be null).
+         * - $response  Current response when available (best-effort, may be null).
          *
          * @param string $view View name relative to the module's Views/ folder (without .php).
          * @param array<string,mixed> $vars Variables extracted into the view scope.
@@ -31,7 +58,8 @@
                 return;
             }
 
-            $viewPath = $module['path'] . '/Views/' . $view . '.php';
+            $basePath = rtrim($module['path'], '/\\') . '/Views/';
+            $viewPath = $basePath . $view . '.php';
 
             if (!file_exists($viewPath)) {
                 http_response_code(500);
@@ -39,8 +67,57 @@
                 return;
             }
 
+            // Expose a minimal sections helper to views
+            $sections = new ViewSections();
+            // Also expose common variables to the view scope (best-effort)
+            /** @var array<string,mixed> $data */
+            $data = $this->data;
+            /** @var \Ishmael\Core\Http\Request|null $request */
+            $request = \Ishmael\Core\Http\Request::fromGlobals();
+            /** @var \Ishmael\Core\Http\Response|null $response */
+            $response = null; // Response instance may not be available in legacy dispatch; reserved for future pipeline wiring
+
+            // Make provided variables available in the view scope (cannot overwrite reserved ones)
             extract($vars, EXTR_SKIP);
+
+            // Provide a lightweight route() callable in view scope for named URL generation
+            /** @var callable(string,array<string,mixed>,array<string,mixed>,bool):string $route */
+            $route = static function(string $name, array $params = [], array $query = [], bool $absolute = false): string {
+                return \Ishmael\Core\Router::url($name, $params, $query, $absolute);
+            };
+
+            // Buffer child view output to allow optional layout handling without breaking existing behavior
+            ob_start();
             include $viewPath;
+            $childOutput = (string) ob_get_clean();
+
+            // If the child view sets $layoutFile, attempt to render a layout
+            if (isset($layoutFile) && is_string($layoutFile) && $layoutFile !== '') {
+                // If the view did not explicitly define the 'content' section, use the child output
+                if (!$sections->has('content')) {
+                    $sections->set('content', $childOutput);
+                }
+
+                // Resolve layout path relative to Views/
+                $layoutPath = $layoutFile;
+                if (substr($layoutPath, -4) !== '.php') {
+                    $layoutPath .= '.php';
+                }
+                $layoutPath = $basePath . ltrim($layoutPath, '/\\');
+
+                if (!file_exists($layoutPath)) {
+                    http_response_code(500);
+                    echo "Layout not found: {$layoutPath}";
+                    return;
+                }
+
+                // Include the layout in the same scope so it can access $sections and any view variables
+                include $layoutPath;
+                return;
+            }
+
+            // No layout requested: behave as before
+            echo $childOutput;
         }
 
         /**

@@ -79,3 +79,10 @@ The hook file lives at SkeletonApp/config/dev_bootstrap.php and is included by p
 Refer to the guides:
 - Guide: writing-and-running-migrations.md
 - How-to: create-and-run-seeders.md
+
+
+---
+
+## Related reference
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)
+- Reference: [Config Keys](../reference/config-keys.md)

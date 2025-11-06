@@ -1,0 +1,25 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Create view for <ResourceName> (Tailwind-friendly)
+ * Variables available: $sections, $data
+ */
+
+$layoutFile = 'layout';
+
+$sections->start('title');
+echo 'Create <ResourceName>';
+$sections->end();
+
+$sections->start('header');
+echo 'Create <ResourceName>';
+$sections->end();
+
+$sections->start('content');
+?>
+<form action="<?= function_exists('route') ? route('<module>.<resource>.store') : '' ?>" method="post" class="rounded-lg border border-gray-200 bg-white p-4">
+    <?= function_exists('csrfField') ? csrfField() : '' ?>
+    <?php include __DIR__ . DIRECTORY_SEPARATOR . '_form.php'; ?>
+</form>
+<?php $sections->end(); ?>

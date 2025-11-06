@@ -1,0 +1,24 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Single view stub (Tailwind-friendly, non-prescriptive)
+ * Variables available: $sections, $data, $request, $response
+ */
+
+$layoutFile = 'layout';
+
+$sections->start('title');
+echo '<PageTitle>';
+$sections->end();
+
+$sections->start('header');
+echo '<Heading>';
+$sections->end();
+
+$sections->start('content');
+?>
+<div class="rounded-lg border border-gray-200 bg-white p-6">
+    <p class="text-gray-700">Welcome to your new view.</p>
+</div>
+<?php $sections->end(); ?>

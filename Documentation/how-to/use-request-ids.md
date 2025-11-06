@@ -26,3 +26,10 @@ Every log line will include a `request_id` field when the middleware is active. 
 
 ## Propagating downstream
 When calling other services, forward the `X-Request-Id` header so logs across systems can be correlated.
+
+
+---
+
+## Related reference
+- Reference: [Logging](../reference/logging.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

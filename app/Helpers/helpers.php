@@ -369,7 +369,37 @@ ENV;
         }
     }
 
-/**
+    /**
+     * HTML-escape a value for safe output in views.
+     *
+     * @param mixed $value Value to escape
+     * @return string Escaped string
+     */
+    if (!function_exists('e')) {
+        function e(mixed $value): string
+        {
+            return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
+        }
+    }
+
+    /**
+     * Generate a URL for a named route.
+     * Thin wrapper around Router::url() for convenience in views.
+     *
+     * @param string $name Route name
+     * @param array<string,mixed> $params Path parameters
+     * @param array<string,mixed> $query Query parameters (optional)
+     * @param bool $absolute Include scheme/host when true (default false)
+     * @return string URL
+     */
+    if (!function_exists('route')) {
+        function route(string $name, array $params = [], array $query = [], bool $absolute = false): string
+        {
+            return \Ishmael\Core\Router::url($name, $params, $query, $absolute);
+        }
+    }
+
+    /**
      * Return the current CSRF token for this session (generating one if missing).
      * Requires StartSessionMiddleware to be active in the pipeline or a session
      * manager to be registered manually via app('session').
@@ -401,6 +431,44 @@ ENV;
         }
     }
 
+    /**
+     * Tiny flash message helper using PHP sessions.
+     *
+     * Behavior:
+     * - Setter: flash('key', 'value') stores a one-time message in $_SESSION['flash'].
+     * - Getter: flash('key') returns and clears the message if present, otherwise null.
+     * - Array setters are allowed to set multiple keys at once.
+     *
+     * @param string $key Flash key (e.g., 'success', 'error')
+     * @param mixed $value Optional value to set; when null acts as getter.
+     * @return mixed|null Returns value on get; null if absent.
+     */
+    if (!function_exists('flash')) {
+        function flash(string $key, $value = null)
+        {
+            if (session_status() !== PHP_SESSION_ACTIVE) {
+                @session_start();
+            }
+            if (!isset($_SESSION['flash']) || !is_array($_SESSION['flash'])) {
+                $_SESSION['flash'] = [];
+            }
+            if ($value !== null) {
+                if (is_array($value)) {
+                    foreach ($value as $k => $v) {
+                        $_SESSION['flash'][(string)$k] = $v;
+                    }
+                    return null;
+                }
+                $_SESSION['flash'][$key] = $value;
+                return null;
+            }
+            $val = $_SESSION['flash'][$key] ?? null;
+            if (array_key_exists($key, $_SESSION['flash'])) {
+                unset($_SESSION['flash'][$key]);
+            }
+            return $val;
+        }
+    }
 
     /**
      * Resolve the password hasher service.

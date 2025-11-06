@@ -1,0 +1,26 @@
+<?php
+declare(strict_types=1);
+
+use Ishmael\Core\Router;
+
+/**
+ * Resource routes (Core stub)
+ *
+ * Replace placeholders before use:
+ * - <ModuleName> (StudlyCase)
+ * - <ResourceName> (StudlyCase, e.g., Post)
+ * - <resource> (kebab/plural path, e.g., posts)
+ */
+return function (Router $router): void {
+    // Index
+    $router->get('<resource>', '<ModuleName><ResourceName>Controller@index')->name('<module>.<resource>.index');
+    // Create
+    $router->get('<resource>/create', '<ModuleName><ResourceName>Controller@create')->name('<module>.<resource>.create');
+    $router->post('<resource>', '<ModuleName><ResourceName>Controller@store')->name('<module>.<resource>.store');
+    // Show
+    $router->get('<resource>/{id:int}', '<ModuleName><ResourceName>Controller@show')->name('<module>.<resource>.show');
+    // Edit
+    $router->get('<resource>/{id:int}/edit', '<ModuleName><ResourceName>Controller@edit')->name('<module>.<resource>.edit');
+    $router->put('<resource>/{id:int}', '<ModuleName><ResourceName>Controller@update')->name('<module>.<resource>.update');
+    $router->delete('<resource>/{id:int}', '<ModuleName><ResourceName>Controller@destroy')->name('<module>.<resource>.destroy');
+};

@@ -246,7 +246,7 @@ Database::init($databaseConfig);
 // 4) Resolve template directory order (app overrides → core stubs)
 /**
  * Resolve a template bundle directory by name.
- * Lookup order: <appRoot>/Templates/<Name> then <core>/Resources/stubs/<Name>.
+ * Lookup order: <appRoot>/app/stubs/<Name> → <appRoot>/Templates/<Name> → <core>/Resources/stubs/<Name>.
  *
  * @param string $name Template bundle name (e.g., 'Module')
  * @param string $appRoot Application root
@@ -261,6 +261,10 @@ function resolveTemplateDir(string $name, string $appRoot, ?string $override = n
         }
         return $override;
     }
+    $appStubs = $appRoot . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . $name;
+    if (is_dir($appStubs)) {
+        return $appStubs;
+    }
     $appTpl = $appRoot . DIRECTORY_SEPARATOR . 'Templates' . DIRECTORY_SEPARATOR . $name;
     if (is_dir($appTpl)) {
         return $appTpl;
@@ -272,8 +276,140 @@ function resolveTemplateDir(string $name, string $appRoot, ?string $override = n
     throw new RuntimeException("No templates found for '{$name}'.");
 }
 
+/**
+ * Replace template tokens in a string.
+ *
+ * @param string $contents Template contents
+ * @param array<string,string> $vars Map of token => value
+ * @return string
+ */
+function replaceTokens(string $contents, array $vars): string
+{
+    foreach ($vars as $k => $v) {
+        $contents = str_replace('<' . $k . '>', $v, $contents);
+    }
+    return $contents;
+}
+
+/**
+ * Persist CLI command metadata for docs generation.
+ * Writes to <appRoot>/storage/cli_commands.json.
+ *
+ * @param string $appRoot
+ * @param array<int, array{name:string, description:string, options:array<int, array{name:string, description:string, accepts?:string}>}> $commands
+ * @return void
+ */
+function persistCliMetadata(string $appRoot, array $commands): void
+{
+    $dir = $appRoot . DIRECTORY_SEPARATOR . 'storage';
+    ensureDirectory($dir);
+    $path = $dir . DIRECTORY_SEPARATOR . 'cli_commands.json';
+    $json = json_encode(['generatedAt' => date('c'), 'commands' => $commands], JSON_PRETTY_PRINT);
+    if ($json === false) {
+        return;
+    }
+    file_put_contents($path, $json);
+}
+
+/**
+ * Return the command registry (name, description, options) for docs.
+ *
+ * @return array<int, array{name:string, description:string, options:array<int, array{name:string, description:string, accepts?:string}>}>
+ */
+function cliCommandRegistry(): array
+{
+    return [
+        [
+            'name' => 'help',
+            'description' => 'Show CLI usage and available commands.',
+            'options' => [
+                ['name' => '--config', 'description' => 'Path to database config file', 'accepts' => 'PATH'],
+                ['name' => '--templates', 'description' => 'Override templates directory', 'accepts' => 'PATH'],
+                ['name' => '--app-root', 'description' => 'Override application root', 'accepts' => 'PATH'],
+            ],
+        ],
+        [
+            'name' => 'make:module',
+            'description' => 'Scaffold a new module skeleton (controllers, models, views, routes.php, module.json).',
+            'options' => [
+                ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+            ],
+        ],
+        [
+            'name' => 'make:resource',
+            'description' => 'Scaffold a CRUD resource inside a module (controller, routes, views).',
+            'options' => [
+                ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+            ],
+        ],
+        [
+            'name' => 'make:view',
+            'description' => 'Create a single view file inside a module from the view stub.',
+            'options' => [
+                ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+            ],
+        ],
+        [
+            'name' => 'make:migration',
+            'description' => 'Create a timestamped migration file (supports --module=Name or positional module).',
+            'options' => [
+                ['name' => '--module', 'description' => 'Target module name for the migration', 'accepts' => 'Name'],
+            ],
+        ],
+        [
+            'name' => 'make:seeder',
+            'description' => 'Create a seeder class inside a module.',
+            'options' => [],
+        ],
+        [
+            'name' => 'migrate',
+            'description' => 'Run outstanding migrations.',
+            'options' => [
+                ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+                ['name' => '--steps', 'description' => 'Limit number of steps', 'accepts' => 'N'],
+                ['name' => '--pretend', 'description' => 'Dry-run without executing'],
+            ],
+        ],
+        [
+            'name' => 'migrate:rollback',
+            'description' => 'Rollback the last or N batches.',
+            'options' => [
+                ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+                ['name' => '--steps', 'description' => 'Number of steps to rollback', 'accepts' => 'N'],
+            ],
+        ],
+        [
+            'name' => 'status',
+            'description' => 'Show migration status.',
+            'options' => [
+                ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+            ],
+        ],
+        [
+            'name' => 'seed',
+            'description' => 'Run database seeders.',
+            'options' => [
+                ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+                ['name' => '--class', 'description' => 'Seeder FQCN to run', 'accepts' => 'FQCN'],
+                ['name' => '--force', 'description' => 'Bypass environment guard'],
+                ['name' => '--env', 'description' => 'Environment name', 'accepts' => 'ENV'],
+            ],
+        ],
+        [
+            'name' => 'key:generate',
+            'description' => 'Generate and set APP_KEY in .env.',
+            'options' => [
+                ['name' => '--force', 'description' => 'Overwrite existing APP_KEY'],
+            ],
+        ],
+    ];
+}
+
 // 5) Dispatch
 $command = $argv[1] ?? 'help';
+
+// Persist CLI metadata on every run (cheap) to keep docs in sync
+persistCliMetadata($appRoot, cliCommandRegistry());
 
 try {
     switch ($command) {
@@ -286,7 +422,11 @@ Ishmael CLI (Core distribution)
 Usage:
   ish help
   ish make:module <Name> [--templates=PATH]
+  ish make:resource <Module> <Name> [--templates=PATH]
+  ish make:view <Module> <resource>/<view> [--templates=PATH]
   ish make:migration <name> [--module=Name]
+  ish make:migration <Module> <name>
+  ish make:seeder <Module> <Class>
   ish migrate [--module=Name] [--steps=N] [--pretend]
   ish migrate:rollback [--module=Name] [--steps=N]
   ish status [--module=Name]
@@ -312,12 +452,141 @@ TXT;
             exit(0);
         }
 
-        case 'make:migration': {
-            $nameArg = $argv[2] ?? '';
-            if ($nameArg === '') {
-                throw new InvalidArgumentException('Migration name is required: ish make:migration <name> [--module=Name]');
-            }
+        case 'make:resource': {
+                    $moduleArg = $argv[2] ?? '';
+                    $nameArg = $argv[3] ?? '';
+                    if ($moduleArg === '' || $nameArg === '') {
+                        throw new InvalidArgumentException('Usage: ish make:resource <Module> <Name> [--templates=PATH]');
+                    }
+                    $moduleStudly = toStudlyCase($moduleArg);
+                    $resourceStudly = toStudlyCase($nameArg);
+                    $resourceLower = strtolower($resourceStudly);
+                    $resourcesLower = rtrim($resourceLower, 's') !== $resourceLower ? $resourceLower : $resourceLower . 's';
+
+                    $moduleDir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly;
+                    ensureDirectory($moduleDir);
+
+                    // 1) Controller
+                    $resTpl = resolveTemplateDir('Resource', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+                    $ctrlTpl = $resTpl . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'ResourceController.php.stub';
+                    if (!is_file($ctrlTpl)) { throw new RuntimeException('Missing Resource controller stub: ' . $ctrlTpl); }
+                    $ctrlContents = file_get_contents($ctrlTpl);
+                    if ($ctrlContents === false) { throw new RuntimeException('Failed to read controller stub'); }
+                    $ctrlContents = replaceTokens($ctrlContents, [
+                        'ModuleName' => $moduleStudly,
+                        'ResourceName' => $resourceStudly,
+                        'resource' => $resourceLower,
+                        'resources' => $resourcesLower,
+                    ]);
+                    $ctrlDest = $moduleDir . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . $resourceStudly . 'Controller.php';
+                    writeFile($ctrlDest, $ctrlContents);
+
+                    // 2) Views
+                    $views = ['index.php.stub' => 'index.php', 'show.php.stub' => 'show.php', 'create.php.stub' => 'create.php', 'edit.php.stub' => 'edit.php', '_form.php.stub' => '_form.php'];
+                    foreach ($views as $src => $dst) {
+                        $vp = $resTpl . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . '<resource>' . DIRECTORY_SEPARATOR . $src;
+                        // Allow either <resource> folder or flat within Views
+                        if (!is_file($vp)) {
+                            $vp = $resTpl . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . $src;
+                        }
+                        if (!is_file($vp)) { continue; }
+                        $vc = file_get_contents($vp);
+                        if ($vc === false) { throw new RuntimeException('Failed to read view stub: ' . $vp); }
+                        $vc = replaceTokens($vc, [
+                            'ModuleName' => $moduleStudly,
+                            'ResourceName' => $resourceStudly,
+                            'resource' => $resourcesLower, // directory convention uses plural
+                            'resources' => $resourcesLower,
+                        ]);
+                        $dest = $moduleDir . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . $resourcesLower . DIRECTORY_SEPARATOR . $dst;
+                        writeFile($dest, $vc);
+                    }
+
+                    // 3) Routes: append resource routes
+                    $routesTpl = $resTpl . DIRECTORY_SEPARATOR . 'routes.php.stub';
+                    if (is_file($routesTpl)) {
+                        $rc = file_get_contents($routesTpl);
+                        if ($rc === false) { throw new RuntimeException('Failed to read resource routes stub'); }
+                        $rc = replaceTokens($rc, [
+                            'ModuleName' => $moduleStudly,
+                            'ResourceName' => $resourceStudly,
+                            'resource' => $resourceLower,
+                            'resources' => $resourcesLower,
+                        ]);
+                        $routesPath = $moduleDir . DIRECTORY_SEPARATOR . 'routes.php';
+                        if (!is_file($routesPath)) {
+                            // Bootstrap routes with module routes stub
+                            $modTplDir = resolveTemplateDir('Module', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+                            $baseRoutes = $modTplDir . DIRECTORY_SEPARATOR . 'routes.php.stub';
+                            if (is_file($baseRoutes)) {
+                                $base = file_get_contents($baseRoutes) ?: '';
+                                $base = replaceTokens($base, ['ModuleName' => $moduleStudly]);
+                                writeFile($routesPath, $base);
+                            } else {
+                                $bootstrap = '<?php' . "\n" . 'declare(strict_types=1);' . "\n\n" . 'use Ishmael\\Core\\Router;' . "\n\n" . 'return function (Router $router): void {' . "\n" . '};' . "\n";
+                                                            writeFile($routesPath, $bootstrap);
+                            }
+                        }
+                        $existing = file_get_contents($routesPath) ?: '';
+                        // Insert before the last closing "};"
+                        $pos = strrpos($existing, '};');
+                        if ($pos === false) { $pos = strlen($existing); }
+                        $updated = substr($existing, 0, $pos) . rtrim("\n\n" . $rc) . "\n};\n";
+                        writeFile($routesPath, $updated, true);
+                    }
+
+                    echo 'Resource scaffolded: ' . $moduleStudly . '/' . $resourceStudly . PHP_EOL;
+                    exit(0);
+                }
+
+                case 'make:view': {
+                    $moduleArg = $argv[2] ?? '';
+                    $pathArg = $argv[3] ?? '';
+                    if ($moduleArg === '' || $pathArg === '') {
+                        throw new InvalidArgumentException('Usage: ish make:view <Module> <resource>/<view> [--templates=PATH]');
+                    }
+                    $moduleStudly = toStudlyCase($moduleArg);
+                    $parts = explode('/', str_replace('\\', '/', $pathArg));
+                    if (count($parts) < 2) {
+                        throw new InvalidArgumentException('View path must be of the form <resource>/<view>');
+                    }
+                    $resource = strtolower($parts[0]);
+                    $view = strtolower($parts[1]);
+                    $tplDir = resolveTemplateDir('View', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+                    $stub = $tplDir . DIRECTORY_SEPARATOR . 'view.php.stub';
+                    if (!is_file($stub)) { throw new RuntimeException('Missing view stub: ' . $stub); }
+                    $contents = file_get_contents($stub);
+                    if ($contents === false) { throw new RuntimeException('Failed to read view stub'); }
+                    $contents = replaceTokens($contents, [
+                        'ModuleName' => $moduleStudly,
+                        'resource' => $resource,
+                        'view' => $view,
+                    ]);
+                    $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . $resource . DIRECTORY_SEPARATOR . $view . '.php';
+                    writeFile($dest, $contents);
+                    echo 'View created at: ' . $dest . PHP_EOL;
+                    exit(0);
+                }
+
+                case 'make:migration': {
+            // Support both forms:
+            //  - ish make:migration <name> [--module=Name]
+            //  - ish make:migration <Module> <name>
+            $arg2 = $argv[2] ?? '';
+            $arg3 = $argv[3] ?? '';
             $module = $options['module'] ?? null;
+            $nameArg = '';
+            if ($module !== null) {
+                $nameArg = $arg2;
+            } elseif ($arg3 !== '') {
+                $module = $arg2;
+                $nameArg = $arg3;
+            } else {
+                $nameArg = $arg2;
+            }
+            if ($nameArg === '') {
+                throw new InvalidArgumentException('Migration name is required: ish make:migration <name> [--module=Name] or ish make:migration <Module> <name>');
+            }
             $snake = toSnake($nameArg);
             $timestamp = date('YmdHis');
             $fileName = $timestamp . '__' . $snake . '.php';
@@ -332,6 +601,29 @@ TXT;
             $contents = createMigrationContent($className);
             writeFile($path, $contents);
             echo 'Created migration: ' . $path . PHP_EOL;
+            exit(0);
+        }
+
+        case 'make:seeder': {
+            $moduleArg = $argv[2] ?? '';
+            $classArg = $argv[3] ?? '';
+            if ($moduleArg === '' || $classArg === '') {
+                throw new InvalidArgumentException('Usage: ish make:seeder <Module> <Class>');
+            }
+            $moduleStudly = toStudlyCase($moduleArg);
+            $classStudly = toStudlyCase($classArg);
+            $tplDir = resolveTemplateDir('Seeder', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+            $stub = $tplDir . DIRECTORY_SEPARATOR . 'seeder.php.stub';
+            if (!is_file($stub)) { throw new RuntimeException('Missing seeder stub: ' . $stub); }
+            $contents = file_get_contents($stub);
+            if ($contents === false) { throw new RuntimeException('Failed to read seeder stub'); }
+            $contents = replaceTokens($contents, [
+                'ModuleName' => $moduleStudly,
+                'ClassName' => $classStudly,
+            ]);
+            $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Seeders' . DIRECTORY_SEPARATOR . $classStudly . '.php';
+            writeFile($dest, $contents);
+            echo 'Seeder created at: ' . $dest . PHP_EOL;
             exit(0);
         }
 

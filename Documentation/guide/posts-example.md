@@ -74,3 +74,11 @@ How it works
 Troubleshooting
 - If php bin/demo_posts.php reports that seeding is disabled in your environment, it’s because seeders are guarded in production. The demo script forces seeding on by passing force=true.
 - If you don’t see data on /posts, ensure you ran the demo script and your app is using the same SQLite database file.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

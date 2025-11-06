@@ -66,3 +66,10 @@ The bootstrap and Kernel read common environment variables from your .env file. 
 - Clear flow: index.php → bootstrap/app.php → App::boot() → App::handle() → App::terminate().
 
 This foundation will be extended in later phases with richer Request/Response and an emitter for headers, as well as middleware and ergonomic routing APIs.
+
+
+---
+
+## Related reference
+- Reference: [Config Keys](../reference/config-keys.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

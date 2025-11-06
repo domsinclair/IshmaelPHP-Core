@@ -19,3 +19,10 @@ public function index(): void
     $this->render('home', ['message' => 'Hello']);
 }
 ```
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

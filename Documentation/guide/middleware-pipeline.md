@@ -45,3 +45,10 @@ Short-circuiting:
 
 Caching considerations:
 - For `ish route:cache` to work, middleware must be cacheable: either a class string or a static callable. Closures and object callables are not cacheable and will cause `route:cache` to fail unless `--force` is specified (non-cacheable entries are stripped with warnings). See the Middleware page for details.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

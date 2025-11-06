@@ -83,3 +83,10 @@ Route collision detected for method(s) GET: '/users/new' conflicts with existing
 ## Route cache
 
 Use `ish route:cache` to compile routes. In production, the Kernel loads the cached routes for faster cold boots. `ish route:clear` clears the cache and restores dynamic discovery. See the Route Caching guide for details and benchmarks.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)

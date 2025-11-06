@@ -15,3 +15,11 @@ return [
     '^$' => 'HomeController@index',
 ];
 ```
+
+
+---
+
+## Related reference
+- Reference: [CLI Route Commands](../reference/cli-route-commands.md)
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

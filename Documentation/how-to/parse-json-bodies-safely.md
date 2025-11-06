@@ -29,3 +29,10 @@ final class JsonBodyParser
 ```
 
 Register per-route or globally depending on your needs, and in your controller, read the parsed JSON from the Request/attributes as supported by your application.
+
+
+---
+
+## Related reference
+- Reference: [Routes](../reference/routes/_index.md)
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)

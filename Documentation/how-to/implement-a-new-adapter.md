@@ -151,3 +151,10 @@ Troubleshooting
 
 References
 - Reference: Database Adapter Contract (../reference/core-api/DatabaseAdapterInterface.md)
+
+
+---
+
+## Related reference
+- Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)
+- Reference: [Config Keys](../reference/config-keys.md)

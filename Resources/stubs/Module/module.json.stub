@@ -1,0 +1,12 @@
+{
+  "name": "<ModuleName>",
+  "version": "0.1.0",
+  "description": "Scaffolded module <ModuleName>",
+  "routes": "Modules/<ModuleName>/routes.php",
+  "authors": [
+    {
+      "name": "Your Name",
+      "email": "you@example.com"
+    }
+  ]
+}
