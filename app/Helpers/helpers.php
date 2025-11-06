@@ -469,3 +469,14 @@ ENV;
             gate()->authorize($ability, $resource, $message);
         }
     }
+
+
+    /**
+     * Cache helper returns the CacheManager singleton.
+     */
+    if (!function_exists('cache')) {
+        function cache(): \Ishmael\Core\Cache\CacheManager
+        {
+            return \Ishmael\Core\Cache\CacheManager::instance();
+        }
+    }
