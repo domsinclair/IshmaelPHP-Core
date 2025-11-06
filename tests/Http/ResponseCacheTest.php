@@ -20,6 +20,10 @@ final class ResponseCacheTest extends TestCase
         $_COOKIE = [];
         // Use array cache for tests
         \app(['config.cache.driver' => 'array']);
+        // Ensure a clean HTTP cache namespace so first request is a MISS in each test
+        if (function_exists('cache')) {
+            try { cache()->clearNamespace('http'); } catch (\Throwable $e) { /* ignore */ }
+        }
     }
 
     public function testCachesGetResponseAndHitsOnSecondRequest(): void
