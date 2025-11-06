@@ -5,13 +5,18 @@ Auto-generated stubs for public types in Ishmael Core.
 | Name | Namespace | Type |
 |---|---|---|
 | [App](App.md) | `Ishmael\Core` | class |
+| [ArrayCacheStore](ArrayCacheStore.md) | `Ishmael\Core\Cache` | class |
 | [Authenticate](Authenticate.md) | `Ishmael\Core\Http\Middleware` | class |
 | [AuthManager](AuthManager.md) | `Ishmael\Core\Auth` | class |
 | [AuthorizationException](AuthorizationException.md) | `Ishmael\Core\Authz` | class |
 | [BaseLoggerTrait](BaseLoggerTrait.md) | `Ishmael\Core\Log` | trait |
 | [Blueprint](Blueprint.md) | `Ishmael\Core\Database\Schema` | class |
+| [CacheManager](CacheManager.md) | `Ishmael\Core\Cache` | class |
+| [CacheStore](CacheStore.md) | `Ishmael\Core\Cache` | interface |
 | [Can](Can.md) | `Ishmael\Core\Http\Middleware` | class |
 | [ColumnDefinition](ColumnDefinition.md) | `Ishmael\Core\Database\Schema` | class |
+| [ConditionalRequests](ConditionalRequests.md) | `Ishmael\Core\Http\Middleware` | class |
+| [ConfigCache](ConfigCache.md) | `Ishmael\Core` | class |
 | [ConstraintRegistry](ConstraintRegistry.md) | `Ishmael\Core` | class |
 | [Controller](Controller.md) | `Ishmael\Core` | class |
 | [CookieSessionStore](CookieSessionStore.md) | `Ishmael\Core\Session` | class |
@@ -21,15 +26,18 @@ Auto-generated stubs for public types in Ishmael Core.
 | [Database](Database.md) | `Ishmael\Core` | class |
 | [DatabaseAdapterFactory](DatabaseAdapterFactory.md) | `Ishmael\Core\DatabaseAdapters` | class |
 | [DatabaseAdapterInterface](DatabaseAdapterInterface.md) | `Ishmael\Core\DatabaseAdapters` | interface |
+| [DatabaseCacheStore](DatabaseCacheStore.md) | `Ishmael\Core\Cache` | class |
 | [DatabaseSessionStore](DatabaseSessionStore.md) | `Ishmael\Core\Session` | class |
 | [DatabaseUserProvider](DatabaseUserProvider.md) | `Ishmael\Core\Auth` | class |
 | [Emitter](Emitter.md) | `Ishmael\Core\Http` | class |
+| [FileCacheStore](FileCacheStore.md) | `Ishmael\Core\Cache` | class |
 | [FileSessionStore](FileSessionStore.md) | `Ishmael\Core\Session` | class |
 | [FormatterInterface](FormatterInterface.md) | `Ishmael\Core\Log` | interface |
 | [Gate](Gate.md) | `Ishmael\Core\Authz` | class |
 | [Guest](Guest.md) | `Ishmael\Core\Http\Middleware` | class |
 | [HandleValidationExceptions](HandleValidationExceptions.md) | `Ishmael\Core\Http\Middleware` | class |
 | [HasherInterface](HasherInterface.md) | `Ishmael\Core\Auth` | interface |
+| [HttpValidators](HttpValidators.md) | `Ishmael\Core\Http` | class |
 | [IndexDefinition](IndexDefinition.md) | `Ishmael\Core\Database\Schema` | class |
 | [JsonBodyParserMiddleware](JsonBodyParserMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [JsonLinesFormatter](JsonLinesFormatter.md) | `Ishmael\Core\Log` | class |
@@ -54,6 +62,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [RequestIdProcessor](RequestIdProcessor.md) | `Ishmael\Core\Log\Processor` | class |
 | [RequestLoggingMiddleware](RequestLoggingMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [Response](Response.md) | `Ishmael\Core\Http` | class |
+| [ResponseCache](ResponseCache.md) | `Ishmael\Core\Http\Middleware` | class |
 | [Result](Result.md) | `Ishmael\Core\Database` | class |
 | [RouteCache](RouteCache.md) | `Ishmael\Core` | class |
 | [Router](Router.md) | `Ishmael\Core` | class |
@@ -72,6 +81,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [StartSessionMiddleware](StartSessionMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [StderrChannel](StderrChannel.md) | `Ishmael\Core\Log` | class |
 | [TableDefinition](TableDefinition.md) | `Ishmael\Core\Database\Schema` | class |
+| [ThrottleMiddleware](ThrottleMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [TrailingSlashMiddleware](TrailingSlashMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [UserProviderInterface](UserProviderInterface.md) | `Ishmael\Core\Auth` | interface |
 | [ValidationException](ValidationException.md) | `Ishmael\Core\Validation` | class |

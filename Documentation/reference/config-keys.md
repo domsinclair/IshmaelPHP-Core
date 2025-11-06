@@ -27,6 +27,10 @@ This page is generated from files under `IshmaelPHP-Core/config/`.
 - policies
 - remember_me
 
+## cache
+
+- <error reading file>
+
 ## database
 
 - default
@@ -35,6 +39,12 @@ This page is generated from files under `IshmaelPHP-Core/config/`.
 ## logging
 
 - <error reading file>
+
+## rate_limit
+
+- namespace
+- jitter_ratio
+- presets
 
 ## security
 

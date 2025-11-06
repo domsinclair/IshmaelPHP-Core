@@ -260,6 +260,20 @@ ENV;
         {
             static $configCache = [];
 
+            // Allow bootstrap to provide a preloaded config repository
+            $preloaded = app('config_repo');
+            if (is_array($preloaded)) {
+                // Look up directly from merged repository
+                [$file, $item] = array_pad(explode('.', $key, 2), 2, null);
+                if (!$file) {
+                    return $default;
+                }
+                if (array_key_exists($file, $preloaded)) {
+                    return $item ? ($preloaded[$file][$item] ?? $default) : $preloaded[$file];
+                }
+                return $default;
+            }
+
             // Split e.g. 'database.default'
             [$file, $item] = array_pad(explode('.', $key, 2), 2, null);
             if (!$file) {

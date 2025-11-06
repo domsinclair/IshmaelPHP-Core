@@ -23,10 +23,22 @@ require_once __DIR__ . '/../app/Helpers/helpers.php';
 load_env();
 
 // --------------------------------------------------
-// 3. Configuration
+// 3. Configuration (with config cache support)
 // --------------------------------------------------
-$appConfig      = require __DIR__ . '/../config/app.php';
-$loggingConfig  = require __DIR__ . '/../config/logging.php';
+// Try to load merged config repository from cache
+$debugFromEnv = (bool) (env('APP_DEBUG', true));
+$dirs = \Ishmael\Core\ConfigCache::getDefaultDirs();
+$compiledConfig = \Ishmael\Core\ConfigCache::load();
+if (is_array($compiledConfig)) {
+    $fresh = \Ishmael\Core\ConfigCache::isFresh($compiledConfig, $dirs);
+    if ($fresh || !$debugFromEnv) {
+        // Preload merged repository for helpers->config()
+        app(['config_repo' => (array)($compiledConfig['config'] ?? [])]);
+    }
+}
+// Fallback: helpers->config() will read individual files on demand if repo not set
+$appConfig      = (array) (config('app') ?? (require __DIR__ . '/../config/app.php'));
+$loggingConfig  = (array) (config('logging') ?? (require __DIR__ . '/../config/logging.php'));
 
 // --------------------------------------------------
 // 4. Logger Init (PSR-3 via LoggerManager)
