@@ -46,6 +46,8 @@
                 // Example: Ishmael\Core\Http\Middleware\RequestIdMiddleware::class,
                 // Example: Ishmael\Core\Http\Middleware\CorsMiddleware::class,
                 // Example: Ishmael\Core\Http\Middleware\JsonBodyParserMiddleware::class,
+                // To enable sessions globally, uncomment the next line:
+                // Ishmael\Core\Http\Middleware\StartSessionMiddleware::class,
             ],
         ],
     ];

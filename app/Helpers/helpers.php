@@ -281,6 +281,68 @@ ENV;
     }
 
     /**
+     * Global session helper.
+     * - session(): returns SessionManager instance
+     * - session('key', $default): get value
+     * - session(['key' => 'value']): set value(s)
+     *
+     * @return mixed
+     */
+    if (!function_exists('session')) {
+        function session($key = null, $default = null)
+        {
+            /** @var \Ishmael\Core\Session\SessionManager|null $mgr */
+            $mgr = app('session');
+            if ($mgr === null) {
+                return null;
+            }
+            if ($key === null) {
+                return $mgr;
+            }
+            if (is_array($key)) {
+                foreach ($key as $k => $v) {
+                    $mgr->put((string)$k, $v);
+                }
+                return null;
+            }
+            return $mgr->get((string)$key, $default);
+        }
+    }
+
+    /**
+     * Flash message helper: flash('key', 'value') to store for next request; flash('key') to read current.
+     */
+    if (!function_exists('flash')) {
+        function flash(string $key, mixed $value = null): mixed
+        {
+            /** @var \Ishmael\Core\Session\SessionManager|null $mgr */
+            $mgr = app('session');
+            if ($mgr === null) {
+                return null;
+            }
+            if (func_num_args() === 1) {
+                return $mgr->getFlash($key);
+            }
+            $mgr->flash($key, $value);
+            return null;
+        }
+    }
+
+    /**
+     * back() helper returns the Referer header or a safe fallback.
+     */
+    if (!function_exists('back')) {
+        function back(string $fallback = '/'): string
+        {
+            $ref = $_SERVER['HTTP_REFERER'] ?? '';
+            if (is_string($ref) && $ref !== '') {
+                return $ref;
+            }
+            return $fallback;
+        }
+    }
+
+    /**
      * Dump and die utility (for development).
      */
     if (!function_exists('dd')) {
