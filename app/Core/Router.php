@@ -14,11 +14,11 @@ use Ishmael\Core\Http\Response;
  */
 class Router
 {
-    /** @var array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:callable[], pattern:string, module?:string, name?:string}> */
+    /** @var array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:array<int, callable|string>, pattern:string, module?:string, name?:string}> */
     private array $routes = [];
-    /** @var array<int, array{prefix:string, middleware:callable[], module?:string}> */
+    /** @var array<int, array{prefix:string, middleware:array<int, callable|string>, module?:string}> */
     private array $groupStack = [];
-    /** @var array<int, callable> */
+    /** @var array<int, callable|string> */
     private array $globalMiddleware = [];
     private bool $appliedModuleClosures = false;
     /** Last dispatched Response instance */
@@ -132,6 +132,35 @@ class Router
     }
 
     public function getInstance(): self { return $this; }
+
+    /**
+     * Export the compiled route entries for caching.
+     *
+     * @return array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:array<int, callable|string>, pattern:string, module?:string, name?:string}>
+     */
+    public function exportCompiledMap(): array
+    {
+        return $this->routes;
+    }
+
+    /**
+     * Load a previously compiled route map. This bypasses module route registration.
+     *
+     * @param array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:array<int, callable|string>, pattern:string, module?:string, name?:string}> $routes
+     * @return void
+     */
+    public function loadCompiledMap(array $routes): void
+    {
+        $this->routes = $routes;
+        $this->nameIndex = [];
+        foreach ($this->routes as $i => $r) {
+            if (isset($r['name']) && is_string($r['name'])) {
+                $this->nameIndex[$r['name']] = (int)$i;
+            }
+        }
+        // Prevent module closures from running; cache already contains compiled routes
+        $this->appliedModuleClosures = true;
+    }
 
     /**
      * Assign a name to the most recently added route for URL generation.
@@ -641,9 +670,27 @@ class Router
         call_user_func_array([$ctrl, $action], $params);
     }
 
+    /**
+     * Toggle route caching integration (no-op placeholder; kept for BC).
+     * Prefer using RouteCache at bootstrap/CLI to load or generate caches.
+     *
+     * @param bool $enabled Enable/disable caching (unused).
+     * @return void
+     */
     public static function cache(bool $enabled = true): void
     {
-        // Stub for future route caching
+        // Left as a no-op to preserve public API; caching is handled by RouteCache.
+    }
+
+    /**
+     * Ensure module route closures have been applied to this router instance.
+     * Idempotent; safe to call multiple times.
+     *
+     * @return void
+     */
+    public function buildRoutes(): void
+    {
+        $this->applyModuleClosuresOnce();
     }
 
     private function applyModuleClosuresOnce(): void

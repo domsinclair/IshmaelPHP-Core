@@ -6,8 +6,11 @@ Auto-generated stubs for public types in Ishmael Core.
 |---|---|---|
 | [App](App.md) | `Ishmael\Core` | class |
 | [BaseLoggerTrait](BaseLoggerTrait.md) | `Ishmael\Core\Log` | trait |
+| [Blueprint](Blueprint.md) | `Ishmael\Core\Database\Schema` | class |
 | [ColumnDefinition](ColumnDefinition.md) | `Ishmael\Core\Database\Schema` | class |
+| [ConstraintRegistry](ConstraintRegistry.md) | `Ishmael\Core` | class |
 | [Controller](Controller.md) | `Ishmael\Core` | class |
+| [CorsMiddleware](CorsMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [DailyRotatingFileChannel](DailyRotatingFileChannel.md) | `Ishmael\Core\Log` | class |
 | [Database](Database.md) | `Ishmael\Core` | class |
 | [DatabaseAdapterFactory](DatabaseAdapterFactory.md) | `Ishmael\Core\DatabaseAdapters` | class |
@@ -15,12 +18,14 @@ Auto-generated stubs for public types in Ishmael Core.
 | [Emitter](Emitter.md) | `Ishmael\Core\Http` | class |
 | [FormatterInterface](FormatterInterface.md) | `Ishmael\Core\Log` | interface |
 | [IndexDefinition](IndexDefinition.md) | `Ishmael\Core\Database\Schema` | class |
+| [JsonBodyParserMiddleware](JsonBodyParserMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [JsonLinesFormatter](JsonLinesFormatter.md) | `Ishmael\Core\Log` | class |
 | [JsonLinesFormatter](JsonLinesFormatter.md) | `Ishmael\Core\Log\Monolog` | class |
 | [LineFormatter](LineFormatter.md) | `Ishmael\Core\Log` | class |
 | [Log](Log.md) | `Ishmael\Core\Support` | class |
 | [Logger](Logger.md) | `Ishmael\Core` | class |
 | [LoggerManager](LoggerManager.md) | `Ishmael\Core\Log` | class |
+| [MethodOverrideMiddleware](MethodOverrideMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [Migrator](Migrator.md) | `Ishmael\Core\Database\Migrations` | class |
 | [Model](Model.md) | `Ishmael\Core` | class |
 | [ModuleManager](ModuleManager.md) | `Ishmael\Core` | class |
@@ -35,7 +40,9 @@ Auto-generated stubs for public types in Ishmael Core.
 | [RequestLoggingMiddleware](RequestLoggingMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [Response](Response.md) | `Ishmael\Core\Http` | class |
 | [Result](Result.md) | `Ishmael\Core\Database` | class |
+| [RouteCache](RouteCache.md) | `Ishmael\Core` | class |
 | [Router](Router.md) | `Ishmael\Core` | class |
+| [Schema](Schema.md) | `Ishmael\Core\Database\Schema` | class |
 | [SchemaDiff](SchemaDiff.md) | `Ishmael\Core\Database\Schema` | class |
 | [SchemaManager](SchemaManager.md) | `Ishmael\Core\Database` | class |
 | [SeederInterface](SeederInterface.md) | `Ishmael\Core\Database\Seeders` | interface |
@@ -46,3 +53,4 @@ Auto-generated stubs for public types in Ishmael Core.
 | [StackChannel](StackChannel.md) | `Ishmael\Core\Log` | class |
 | [StderrChannel](StderrChannel.md) | `Ishmael\Core\Log` | class |
 | [TableDefinition](TableDefinition.md) | `Ishmael\Core\Database\Schema` | class |
+| [TrailingSlashMiddleware](TrailingSlashMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |

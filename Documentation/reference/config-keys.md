@@ -16,6 +16,7 @@ This page is generated from files under `IshmaelPHP-Core/config/`.
 - timezone
 - locale
 - paths
+- http
 
 ## database
 

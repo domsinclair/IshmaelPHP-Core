@@ -23,3 +23,5 @@ Lightweight HTTP Request abstraction wrapping PHP superglobals.
 - `getSubdomainParts(): array`
 - `getUri(): string`
 - `input(string $key, mixed $default = NULL): mixed` — Convenience getter combining query and parsed body with query taking precedence.
+- `withMethod(string $method): self` — Return a new Request with a replaced HTTP method.
+- `withParsedBody(array $body): self` — Return a new Request with a replaced parsed body array.

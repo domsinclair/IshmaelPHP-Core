@@ -142,6 +142,23 @@ $modulesPath = $appConfig['paths']['modules'] ?? (function () {
 ModuleManager::discover($modulesPath);
 
 // --------------------------------------------------
+// 5.1 Route cache warm/load (Phase-6 Milestone D)
+// --------------------------------------------------
+$router = new Router();
+$cached = \Ishmael\Core\RouteCache::load();
+if ($cached !== null) {
+    // Validate freshness in dev; in production we trust the cache
+    $isDebug = (bool)($appConfig['debug'] ?? false);
+    $fresh = \Ishmael\Core\RouteCache::isFresh($cached, $modulesPath);
+    if ($fresh || !$isDebug) {
+        $router->loadCompiledMap($cached['routes']);
+        \Ishmael\Core\Logger::info('Using cached routes' . ($fresh ? '' : ' (stale but used in production)'));
+    } else {
+        \Ishmael\Core\Logger::info('Route cache is stale; ignoring in debug mode.');
+    }
+}
+
+// --------------------------------------------------
 // 6. Dispatch Current Request
 // --------------------------------------------------
 $uri = $_SERVER['REQUEST_URI'] ?? '/';
@@ -156,7 +173,8 @@ if ($uri === '/' || $uri === '') {
 
 // Allow consumers to opt-in to "bootstrap only" mode by defining ISH_BOOTSTRAP_ONLY
 if (!defined('ISH_BOOTSTRAP_ONLY') || ISH_BOOTSTRAP_ONLY !== true) {
-    $router = new Router();
+    // If we did not load from cache, build routes now
+    $router->buildRoutes();
     // Let exceptions bubble to global handler
     $router->dispatch($uri);
 }
