@@ -19,6 +19,7 @@ Auto-generated from command metadata.
 | `config:clear` | ish config:clear | Clear configuration cache. |
 | `cache:clear` | ish cache:clear [--stats] | Clear application cache. |
 | `docs:generate` | ish docs:generate | Generate documentation (CLI and Module references). |
+| `docs:check-links` | ish docs:check-links [--fail-on-warn] | Scan site/ output for broken internal links (href/src). |
 
 ## Options
 
@@ -108,4 +109,10 @@ Auto-generated from command metadata.
 ### docs:generate
 
 (No options)
+
+### docs:check-links
+
+| Option | Takes Value | Default | Description |
+|---|---|---|---|
+| --fail-on-warn | no | false | Exit non-zero even if only warnings found. |
 
