@@ -11,4 +11,4 @@ Highlights:
 - First-class logging (Monolog) including processors and per-request IDs for traceability.
 - Minimal surface area: prefer clarity over magic so you can understand and control the runtime.
 
-To explore the framework in action, check out the SkeletonApp in this repository and the guides under Documentation/ and site/guide/.
+To explore the framework in action, check out the guides under Documentation.
