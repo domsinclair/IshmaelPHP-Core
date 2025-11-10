@@ -17,6 +17,8 @@ require __DIR__ . '/../vendor/autoload.php';
 
 // Ensure test utilities are loaded (not managed by Composer autoload)
 require_once __DIR__ . '/Database/AdapterTestUtil.php';
+// Ensure abstract base test is defined before concrete adapter tests are loaded
+require_once __DIR__ . '/Database/AdapterConformanceTest.php';
 
 use Ishmael\Core\Logger;
 
