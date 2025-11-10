@@ -1,9 +1,8 @@
 # LineFormatter
 
-Namespace: `Ishmael\Core\Log`  
-Source: `IshmaelPHP-Core\app\Core\Log\LineFormatter.php`
+- FQCN: `Ishmael\Core\Log\LineFormatter`
+- Type: class
 
-Simple human-readable formatter that renders a single log line like:
+## Public Methods
 
-### Public methods
-- `format(array $record): string`
+- `format(array $record)`

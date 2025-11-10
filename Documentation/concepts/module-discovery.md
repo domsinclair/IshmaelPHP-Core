@@ -147,4 +147,4 @@ php IshmaelPHP-Core/bin/ishmael route:cache
 - Guide: [Routing](../guide/routing.md) and [Routing v2: Parameters, Constraints, and Named Routes](../guide/routing-v2-parameters-constraints-and-named-routes.md)
 - Guide: [Controllers & Views](../guide/controllers-and-views.md)
 - How‑to: [Create a Module](../how-to/create-a-module.md)
-- Reference: [Modules](../reference/modules/_index.md) and [Routes](../reference/routes/_index.md)
+- Reference: [Routes](../reference/routes/_index.md)

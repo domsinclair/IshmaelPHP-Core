@@ -1,13 +1,11 @@
 # CookieSessionStore
 
-Namespace: `Ishmael\Core\Session`  
-Source: `IshmaelPHP-Core\app\Core\Session\CookieSessionStore.php`
+- FQCN: `Ishmael\Core\Session\CookieSessionStore`
+- Type: class
 
-CookieSessionStore stores the entire session payload in a single encrypted, HMAC-signed cookie.
+## Public Methods
 
-### Public methods
-- `__construct(string $cookieName, string $appKey)`
-- `destroy(string $id): void`
-- `generateId(): string`
-- `load(string $id): array`
-- `persist(string $id, array $data, int $ttlSeconds): void`
+- `load(string $id)`
+- `persist(string $id, array $data, int $ttlSeconds)`
+- `destroy(string $id)`
+- `generateId()`

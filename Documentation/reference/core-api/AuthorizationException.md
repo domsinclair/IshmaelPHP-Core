@@ -1,11 +1,9 @@
 # AuthorizationException
 
-Namespace: `Ishmael\Core\Authz`  
-Source: `IshmaelPHP-Core\app\Core\Authz\AuthorizationException.php`
+- FQCN: `Ishmael\Core\Authz\AuthorizationException`
+- Type: class
 
-AuthorizationException represents a 403 Forbidden decision.
+## Public Methods
 
-### Public methods
-- `__construct(string $ability, mixed $resource = NULL, string $message = 'Forbidden')`
-- `getAbility(): string`
-- `getResource(): mixed`
+- `getAbility()`
+- `getResource()`

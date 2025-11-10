@@ -1,27 +1,16 @@
 # MonologChannel
 
-Namespace: `Ishmael\Core\Log`  
-Source: `IshmaelPHP-Core\app\Core\Log\MonologChannel.php`
+- FQCN: `Ishmael\Core\Log\MonologChannel`
+- Type: class
 
-Thin adapter around Monolog\Logger implementing PSR-3.
+## Public Methods
 
-### Public methods
-- `__construct(Monolog\Logger $logger)`
-- `alert($message, array $context = array (
-)): void`
-- `critical($message, array $context = array (
-)): void`
-- `debug($message, array $context = array (
-)): void`
-- `emergency($message, array $context = array (
-)): void`
-- `error($message, array $context = array (
-)): void`
-- `info($message, array $context = array (
-)): void`
-- `log($level, $message, array $context = array (
-)): void`
-- `notice($message, array $context = array (
-)): void`
-- `warning($message, array $context = array (
-)): void`
+- `emergency(mixed $message, array $context)`
+- `alert(mixed $message, array $context)`
+- `critical(mixed $message, array $context)`
+- `error(mixed $message, array $context)`
+- `warning(mixed $message, array $context)`
+- `notice(mixed $message, array $context)`
+- `info(mixed $message, array $context)`
+- `debug(mixed $message, array $context)`
+- `log(mixed $level, mixed $message, array $context)`

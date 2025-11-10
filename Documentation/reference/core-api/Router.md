@@ -1,41 +1,29 @@
 # Router
 
-Namespace: `Ishmael\Core`  
-Source: `IshmaelPHP-Core\app\Core\Router.php`
+- FQCN: `Ishmael\Core\Router`
+- Type: class
 
-Minimal HTTP router supporting fluent route definitions, groups, and module-aware dispatch.
+## Public Methods
 
-### Public methods
-- `add(array $methods, string $pattern, $handler, array $middleware = array (
-)): self` — Register a route on this router instance.
-- `addGlobalMiddleware($mw): void` — Add a single global middleware.
-- `any(string $pattern, $handler, array $middleware = array (
-)): self`
-- `buildRoutes(): void` — Ensure module route closures have been applied to this router instance.
-- `cache(bool $enabled = true): void` — Toggle route caching integration (no-op placeholder; kept for BC).
-- `delete(string $pattern, $handler, array $middleware = array (
-)): self`
-- `dispatch(string $uri): void`
-- `exportCompiledMap(): array` — Export the compiled route entries for caching.
-- `generateUrl(string $name, array $params = array (
-), array $query = array (
-), bool $absolute = false): string` — Instance URL generation implementation.
-- `get(string $pattern, $handler, array $middleware = array (
-)): self`
-- `getInstance(): self`
-- `getLastResponse(): ?Ishmael\Core\Http\Response`
-- `group(array $options, callable $callback): void` — Group routes with options: prefix, middleware, module
-- `loadCompiledMap(array $routes): void` — Load a previously compiled route map. This bypasses module route registration.
-- `name(string $routeName): self` — Assign a name to the most recently added route for URL generation.
-- `patch(string $pattern, $handler, array $middleware = array (
-)): self`
-- `post(string $pattern, $handler, array $middleware = array (
-)): self`
-- `put(string $pattern, $handler, array $middleware = array (
-)): self`
-- `setActive(?self $router): void`
-- `setGlobalMiddleware(array $stack): void` — Set the global middleware stack applied to every route.
-- `url(string $name, array $params = array (
-), array $query = array (
-), bool $absolute = false): string` — Generate a URL by route name.
-- `useGlobal(array $stack): void` — Static facade to set global middleware on active router.
+- `getLastResponse()`
+- `setActive(self $router)`
+- `get(string $pattern, mixed $handler, array $middleware)`
+- `post(string $pattern, mixed $handler, array $middleware)`
+- `put(string $pattern, mixed $handler, array $middleware)`
+- `patch(string $pattern, mixed $handler, array $middleware)`
+- `delete(string $pattern, mixed $handler, array $middleware)`
+- `any(string $pattern, mixed $handler, array $middleware)`
+- `group(array $options, callable $callback)`
+- `setGlobalMiddleware(array $stack)`
+- `useGlobal(array $stack)`
+- `addGlobalMiddleware(mixed $mw)`
+- `add(array $methods, string $pattern, mixed $handler, array $middleware)`
+- `getInstance()`
+- `exportCompiledMap()`
+- `loadCompiledMap(array $routes)`
+- `name(string $routeName)`
+- `url(string $name, array $params, array $query, bool $absolute)`
+- `generateUrl(string $name, array $params, array $query, bool $absolute)`
+- `dispatch(string $uri)`
+- `cache(bool $enabled)`
+- `buildRoutes()`

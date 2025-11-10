@@ -88,22 +88,48 @@ if (!defined('ISH_ERROR_HANDLERS_REGISTERED') && !$ishTesting) {
     });
 
     $previousExceptionHandler = set_exception_handler(function (Throwable $e) use ($appConfig, &$previousExceptionHandler): void {
-        // Log as critical with stack trace
-        Logger::log(LogLevel::CRITICAL, 'Uncaught exception: ' . $e->getMessage(), [
+        // Log as critical with stack trace and correlation id if available
+        $rid = null;
+        if (function_exists('app')) { $rid = app('request_id'); }
+        if (!is_string($rid) || $rid === '') { $rid = bin2hex(random_bytes(8)); }
+        $context = [
             'exception' => get_class($e),
             'file' => $e->getFile(),
             'line' => $e->getLine(),
             'trace' => $e->getTrace(),
-        ]);
+            'request_id' => $rid,
+        ];
+        Logger::log(LogLevel::CRITICAL, 'Uncaught exception: ' . $e->getMessage(), $context);
 
-        // Render response based on debug flag (CLI-safe)
+        // Render response based on debug flag with simple content negotiation (CLI-safe)
         if (php_sapi_name() !== 'cli') {
             http_response_code(500);
-            if (($appConfig['debug'] ?? false) === true) {
-                echo '<h1>Uncaught Exception</h1>';
-                echo '<pre>' . htmlspecialchars((string)$e) . '</pre>';
+            $accept = strtolower((string)($_SERVER['HTTP_ACCEPT'] ?? 'text/html'));
+            $debug = ($appConfig['debug'] ?? false) === true;
+            if (str_contains($accept, 'application/json')) {
+                $payload = [
+                    'error' => [
+                        'id' => $rid,
+                        'status' => 500,
+                        'title' => 'Internal Server Error',
+                        'detail' => $debug ? $e->getMessage() : 'An unexpected error occurred',
+                    ],
+                ];
+                if ($debug) { $payload['error']['trace'] = $e->getTrace(); }
+                header('Content-Type: application/json; charset=UTF-8', true);
+                header('X-Correlation-Id: ' . $rid, true);
+                echo json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
             } else {
-                echo '<h1>Internal Server Error</h1>';
+                header('Content-Type: text/html; charset=UTF-8', true);
+                header('X-Correlation-Id: ' . $rid, true);
+                if ($debug) {
+                    echo '<h1>Uncaught Exception</h1>';
+                    echo '<p><strong>Correlation Id:</strong> ' . htmlspecialchars($rid) . '</p>';
+                    echo '<pre>' . htmlspecialchars((string)$e) . '</pre>';
+                } else {
+                    echo '<h1>Internal Server Error</h1>';
+                    echo '<p><strong>Correlation Id:</strong> ' . htmlspecialchars($rid) . '</p>';
+                }
             }
         }
 

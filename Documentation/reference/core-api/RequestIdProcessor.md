@@ -1,9 +1,8 @@
 # RequestIdProcessor
 
-Namespace: `Ishmael\Core\Log\Processor`  
-Source: `IshmaelPHP-Core\app\Core\Log\Processor\RequestIdProcessor.php`
+- FQCN: `Ishmael\Core\Log\Processor\RequestIdProcessor`
+- Type: class
 
-Adds request_id from global context if available (set by RequestIdMiddleware).
+## Public Methods
 
-### Public methods
-- `__invoke(array $context): array`
+- `__invoke(array $context)`

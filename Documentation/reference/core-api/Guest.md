@@ -1,9 +1,8 @@
 # Guest
 
-Namespace: `Ishmael\Core\Http\Middleware`  
-Source: `IshmaelPHP-Core\app\Core\Http\Middleware\Guest.php`
+- FQCN: `Ishmael\Core\Http\Middleware\Guest`
+- Type: class
 
-Guest middleware redirects authenticated users away from guest-only routes
+## Public Methods
 
-### Public methods
-- `__invoke(Ishmael\Core\Http\Request $req, Ishmael\Core\Http\Response $res, callable $next): Ishmael\Core\Http\Response`
+- `__invoke(Ishmael\Core\Http\Request $req, Ishmael\Core\Http\Response $res, callable $next)`

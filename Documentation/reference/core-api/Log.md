@@ -1,26 +1,16 @@
 # Log
 
-Namespace: `Ishmael\Core\Support`  
-Source: `IshmaelPHP-Core\app\Core\Support\Log.php`
+- FQCN: `Ishmael\Core\Support\Log`
+- Type: class
 
-Static logging facade for newcomer ergonomics.
+## Public Methods
 
-### Public methods
-- `alert(string $message, array $context = array (
-)): void`
-- `critical(string $message, array $context = array (
-)): void`
-- `debug(string $message, array $context = array (
-)): void`
-- `emergency(string $message, array $context = array (
-)): void`
-- `error(string $message, array $context = array (
-)): void`
-- `info(string $message, array $context = array (
-)): void`
-- `log(string $level, string $message, array $context = array (
-)): void`
-- `notice(string $message, array $context = array (
-)): void`
-- `warning(string $message, array $context = array (
-)): void`
+- `emergency(string $message, array $context)`
+- `alert(string $message, array $context)`
+- `critical(string $message, array $context)`
+- `error(string $message, array $context)`
+- `warning(string $message, array $context)`
+- `notice(string $message, array $context)`
+- `info(string $message, array $context)`
+- `debug(string $message, array $context)`
+- `log(string $level, string $message, array $context)`

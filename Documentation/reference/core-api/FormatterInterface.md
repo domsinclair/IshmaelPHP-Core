@@ -1,9 +1,8 @@
 # FormatterInterface
 
-Namespace: `Ishmael\Core\Log`  
-Source: `IshmaelPHP-Core\app\Core\Log\FormatterInterface.php`
+- FQCN: `Ishmael\Core\Log\FormatterInterface`
+- Type: interface
 
-Formats a normalized log record into a string to be written by a channel.
+## Public Methods
 
-### Public methods
-- `format(array $record): string`
+- `format(array $record)`

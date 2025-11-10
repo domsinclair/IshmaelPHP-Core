@@ -1,10 +1,9 @@
 # IndexDefinition
 
-Namespace: `Ishmael\Core\Database\Schema`  
-Source: `IshmaelPHP-Core\app\Core\Database\Schema\IndexDefinition.php`
+- FQCN: `Ishmael\Core\Database\Schema\IndexDefinition`
+- Type: class
 
-### Public methods
-- `__construct(string $name, array $columns, string $type = 'index', ?string $where = NULL, array $extras = array (
-))`
-- `jsonSerialize(): array`
-- `toArray(): array`
+## Public Methods
+
+- `toArray()`
+- `jsonSerialize()`

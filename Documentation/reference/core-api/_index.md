@@ -30,6 +30,7 @@ Auto-generated stubs for public types in Ishmael Core.
 | [DatabaseSessionStore](DatabaseSessionStore.md) | `Ishmael\Core\Session` | class |
 | [DatabaseUserProvider](DatabaseUserProvider.md) | `Ishmael\Core\Auth` | class |
 | [Emitter](Emitter.md) | `Ishmael\Core\Http` | class |
+| [ErrorBoundaryMiddleware](ErrorBoundaryMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [FileCacheStore](FileCacheStore.md) | `Ishmael\Core\Cache` | class |
 | [FileSessionStore](FileSessionStore.md) | `Ishmael\Core\Session` | class |
 | [FormatterInterface](FormatterInterface.md) | `Ishmael\Core\Log` | interface |

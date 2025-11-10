@@ -36,6 +36,22 @@
                 $this->pdo = new PDO($dsn);
                 $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+                // Reduce lock contention between concurrent processes (e.g., CLI + tests)
+                // Note: PDO::ATTR_TIMEOUT is in seconds for SQLite
+                if (defined('PDO::ATTR_TIMEOUT')) {
+                    $this->pdo->setAttribute(PDO::ATTR_TIMEOUT, 5);
+                }
+                // Apply SQLite PRAGMAs for file-based DBs to allow writers while readers are present
+                if ($path !== ':memory:') {
+                    // Wait up to 5000ms if the database is busy
+                    @($this->pdo->exec('PRAGMA busy_timeout = 5000'));
+                    // Enable WAL so readers do not block writers
+                    @($this->pdo->exec('PRAGMA journal_mode = WAL'));
+                    // Reasonable durability vs performance for CLI/test usage
+                    @($this->pdo->exec('PRAGMA synchronous = NORMAL'));
+                    // Enforce FK constraints
+                    @($this->pdo->exec('PRAGMA foreign_keys = ON'));
+                }
 
                 Logger::info("SQLite connected: {$path}");
 

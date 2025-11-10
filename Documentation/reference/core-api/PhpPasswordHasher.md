@@ -1,12 +1,10 @@
 # PhpPasswordHasher
 
-Namespace: `Ishmael\Core\Auth`  
-Source: `IshmaelPHP-Core\app\Core\Auth\PhpPasswordHasher.php`
+- FQCN: `Ishmael\Core\Auth\PhpPasswordHasher`
+- Type: class
 
-PhpPasswordHasher implements HasherInterface using PHP's password_* APIs.
+## Public Methods
 
-### Public methods
-- `__construct()`
-- `hash(string $plain): string`
-- `needsRehash(string $hash): bool`
-- `verify(string $plain, string $hash): bool`
+- `hash(string $plain)`
+- `verify(string $plain, string $hash)`
+- `needsRehash(string $hash)`

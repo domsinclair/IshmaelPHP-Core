@@ -1,0 +1,194 @@
+#!/usr/bin/env php
+<?php
+declare(strict_types=1);
+
+// Simple DocGen that runs entirely within IshmaelPHP-Core
+// - Generates Documentation/reference/config-keys.md from config/*.php
+// - Generates Documentation/reference/routes/<Module>.md from Modules/*/routes.php (if present)
+// - Generates Documentation/reference/core-api/*.md from app/* via Reflection
+
+$core = dirname(__DIR__);
+$docs = $core . DIRECTORY_SEPARATOR . 'Documentation' . DIRECTORY_SEPARATOR . 'reference';
+$configDir = $core . DIRECTORY_SEPARATOR . 'config';
+$modulesDir = $core . DIRECTORY_SEPARATOR . 'Modules'; // self-contained; no dependency on SkeletonApp
+
+@mkdir($docs, 0777, true);
+@mkdir($docs . DIRECTORY_SEPARATOR . 'routes', 0777, true);
+@mkdir($docs . DIRECTORY_SEPARATOR . 'core-api', 0777, true);
+
+function writeFile(string $path, string $content): void {
+    $dir = dirname($path);
+    if (!is_dir($dir)) @mkdir($dir, 0777, true);
+    file_put_contents($path, $content);
+}
+
+function h2(string $t): string { return "\n## $t\n\n"; }
+
+// Provide minimal stubs for helpers used by config files when requiring them in this generator context
+if (!function_exists('env')) {
+    function env(string $key, $default = null) {
+        $val = getenv($key);
+        if ($val === false) return $default;
+        $lower = strtolower((string)$val);
+        if ($lower === 'true') return true;
+        if ($lower === 'false') return false;
+        if (is_numeric($val)) return $val + 0;
+        return $val;
+    }
+}
+if (!function_exists('base_path')) {
+    function base_path(string $path = ''): string {
+        $base = dirname(__DIR__);
+        if ($path === '') return $base;
+        $normalized = ltrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path), DIRECTORY_SEPARATOR);
+        return $base . DIRECTORY_SEPARATOR . $normalized;
+    }
+}
+
+// 1) Config keys summary
+$configKeys = [];
+if (is_dir($configDir)) {
+    foreach (glob($configDir . DIRECTORY_SEPARATOR . '*.php') as $cfgFile) {
+        $name = basename($cfgFile, '.php');
+        try {
+            $arr = require $cfgFile;
+            if (is_array($arr)) {
+                $configKeys[$name] = array_keys($arr);
+            }
+        } catch (Throwable $e) {
+            $configKeys[$name] = ['<error reading file>'];
+        }
+    }
+}
+
+$cfgMd = "# Config Keys\n\nThis page is generated from files under `IshmaelPHP-Core/config/`.\n\n";
+foreach ($configKeys as $file => $keys) {
+    $cfgMd .= h2($file) . "- " . implode("\n- ", $keys) . "\n";
+}
+writeFile($docs . DIRECTORY_SEPARATOR . 'config-keys.md', $cfgMd);
+
+// 2) Routes per module (optional; if no Modules directory, write an index hint)
+if (is_dir($modulesDir)) {
+    foreach (glob($modulesDir . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) as $modulePath) {
+        $module = basename($modulePath);
+        $routesFile = $modulePath . DIRECTORY_SEPARATOR . 'routes.php';
+        $rows = [];
+        if (file_exists($routesFile)) {
+            try {
+                $routes = require $routesFile;
+                if (is_array($routes)) {
+                    foreach ($routes as $pattern => $handler) {
+                        $rows[] = [$pattern, (string)$handler];
+                    }
+                }
+            } catch (Throwable $e) {
+                $rows[] = ['<error reading routes>', $e->getMessage()];
+            }
+        }
+        $md = "# Routes — $module\n\n";
+        if (!$rows) {
+            $md .= "No routes found.\n";
+        } else {
+            $md .= "| Pattern | Handler |\n|---|---|\n";
+            foreach ($rows as [$p, $h]) {
+                $md .= "| `" . str_replace('|', '\\|', (string)$p) . "` | `" . str_replace('|', '\\|', (string)$h) . "` |\n";
+            }
+        }
+        writeFile($docs . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . $module . '.md', $md);
+    }
+} else {
+    // Ensure the routes index exists with a helpful note
+    $idx = "# Routes Reference\n\nNo local Modules directory was found at `IshmaelPHP-Core/Modules`.\nWhen modules are added, route summaries will appear here after running DocGen.\n";
+    writeFile($docs . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . '_index.md', $idx);
+}
+
+// 3) Core API (Markdown via Reflection): list classes/interfaces/traits under app/ and their public methods
+$coreApiDir = $docs . DIRECTORY_SEPARATOR . 'core-api';
+$coreIndex = [];
+
+// Ensure Composer autoload is available for Reflection
+$autoload = $core . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
+}
+
+$srcApp = $core . DIRECTORY_SEPARATOR . 'app';
+
+function listPhpFilesRecursively(string $dir): array {
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS));
+    $files = [];
+    foreach ($it as $file) {
+        /** @var SplFileInfo $file */
+        if ($file->isFile() && strtolower($file->getExtension()) === 'php') {
+            $files[] = $file->getRealPath();
+        }
+    }
+    sort($files);
+    return $files;
+}
+
+function fqcnFromPath(string $baseDir, string $file): ?string {
+    $rel = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, substr($file, strlen($baseDir) + 1));
+    if (!str_ends_with($rel, '.php')) return null;
+    $rel = substr($rel, 0, -4);
+    $parts = explode(DIRECTORY_SEPARATOR, $rel);
+    array_unshift($parts, 'Ishmael');
+    return implode('\\', $parts);
+}
+
+$files = is_dir($srcApp) ? listPhpFilesRecursively($srcApp) : [];
+foreach ($files as $phpFile) {
+    // Skip migrations to avoid executing user code and duplicate class names
+    $normalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $phpFile);
+    if (str_contains($normalized, DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations' . DIRECTORY_SEPARATOR)) {
+        continue;
+    }
+
+    $fqcn = fqcnFromPath($srcApp, $phpFile);
+    if (!$fqcn || (!class_exists($fqcn) && !interface_exists($fqcn) && !trait_exists($fqcn))) {
+        // try requiring the file directly if not autoloadable yet
+        @require_once $phpFile;
+    }
+    if (!class_exists($fqcn) && !interface_exists($fqcn) && !trait_exists($fqcn)) {
+        continue;
+    }
+
+    $ref = new ReflectionClass($fqcn);
+    $short = $ref->getShortName();
+    $coreIndex[] = $short;
+
+    $md = "# $short\n\n";
+    $md .= "- FQCN: `{$fqcn}`\n";
+    $md .= "- Type: " . ($ref->isInterface() ? 'interface' : ($ref->isTrait() ? 'trait' : 'class')) . "\n\n";
+
+    $methods = $ref->getMethods(ReflectionMethod::IS_PUBLIC);
+    if (count($methods) > 0) {
+        $md .= "## Public Methods\n\n";
+        foreach ($methods as $m) {
+            if ($m->isConstructor()) continue;
+            if ($m->getDeclaringClass()->getName() !== $ref->getName()) continue; // skip inherited to reduce noise
+            $sig = $m->getName() . '(';
+            $params = [];
+            foreach ($m->getParameters() as $p) {
+                $pt = $p->getType();
+                $ptName = $pt instanceof ReflectionNamedType ? $pt->getName() : 'mixed';
+                $paramStr = ($p->isVariadic() ? '...' : '') . '$' . $p->getName();
+                $params[] = $ptName . ' ' . $paramStr;
+            }
+            $sig .= implode(', ', $params) . ')';
+            $md .= "- `{$sig}`\n";
+        }
+    }
+
+    writeFile($coreApiDir . DIRECTORY_SEPARATOR . $short . '.md', $md);
+}
+
+// Write a simple index file
+sort($coreIndex);
+$indexMd = "# Core API (Markdown stubs)\n\nThe following symbols were discovered under `IshmaelPHP-Core/app/` and summarized by DocGen.\n\n";
+foreach ($coreIndex as $n) {
+    $indexMd .= "- [{$n}](./{$n}.md)\n";
+}
+writeFile($coreApiDir . DIRECTORY_SEPARATOR . 'index.md', $indexMd);
+
+echo "DocGen completed.\n";

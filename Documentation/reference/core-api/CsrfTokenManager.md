@@ -1,12 +1,11 @@
 # CsrfTokenManager
 
-Namespace: `Ishmael\Core\Security`  
-Source: `IshmaelPHP-Core\app\Core\Security\CsrfTokenManager.php`
+- FQCN: `Ishmael\Core\Security\CsrfTokenManager`
+- Type: class
 
-CsrfTokenManager is responsible for generating, storing, and validating
+## Public Methods
 
-### Public methods
-- `getToken(): string` — Return the current CSRF token for this session, generating one if missing.
-- `regenerateToken(): string` — Regenerate the CSRF token and return the new value.
-- `rotateOnPrivilegeChange(): void` — Rotate token based on app policy (placeholder for future hooks like login).
-- `validateToken(?string $presented): bool` — Validate a presented token against the session token using
+- `getToken()`
+- `regenerateToken()`
+- `validateToken(string $presented)`
+- `rotateOnPrivilegeChange()`

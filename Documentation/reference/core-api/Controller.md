@@ -1,7 +1,5 @@
 # Controller
 
-Namespace: `Ishmael\Core`  
-Source: `IshmaelPHP-Core\app\Core\Controller.php`
-
-Base Controller
+- FQCN: `Ishmael\Core\Controller`
+- Type: class
 

@@ -1,9 +1,7 @@
 # JsonLinesFormatter
 
-Namespace: `Ishmael\Core\Log\Monolog`  
-Source: `IshmaelPHP-Core\app\Core\Log\Monolog\JsonLinesFormatter.php`
+- FQCN: `Ishmael\Core\Log\Monolog\JsonLinesFormatter`
+- Type: class
 
-Preset for JSON Lines output using Monolog's JsonFormatter
+## Public Methods
 
-### Public methods
-- `__construct()`

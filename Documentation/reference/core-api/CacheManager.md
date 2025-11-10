@@ -1,19 +1,18 @@
 # CacheManager
 
-Namespace: `Ishmael\Core\Cache`  
-Source: `IshmaelPHP-Core\app\Core\Cache\CacheManager.php`
+- FQCN: `Ishmael\Core\Cache\CacheManager`
+- Type: class
 
-### Public methods
-- `clearAll(): void` — Clear all cache entries for known namespaces when supported by the underlying store.
-- `clearNamespace(string $namespace): void`
-- `clearTag(string $tag, ?string $namespace = NULL): void`
-- `forget(string $key, string $namespace = 'default'): void`
-- `get(string $key, mixed $default = NULL, string $namespace = 'default'): mixed`
-- `getStats(): array` — Return optional stats for the current store (counts only when cheap to compute).
-- `has(string $key, string $namespace = 'default'): bool`
-- `instance(): Ishmael\Core\Cache\CacheManager`
-- `remember(string $key, callable $callback, ?int $ttlSeconds = NULL, string $namespace = 'default', array $tags = array (
-)): mixed`
-- `set(string $key, mixed $value, ?int $ttlSeconds = NULL, string $namespace = 'default', array $tags = array (
-)): void`
-- `store(): Ishmael\Core\Cache\CacheStore`
+## Public Methods
+
+- `clearAll()`
+- `getStats()`
+- `instance()`
+- `get(string $key, mixed $default, string $namespace)`
+- `set(string $key, mixed $value, int $ttlSeconds, string $namespace, array $tags)`
+- `has(string $key, string $namespace)`
+- `forget(string $key, string $namespace)`
+- `clearNamespace(string $namespace)`
+- `clearTag(string $tag, string $namespace)`
+- `remember(string $key, callable $callback, int $ttlSeconds, string $namespace, array $tags)`
+- `store()`

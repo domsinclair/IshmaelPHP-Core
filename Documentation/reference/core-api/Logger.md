@@ -1,15 +1,11 @@
 # Logger
 
-Namespace: `Ishmael\Core`  
-Source: `IshmaelPHP-Core\app\Core\Logger.php`
+- FQCN: `Ishmael\Core\Logger`
+- Type: class
 
-Static facade for application logging built on top of LoggerManager and PSR-3.
+## Public Methods
 
-### Public methods
-- `error(string $message, array $context = array (
-)): void` — Log an error message.
-- `info(string $message, array $context = array (
-)): void` — Log an informational message.
-- `init(array $config): void` — Initialize logging.
-- `log(string $level, string $message, array $context = array (
-)): void` — Log a message at an arbitrary level.
+- `init(array $config)`
+- `log(string $level, string $message, array $context)`
+- `info(string $message, array $context)`
+- `error(string $message, array $context)`

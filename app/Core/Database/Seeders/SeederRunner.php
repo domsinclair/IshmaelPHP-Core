@@ -233,22 +233,57 @@ final class SeederRunner
         $out = [];
         // Consider all declared classes so repeated runs (require_once no-ops) still discover seeders
         foreach ($declaredAfter as $class) {
-            if (is_subclass_of($class, SeederInterface::class) || in_array(SeederInterface::class, class_implements($class) ?: [], true)) {
-                // Instantiate only if class is in one of the module directories by reflection file name
-                try {
-                    $ref = new \ReflectionClass($class);
-                    $file = $ref->getFileName() ?: '';
-                    $filePath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string)$file);
-                    $isInModule = false;
-                    foreach ($normDirs as $nd) {
-                        if ($filePath !== '' && str_starts_with($filePath, $nd)) { $isInModule = true; break; }
+            try {
+                $ref = new \ReflectionClass($class);
+            } catch (\Throwable $_) {
+                continue; // skip bogus
+            }
+            // Verify class file is inside one of the module seeder directories
+            $file = $ref->getFileName() ?: '';
+            $filePath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string)$file);
+            $isInModule = false;
+            foreach ($normDirs as $nd) {
+                if ($filePath !== '' && str_starts_with($filePath, $nd)) { $isInModule = true; break; }
+            }
+            if (!$isInModule || $ref->isAbstract()) { continue; }
+
+            $implements = class_implements($class) ?: [];
+            $implementsInterface = is_subclass_of($class, SeederInterface::class) || in_array(SeederInterface::class, $implements, true);
+
+            if ($implementsInterface) {
+                // Standard: implements SeederInterface
+                /** @var SeederInterface $obj */
+                $obj = $ref->newInstanceWithoutConstructor();
+                $out[$class] = $obj;
+                continue;
+            }
+
+            // Back-compat: allow simple seeders exposing a public run() method without interface
+            if ($ref->hasMethod('run')) {
+                $m = $ref->getMethod('run');
+                if ($m->isPublic()) {
+                    $paramCount = $m->getNumberOfRequiredParameters();
+                    // Support 0-arg or 2-arg (adapter, logger) methods
+                    if ($paramCount === 0 || $paramCount === 2) {
+                        $instance = $ref->newInstanceWithoutConstructor();
+                        // Wrap in anonymous adapter implementing SeederInterface
+                        $adapterWrapper = new class($instance, $paramCount) implements SeederInterface {
+                            private object $inner;
+                            private int $arity;
+                            public function __construct(object $inner, int $arity) { $this->inner = $inner; $this->arity = $arity; }
+                            public function run(\Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface $adapter, \Psr\Log\LoggerInterface $logger): void
+                            {
+                                if ($this->arity === 2) {
+                                    $this->inner->run($adapter, $logger);
+                                } else {
+                                    $this->inner->run();
+                                }
+                            }
+                            public function dependsOn(): array { return []; }
+                        };
+                        $out[$class] = $adapterWrapper;
                     }
-                    if ($isInModule && !$ref->isAbstract()) {
-                        /** @var SeederInterface $obj */
-                        $obj = $ref->newInstanceWithoutConstructor();
-                        $out[$class] = $obj;
-                    }
-                } catch (\Throwable $_) { /* ignore bogus classes */ }
+                }
             }
         }
         ksort($out, SORT_STRING);

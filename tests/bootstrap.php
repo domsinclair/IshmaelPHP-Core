@@ -19,6 +19,8 @@ require __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/Database/AdapterTestUtil.php';
 // Ensure abstract base test is defined before concrete adapter tests are loaded
 require_once __DIR__ . '/Database/AdapterConformanceTest.php';
+// Ensure Integration base test case is available for namespaced tests
+require_once __DIR__ . '/Integration/CliTestCase.php';
 
 use Ishmael\Core\Logger;
 

@@ -1,11 +1,10 @@
 # ConstraintRegistry
 
-Namespace: `Ishmael\Core`  
-Source: `IshmaelPHP-Core\app\Core\ConstraintRegistry.php`
+- FQCN: `Ishmael\Core\ConstraintRegistry`
+- Type: class
 
-ConstraintRegistry manages named route parameter constraints used by the Router.
+## Public Methods
 
-### Public methods
-- `add(string $name, callable|string $regexOrCallable, ?callable $converter = NULL): void` — Register or override a named constraint.
-- `convert(string $name, string $value): mixed` — Convert a matched value using the constraint's converter (if any).
-- `getPattern(string $name): ?string` — Get the regex pattern for a constraint or null if unknown.
+- `add(string $name, mixed $regexOrCallable, callable $converter)`
+- `getPattern(string $name)`
+- `convert(string $name, string $value)`

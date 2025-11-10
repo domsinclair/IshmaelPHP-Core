@@ -77,7 +77,6 @@ This should emit static reference pages under `site/` for API, CLI, and module m
 - Include a README.md inside `Modules/Blog/` summarizing usage and routes (optional).
 
 ## Related reading
-- Reference: [Modules](../reference/modules/_index.md)
 - Guide: [Docs Generator](./docs-generator.md)
 - Reference: [CLI Commands (generated)](../reference/cli-commands.md)
 

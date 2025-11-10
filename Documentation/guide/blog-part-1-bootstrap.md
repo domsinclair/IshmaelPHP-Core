@@ -122,5 +122,5 @@ You should see the placeholder response from PostController::index.
 ## Related reading
 - How‑to: [Create a Module](../how-to/create-a-module.md)
 - Guide: [Routing](./routing.md) and [Routing v2: Parameters, Constraints, and Named Routes](./routing-v2-parameters-constraints-and-named-routes.md)
-- Reference: [Modules](../reference/modules/_index.md) and [Routes](../reference/routes/_index.md)
+- Reference:  [Routes](../reference/routes/_index.md)
 - API Placeholder: [Core API](../reference/core-api/_index.md)

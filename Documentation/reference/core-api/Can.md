@@ -1,9 +1,8 @@
 # Can
 
-Namespace: `Ishmael\Core\Http\Middleware`  
-Source: `IshmaelPHP-Core\app\Core\Http\Middleware\Can.php`
+- FQCN: `Ishmael\Core\Http\Middleware\Can`
+- Type: class
 
-Can middleware checks an authorization ability via Gate.
+## Public Methods
 
-### Public methods
-- `for(string $ability, ?callable $resourceResolver = NULL): callable` — Factory returning a middleware callable that authorizes the given ability.
+- `for(string $ability, callable $resourceResolver)`

@@ -1,29 +1,18 @@
 # DailyRotatingFileChannel
 
-Namespace: `Ishmael\Core\Log`  
-Source: `IshmaelPHP-Core\app\Core\Log\DailyRotatingFileChannel.php`
+- FQCN: `Ishmael\Core\Log\DailyRotatingFileChannel`
+- Type: class
 
-File channel that rotates logs daily and enforces a retention policy.
+## Public Methods
 
-### Public methods
-- `__construct(string $basePath, int $days = 7, string $minLevel = 'debug', ?Ishmael\Core\Log\FormatterInterface $formatter = NULL)`
 - `__destruct()`
-- `alert($message, array $context = array (
-)): void`
-- `critical($message, array $context = array (
-)): void`
-- `debug($message, array $context = array (
-)): void`
-- `emergency($message, array $context = array (
-)): void`
-- `error($message, array $context = array (
-)): void`
-- `info($message, array $context = array (
-)): void`
-- `log($level, $message, array $context = array (
-)): void` — Write a record to the current day's file and apply retention once per run.
-- `notice($message, array $context = array (
-)): void`
-- `setMinLevel(string $level): void`
-- `warning($message, array $context = array (
-)): void`
+- `emergency(mixed $message, array $context)`
+- `alert(mixed $message, array $context)`
+- `critical(mixed $message, array $context)`
+- `error(mixed $message, array $context)`
+- `warning(mixed $message, array $context)`
+- `notice(mixed $message, array $context)`
+- `info(mixed $message, array $context)`
+- `debug(mixed $message, array $context)`
+- `log(mixed $level, mixed $message, array $context)`
+- `setMinLevel(string $level)`

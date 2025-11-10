@@ -1,14 +1,10 @@
 # ValidationException
 
-Namespace: `Ishmael\Core\Validation`  
-Source: `IshmaelPHP-Core\app\Core\Validation\ValidationException.php`
+- FQCN: `Ishmael\Core\Validation\ValidationException`
+- Type: class
 
-ValidationException carries a structured error bag and snapshot of the old input.
+## Public Methods
 
-### Public methods
-- `__construct(array $messages, array $codes = array (
-), array $old = array (
-))`
-- `getCodes(): array`
-- `getMessages(): array`
-- `getOld(): array`
+- `getMessages()`
+- `getCodes()`
+- `getOld()`

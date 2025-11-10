@@ -1,11 +1,9 @@
 # LoggerManager
 
-Namespace: `Ishmael\Core\Log`  
-Source: `IshmaelPHP-Core\app\Core\Log\LoggerManager.php`
+- FQCN: `Ishmael\Core\Log\LoggerManager`
+- Type: class
 
-LoggerManager resolves log channels from configuration and returns PSR-3 loggers.
+## Public Methods
 
-### Public methods
-- `__construct(array $config)`
-- `channel(string $name): Psr\Log\LoggerInterface`
-- `default(): Psr\Log\LoggerInterface`
+- `default()`
+- `channel(string $name)`

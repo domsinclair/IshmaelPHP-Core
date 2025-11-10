@@ -1,13 +1,11 @@
 # FileSessionStore
 
-Namespace: `Ishmael\Core\Session`  
-Source: `IshmaelPHP-Core\app\Core\Session\FileSessionStore.php`
+- FQCN: `Ishmael\Core\Session\FileSessionStore`
+- Type: class
 
-FileSessionStore persists session payloads as JSON files under storage/sessions.
+## Public Methods
 
-### Public methods
-- `__construct(string $directory)`
-- `destroy(string $id): void` — {@inheritdoc}
-- `generateId(): string` — {@inheritdoc}
-- `load(string $id): array` — {@inheritdoc}
-- `persist(string $id, array $data, int $ttlSeconds): void` — {@inheritdoc}
+- `load(string $id)`
+- `persist(string $id, array $data, int $ttlSeconds)`
+- `destroy(string $id)`
+- `generateId()`

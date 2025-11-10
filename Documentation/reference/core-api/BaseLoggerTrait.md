@@ -1,9 +1,8 @@
 # BaseLoggerTrait
 
-Namespace: `Ishmael\Core\Log`  
-Source: `IshmaelPHP-Core\app\Core\Log\BaseLoggerTrait.php`
+- FQCN: `Ishmael\Core\Log\BaseLoggerTrait`
+- Type: trait
 
-Shared PSR-3 helpers: thresholding, interpolation, and record normalization.
+## Public Methods
 
-### Public methods
-- `setMinLevel(string $level): void`
+- `setMinLevel(string $level)`

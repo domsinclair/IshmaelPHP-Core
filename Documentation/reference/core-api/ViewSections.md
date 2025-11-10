@@ -1,13 +1,12 @@
 # ViewSections
 
-Namespace: `Ishmael\Core`  
-Source: `IshmaelPHP-Core\app\Core\ViewSections.php`
+- FQCN: `Ishmael\Core\ViewSections`
+- Type: class
 
-ViewSections
+## Public Methods
 
-### Public methods
-- `end(): void` — End the most recently started section capture and store its contents.
-- `has(string $name): bool` — Determine whether a section has been defined.
-- `set(string $name, string $content, bool $overwrite = true): void` — Set a section's contents programmatically.
-- `start(string $name): void` — Begin capturing output for a section with the given name.
-- `yield(string $name, string $default = ''): string` — Render (return) a section's contents if defined, else a default value.
+- `start(string $name)`
+- `end()`
+- `yield(string $name, string $default)`
+- `has(string $name)`
+- `set(string $name, string $content, bool $overwrite)`

@@ -1,9 +1,8 @@
 # JsonBodyParserMiddleware
 
-Namespace: `Ishmael\Core\Http\Middleware`  
-Source: `IshmaelPHP-Core\app\Core\Http\Middleware\JsonBodyParserMiddleware.php`
+- FQCN: `Ishmael\Core\Http\Middleware\JsonBodyParserMiddleware`
+- Type: class
 
-JsonBodyParserMiddleware
+## Public Methods
 
-### Public methods
-- `__invoke(Ishmael\Core\Http\Request $req, Ishmael\Core\Http\Response $res, callable $next): Ishmael\Core\Http\Response` — Invoke middleware.
+- `__invoke(Ishmael\Core\Http\Request $req, Ishmael\Core\Http\Response $res, callable $next)`

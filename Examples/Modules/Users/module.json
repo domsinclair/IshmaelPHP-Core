@@ -1,0 +1,12 @@
+{
+  "name": "Users",
+  "version": "0.1.0",
+  "enabled": true,
+  "description": "Example identity module with Users, Roles, login form, and role assignment",
+  "routes": ["routes.php"],
+  "migrations": ["Database/Migrations"],
+  "seeders": [
+    "Database/Seeders/RolesSeeder.php",
+    "Database/Seeders/AdminUserSeeder.php"
+  ]
+}
