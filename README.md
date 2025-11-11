@@ -2,7 +2,7 @@
 
 ![](ishmael.jpg)
 
-Ishmael PHP is a lightweight, modular micro-framework for building HTTP-centric PHP applications. It emphasizes an explicit bootstrap process, a clean routing layer, a PSR-style middleware pipeline, and pragmatic, context-rich logging — all with a small, readable core that is easy to extend and test.
+Ishmael PHP is a lightweight, modular micro-framework for building HTTP-centric PHP applications. It emphasises an explicit bootstrap process, a clean routing layer, a PSR-style middleware pipeline, and pragmatic, context-rich logging — all with a small, readable core that is easy to extend and test.
 
 Highlights:
 - Modular design with a simple application skeleton and discoverable modules.
@@ -12,3 +12,11 @@ Highlights:
 - Minimal surface area: prefer clarity over magic so you can understand and control the runtime.
 
 To explore the framework in action, check out the guides under Documentation.
+
+The first phase of development is now complete providing what is hopefully a solid, fully tested foundation upon which it can be expanded.
+
+Expect to see improvements in the database adapters and model creators so that proper foreign key relations and indexes are supported.
+
+There should be a query builder, possibly even a visual query builder.
+
+Modules will be enhanced to differentiate between production and development.
