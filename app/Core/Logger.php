@@ -99,6 +99,17 @@
         }
 
         /**
+         * Log a critical error message.
+         *
+         * @param string $message
+         * @param array<string,mixed> $context
+         */
+        public static function critical(string $message, array $context = []): void
+        {
+            self::logger()->critical($message, $context);
+        }
+
+        /**
          * Get the underlying PSR-3 logger, initializing a default single-file channel if needed.
          */
         private static function logger(): LoggerInterface
