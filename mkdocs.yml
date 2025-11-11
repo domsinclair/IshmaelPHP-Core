@@ -66,7 +66,6 @@ nav:
       - Using Schema Manager Safely: guide/using-schema-manager-safely.md
       - Using the Minimal Model: guide/using-the-minimal-model.md
       - Writing and running migrations: guide/writing-and-running-migrations.md
-      - Posts Example Module: guide/posts-example.md
       - Blog Tutorial:
           - Part 1: guide/blog-part-1-bootstrap.md
           - Part 2: guide/blog-part-2-schema-migrations-seeds.md
@@ -97,9 +96,14 @@ nav:
       - Use Request IDs in Logs: how-to/use-request-ids.md
       - Implement a new Adapter: how-to/implement-a-new-adapter.md
       - Run migrations and seeds without the CLI: how-to/run-migrations-and-seeds-without-cli.md
+
   - Explanations:
       - Request & Response: concepts/request-response.md
       - Module Discovery: concepts/module-discovery.md
+  - Database:
+      - Configuring the Database: database/configuring.md
+      - Defining Tables and Models: database/models-and-tables.md
+      - Soft Deletion: database/soft-deletion.md
   - Reference:
       - Config Keys: reference/config-keys.md
       - Logging: reference/logging.md
