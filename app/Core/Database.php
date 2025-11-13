@@ -80,6 +80,19 @@
         }
 
         /**
+         * Test helper: directly initialize the active adapter and underlying PDO connection.
+         * Useful for unit tests that spin up an in-memory SQLite database without full config.
+         */
+        public static function initAdapter(DatabaseAdapterInterface $adapter): void
+        {
+            // Reset any previous state first
+            self::reset();
+            self::$adapter = $adapter;
+            // Best-effort: try to obtain PDO connection if the adapter exposes it via connect() already used by caller.
+            // We cannot portably fetch PDO from the adapter, so leave self::$connection null; adapter() is the source of truth.
+        }
+
+        /**
          * Reset the static Database state, disconnecting any active adapter and clearing
          * the stored PDO connection. Safe to call multiple times. Intended primarily for tests.
          */

@@ -416,6 +416,76 @@ final class SchemaManager
             } catch (\Throwable) {
                 // Be conservative: schema building should not fail due to soft delete inspection
             }
+
+            // If the model is auditable, ensure created_at/updated_at and optional created_by/updated_by exist.
+            try {
+                $audit = null;
+                if (class_exists(\Ishmael\Core\Attributes\Auditable::class)) {
+                    $ref = new \ReflectionClass($class);
+                    $attrs = $ref->getAttributes(\Ishmael\Core\Attributes\Auditable::class);
+                    if ($attrs !== []) {
+                        /** @var \Ishmael\Core\Attributes\Auditable $inst */
+                        $inst = $attrs[0]->newInstance();
+                        $audit = [
+                            'timestamps' => (bool)$inst->timestamps,
+                            'userAttribution' => (bool)$inst->userAttribution,
+                            'createdByColumn' => (string)$inst->createdByColumn,
+                            'updatedByColumn' => (string)$inst->updatedByColumn,
+                        ];
+                    }
+                }
+                // Allow global config to enable timestamps even without attribute
+                if ($audit === null) {
+                    try {
+                        $cfg = function_exists('config') ? (array)(\config('database.audit') ?? []) : [];
+                        if ($cfg !== []) {
+                            $audit = [
+                                'timestamps' => (bool)($cfg['timestamps'] ?? true),
+                                'userAttribution' => (bool)($cfg['userAttribution'] ?? false),
+                                'createdByColumn' => (string)($cfg['createdByColumn'] ?? 'created_by'),
+                                'updatedByColumn' => (string)($cfg['updatedByColumn'] ?? 'updated_by'),
+                            ];
+                        }
+                    } catch (\Throwable) { /* ignore */ }
+                }
+
+                if (is_array($audit)) {
+                    if (!empty($audit['timestamps'])) {
+                        $hasCreated = false; $hasUpdated = false;
+                        foreach ($td->columns as $c) {
+                            $name = $c instanceof ColumnDefinition ? $c->name : (string)($c['name'] ?? '');
+                            $lname = strtolower($name);
+                            if ($lname === 'created_at') { $hasCreated = true; }
+                            if ($lname === 'updated_at') { $hasUpdated = true; }
+                        }
+                        if (!$hasCreated) {
+                            $td->columns[] = new ColumnDefinition(name: 'created_at', type: 'DATETIME', nullable: false);
+                        }
+                        if (!$hasUpdated) {
+                            $td->columns[] = new ColumnDefinition(name: 'updated_at', type: 'DATETIME', nullable: false);
+                        }
+                    }
+                    if (!empty($audit['userAttribution'])) {
+                        $cb = (string)$audit['createdByColumn'];
+                        $ub = (string)$audit['updatedByColumn'];
+                        $hasCb = false; $hasUb = false;
+                        foreach ($td->columns as $c) {
+                            $name = $c instanceof ColumnDefinition ? $c->name : (string)($c['name'] ?? '');
+                            $lname = strtolower($name);
+                            if ($lname === strtolower($cb)) { $hasCb = true; }
+                            if ($lname === strtolower($ub)) { $hasUb = true; }
+                        }
+                        if (!$hasCb) {
+                            $td->columns[] = new ColumnDefinition(name: $cb, type: 'INTEGER', nullable: true);
+                        }
+                        if (!$hasUb) {
+                            $td->columns[] = new ColumnDefinition(name: $ub, type: 'INTEGER', nullable: true);
+                        }
+                    }
+                }
+            } catch (\Throwable) {
+                // Do not fail schema collection due to audit reflection/config
+            }
             $defs[] = $td;
         }
         return $defs;

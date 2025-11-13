@@ -46,6 +46,87 @@ abstract class Model
     protected static ?string $nextScope = null;
 
     /**
+     * Generate a UTC timestamp string with microsecond precision.
+     * Using microseconds guarantees two adjacent operations in the same second
+     * still yield distinct values (important for fast unit tests on SQLite).
+     */
+    protected static function nowTimestamp(): string
+    {
+        try {
+            $dt = new \DateTimeImmutable('now');
+            $dt = $dt->setTimezone(new \DateTimeZone('UTC'));
+            return $dt->format('Y-m-d H:i:s.u');
+        } catch (\Throwable) {
+            // Extremely defensive fallback
+            return gmdate('Y-m-d H:i:s.u');
+        }
+    }
+
+    /**
+     * Determine whether this model is auditable and the options in effect.
+     * Options keys:
+     *  - timestamps: bool
+     *  - userAttribution: bool
+     *  - createdByColumn: string
+     *  - updatedByColumn: string
+     *
+     * Resolution order:
+     * 1) #[\Ishmael\Core\Attributes\Auditable(...)] attribute on the model class, if present
+     * 2) Global config defaults (database.audit.*), when config() is available
+     * 3) Built-in defaults (timestamps=true, userAttribution=false)
+     *
+     * @return array{timestamps:bool,userAttribution:bool,createdByColumn:string,updatedByColumn:string}
+     */
+    protected static function auditingOptions(): array
+    {
+        $defaults = [
+            'timestamps' => true,
+            'userAttribution' => false,
+            'createdByColumn' => 'created_by',
+            'updatedByColumn' => 'updated_by',
+        ];
+
+        // Attribute override if present
+        try {
+            if (class_exists(\Ishmael\Core\Attributes\Auditable::class)) {
+                $ref = new \ReflectionClass(static::class);
+                $attrs = $ref->getAttributes(\Ishmael\Core\Attributes\Auditable::class);
+                if ($attrs !== []) {
+                    /** @var \Ishmael\Core\Attributes\Auditable $inst */
+                    $inst = $attrs[0]->newInstance();
+                    $defaults['timestamps'] = (bool)$inst->timestamps;
+                    $defaults['userAttribution'] = (bool)$inst->userAttribution;
+                    $defaults['createdByColumn'] = (string)$inst->createdByColumn;
+                    $defaults['updatedByColumn'] = (string)$inst->updatedByColumn;
+                }
+            }
+        } catch (\Throwable) {
+            // Ignore reflection issues; fall back to config/defaults
+        }
+
+        // Config fallback (allows global enabling without attribute)
+        try {
+            $cfg = function_exists('config') ? (array)(\config('database.audit') ?? []) : [];
+            if ($cfg !== []) {
+                foreach (['timestamps','userAttribution','createdByColumn','updatedByColumn'] as $k) {
+                    if (array_key_exists($k, $cfg) && $cfg[$k] !== null && $cfg[$k] !== '') {
+                        $defaults[$k] = $cfg[$k];
+                    }
+                }
+            }
+        } catch (\Throwable) {
+            // config() may not exist; ignore
+        }
+
+        return [
+            'timestamps' => (bool)$defaults['timestamps'],
+            'userAttribution' => (bool)$defaults['userAttribution'],
+            'createdByColumn' => (string)$defaults['createdByColumn'],
+            'updatedByColumn' => (string)$defaults['updatedByColumn'],
+        ];
+    }
+
+    /**
      * Optional model-declared schema metadata.
      *
      * When provided, SchemaManager may use it to create or validate tables.
@@ -127,6 +208,29 @@ abstract class Model
             throw new \InvalidArgumentException('Insert data must not be empty.');
         }
 
+        // Auditing: timestamps and optional user attribution
+        $audit = static::auditingOptions();
+        if ($audit['timestamps']) {
+            $now = static::nowTimestamp();
+            if (!array_key_exists('created_at', $data)) {
+                $data['created_at'] = $now;
+            }
+            if (!array_key_exists('updated_at', $data)) {
+                $data['updated_at'] = $now;
+            }
+        }
+        if ($audit['userAttribution'] && class_exists(\Ishmael\Core\Auth\AuthContext::class)) {
+            try {
+                $uid = \Ishmael\Core\Auth\AuthContext::getCurrentUserId();
+            } catch (\Throwable) { $uid = null; }
+            if ($uid !== null && $uid !== '') {
+                $cb = $audit['createdByColumn'];
+                $ub = $audit['updatedByColumn'];
+                if (!array_key_exists($cb, $data)) { $data[$cb] = $uid; }
+                if (!array_key_exists($ub, $data)) { $data[$ub] = $uid; }
+            }
+        }
+
         $columns = array_keys($data);
         foreach ($columns as $col) {
             if (!is_string($col) || $col === '') {
@@ -161,6 +265,20 @@ abstract class Model
             throw new \InvalidArgumentException('Update data must not be empty.');
         }
 
+        // Auditing: auto-update updated_at and optional updated_by
+        $audit = static::auditingOptions();
+        if ($audit['timestamps'] && !array_key_exists('updated_at', $data)) {
+            $data['updated_at'] = static::nowTimestamp();
+        }
+        if ($audit['userAttribution'] && !array_key_exists($audit['updatedByColumn'], $data) && class_exists(\Ishmael\Core\Auth\AuthContext::class)) {
+            try {
+                $uid = \Ishmael\Core\Auth\AuthContext::getCurrentUserId();
+            } catch (\Throwable) { $uid = null; }
+            if ($uid !== null && $uid !== '') {
+                $data[$audit['updatedByColumn']] = $uid;
+            }
+        }
+
         $sets = [];
         $params = [];
         foreach ($data as $col => $val) {
@@ -188,10 +306,14 @@ abstract class Model
         $adapter = self::adapter();
         $table = static::requireTable();
         if (static::usesSoftDeletes()) {
-            $now = (new \DateTimeImmutable('now'))
-                ->setTimezone(new \DateTimeZone('UTC'))
-                ->format('Y-m-d H:i:s');
-            $sql = "UPDATE {$table} SET deleted_at = :now WHERE id = :id";
+            $now = static::nowTimestamp();
+            // Also update updated_at when auditable timestamps are enabled
+            $audit = static::auditingOptions();
+            if ($audit['timestamps']) {
+                $sql = "UPDATE {$table} SET deleted_at = :now, updated_at = :now WHERE id = :id";
+            } else {
+                $sql = "UPDATE {$table} SET deleted_at = :now WHERE id = :id";
+            }
             return $adapter->execute($sql, ['id' => $id, 'now' => $now]);
         }
         $sql = "DELETE FROM {$table} WHERE id = :id";
