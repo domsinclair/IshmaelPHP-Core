@@ -22,6 +22,7 @@
 - `alterColumn(string $table, Ishmael\Core\Database\Schema\ColumnDefinition $def)`
 - `dropColumn(string $table, string $column)`
 - `addIndex(string $table, Ishmael\Core\Database\Schema\IndexDefinition $def)`
+- `addForeignKey(string $table, Ishmael\Core\Database\Schema\ForeignKeyDefinition $def)`
 - `dropIndex(string $table, string $name)`
 - `tableExists(string $table)`
 - `columnExists(string $table, string $column)`

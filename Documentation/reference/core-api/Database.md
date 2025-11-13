@@ -8,6 +8,7 @@
 - `init(array $config)`
 - `conn()`
 - `adapter()`
+- `initAdapter(Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface $adapter)`
 - `reset()`
 - `transaction(callable $fn)`
 - `retryTransaction(int $attempts, int $sleepMs, callable $fn)`

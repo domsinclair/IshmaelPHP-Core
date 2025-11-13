@@ -19,8 +19,16 @@ Added a feature that allows Modules to be differentiated between Production, Dev
 
 Added a simple means to cleanse the storage olders.  The main benefit of this will be felt in production.
 
+Added Foreign Key, Auditing and Index support.
 
-Expect to see improvements in the database adapters and model creators so that proper foreign key relations and indexes are supported.
+Seeding improved and a new reset sytem implemented to remove fake data used for testing.
+
+Still to come: 
+
+An event Bus
+
+A development only Realistic Fake Data creation module.
+
 
 There should be a query builder, possibly even a visual query builder.
 

@@ -11,3 +11,8 @@
 - `insert(array $data)`
 - `update(mixed $id, array $data)`
 - `delete(mixed $id)`
+- `withDeleted()`
+- `onlyDeleted()`
+- `restore(mixed $id)`
+- `forceDelete(mixed $id)`
+- `usesSoftDeletes()`
