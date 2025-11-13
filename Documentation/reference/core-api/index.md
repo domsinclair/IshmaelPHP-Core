@@ -52,6 +52,7 @@ The following symbols were discovered under `IshmaelPHP-Core/app/` and summarize
 - [MonologChannel](./MonologChannel.md)
 - [MySQLAdapter](./MySQLAdapter.md)
 - [NullChannel](./NullChannel.md)
+- [Packer](./Packer.md)
 - [PhpPasswordHasher](./PhpPasswordHasher.md)
 - [PostgresAdapter](./PostgresAdapter.md)
 - [ProcessorInterface](./ProcessorInterface.md)
