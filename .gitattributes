@@ -1,0 +1,6 @@
+# Do not include these in Composer/zip exports
+/tools export-ignore
+/Docs export-ignore
+/Documentation export-ignore
+/tests export-ignore
+/.github export-ignore
