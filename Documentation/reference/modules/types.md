@@ -159,5 +159,5 @@ Security posture
 
 See also
 
-- Phase 11 overview and packer examples: Docs/Phase-11-Environment-Aware-Modules-and-Packer.md
-- CLI reference for packer: Documentation/reference/cli-pack.md
+- Packer CLI: ../cli-pack.md
+- Security and Policies: ../security-policies.md

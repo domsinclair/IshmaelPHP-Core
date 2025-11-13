@@ -6,5 +6,7 @@ This section documents how modules are discovered and how to structure manifests
 - Module Schema Metadata (preview): [modules/schema.md](modules/schema.md)
 - Module Lifecycle Hooks (preview): [modules/hooks.md](modules/hooks.md)
 - CLI packer to build bundles: [../cli-pack.md](../cli-pack.md)
+- Security and Policies (production packaging): [../security-policies.md](../security-policies.md)
+ - Quick Start — Modules and Packer: [../guide/quick-start-modules-and-packer.md](../guide/quick-start-modules-and-packer.md)
 
 Auto-generated summaries of installed modules and routes may appear here in future iterations.
