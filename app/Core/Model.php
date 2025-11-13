@@ -23,6 +23,29 @@ abstract class Model
     protected static string $table;
 
     /**
+     * Opt-in soft delete toggle for this model.
+     *
+     * When true, delete() will set a deleted_at timestamp instead of removing the row,
+     * and all read queries will, by default, exclude rows where deleted_at is not null.
+     *
+     * You can override the default behavior per-query using withDeleted() and onlyDeleted().
+     *
+     * Models may set this to true to enable soft deletes. If left unset, a global default may
+     * be applied via config('database.soft_deletes.default', false).
+     */
+    protected static bool $softDeletes = false;
+
+    /**
+     * One-shot scope override for the next read query.
+     * Values: null (default scope), 'with' (include deleted), 'only' (only deleted)
+     * Reset to null after each read operation.
+     *
+     * This is static to be scoped per concrete Model class via late static binding.
+     * @var string|null
+     */
+    protected static ?string $nextScope = null;
+
+    /**
      * Optional model-declared schema metadata.
      *
      * When provided, SchemaManager may use it to create or validate tables.
@@ -45,9 +68,11 @@ abstract class Model
     {
         $adapter = self::adapter();
         $table = static::requireTable();
+        [$scopeSql, $scopeParams] = static::scopeWhereSql();
 
-        $sql = "SELECT * FROM {$table} WHERE id = :id LIMIT 1";
-        $result = $adapter->query($sql, ['id' => $id]);
+        $sql = "SELECT * FROM {$table} WHERE id = :id" . $scopeSql . " LIMIT 1";
+        $params = array_merge(['id' => $id], $scopeParams);
+        $result = $adapter->query($sql, $params);
         $row = $result->fetch();
         return $row === false ? null : $row;
     }
@@ -63,10 +88,12 @@ abstract class Model
         $adapter = self::adapter();
         $table = static::requireTable();
 
+        [$scopeSql, $scopeParams] = static::scopeWhereSql();
+
         if ($where === []) {
-            // No where: return all rows; stays explicit and unsurprising.
-            $sql = "SELECT * FROM {$table}";
-            return $adapter->query($sql, [])->fetchAll();
+            // No where: return all rows (respect soft delete scope if enabled)
+            $sql = "SELECT * FROM {$table}" . ($scopeSql !== '' ? " WHERE 1=1{$scopeSql}" : '');
+            return $adapter->query($sql, $scopeParams)->fetchAll();
         }
 
         $clauses = [];
@@ -80,8 +107,9 @@ abstract class Model
             $params[$param] = $val;
         }
 
-        $sql = "SELECT * FROM {$table} WHERE " . implode(' AND ', $clauses);
-        return $adapter->query($sql, $params)->fetchAll();
+        $sql = "SELECT * FROM {$table} WHERE " . implode(' AND ', $clauses) . $scopeSql;
+        $allParams = array_merge($params, $scopeParams);
+        return $adapter->query($sql, $allParams)->fetchAll();
     }
 
     /**
@@ -159,6 +187,13 @@ abstract class Model
     {
         $adapter = self::adapter();
         $table = static::requireTable();
+        if (static::usesSoftDeletes()) {
+            $now = (new \DateTimeImmutable('now'))
+                ->setTimezone(new \DateTimeZone('UTC'))
+                ->format('Y-m-d H:i:s');
+            $sql = "UPDATE {$table} SET deleted_at = :now WHERE id = :id";
+            return $adapter->execute($sql, ['id' => $id, 'now' => $now]);
+        }
         $sql = "DELETE FROM {$table} WHERE id = :id";
         return $adapter->execute($sql, ['id' => $id]);
     }
@@ -200,5 +235,92 @@ abstract class Model
             $i++;
         }
         return $name;
+    }
+
+    /**
+     * Enable inclusion of soft-deleted rows for the next read query on this model.
+     *
+     * Usage: Post::withDeleted()::findBy([...]);
+     */
+    public static function withDeleted(): static
+    {
+        static::$nextScope = 'with';
+        return new static(); // return a dummy instance to allow chaining ::withDeleted()::findBy()
+    }
+
+    /**
+     * Restrict the next read query to only soft-deleted rows.
+     */
+    public static function onlyDeleted(): static
+    {
+        static::$nextScope = 'only';
+        return new static();
+    }
+
+    /**
+     * Restore a soft-deleted row back to active (sets deleted_at to NULL).
+     */
+    public static function restore(int|string $id): int
+    {
+        if (!static::usesSoftDeletes()) {
+            return 0;
+        }
+        $adapter = self::adapter();
+        $table = static::requireTable();
+        $sql = "UPDATE {$table} SET deleted_at = NULL WHERE id = :id";
+        return $adapter->execute($sql, ['id' => $id]);
+    }
+
+    /**
+     * Permanently remove a row, bypassing soft deletes.
+     */
+    public static function forceDelete(int|string $id): int
+    {
+        $adapter = self::adapter();
+        $table = static::requireTable();
+        $sql = "DELETE FROM {$table} WHERE id = :id";
+        return $adapter->execute($sql, ['id' => $id]);
+    }
+
+    /**
+     * Determine if this model uses soft deletes, based on the static toggle or global config default.
+     */
+    public static function usesSoftDeletes(): bool
+    {
+        $flag = static::$softDeletes ?? false;
+        if ($flag === false) {
+            // Allow global opt-in default via config; model can still explicitly enable.
+            try {
+                $flag = (bool) (\config('database.soft_deletes.default') ?? false);
+            } catch (\Throwable) {
+                // config() may not be available in some contexts
+            }
+        }
+        return (bool)$flag;
+    }
+
+    /**
+     * Build an additional WHERE SQL snippet and parameters for the current soft-delete scope.
+     * Returns array: [sql, params]
+     * - sql includes leading ' AND ...' to be appended to existing WHERE or empty if no condition.
+     */
+    protected static function scopeWhereSql(): array
+    {
+        $scope = static::$nextScope;
+        // reset after read consumption
+        static::$nextScope = null;
+
+        if (!static::usesSoftDeletes()) {
+            return ['', []];
+        }
+
+        // default: exclude deleted rows
+        if ($scope === 'with') {
+            return ['', []];
+        }
+        if ($scope === 'only') {
+            return [' AND deleted_at IS NOT NULL', []];
+        }
+        return [' AND deleted_at IS NULL', []];
     }
 }

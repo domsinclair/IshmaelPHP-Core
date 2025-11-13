@@ -387,6 +387,35 @@ final class SchemaManager
             if ($tableName !== '') {
                 $td->name = $tableName;
             }
+
+            // If the model opts into soft deletes (either via static flag or config default),
+            // ensure a conventional nullable deleted_at column exists in the TableDefinition.
+            try {
+                if (method_exists($class, 'usesSoftDeletes') && $class::usesSoftDeletes()) {
+                    $hasDeletedAt = false;
+                    foreach ($td->columns as $c) {
+                        if ($c instanceof ColumnDefinition && strtolower($c->name) === 'deleted_at') {
+                            $hasDeletedAt = true;
+                            break;
+                        }
+                        if (is_array($c) && strtolower((string)($c['name'] ?? '')) === 'deleted_at') {
+                            $hasDeletedAt = true;
+                            break;
+                        }
+                    }
+                    if (!$hasDeletedAt) {
+                        $td->columns[] = new ColumnDefinition(
+                            name: 'deleted_at',
+                            type: 'DATETIME',
+                            nullable: true,
+                            default: null,
+                        );
+                        // Optionally, an index could be added in future; keep minimal for now.
+                    }
+                }
+            } catch (\Throwable) {
+                // Be conservative: schema building should not fail due to soft delete inspection
+            }
             $defs[] = $td;
         }
         return $defs;
