@@ -104,6 +104,7 @@ nav:
       - Configuring the Database: database/configuring.md
       - Defining Tables and Models: database/models-and-tables.md
       - Soft Deletion: database/soft-deletion.md
+      - "Phase 12: Database Additions": database/phase-12-database-additions.md
   - Reference:
       - Glossary: reference/glossary.md
       - Config Keys: reference/config-keys.md

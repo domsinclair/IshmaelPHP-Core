@@ -32,6 +32,7 @@ class DummyAdapter implements DatabaseAdapterInterface
     public function dropColumn(string $table, string $column): void { throw new \LogicException('not implemented'); }
     public function addIndex(string $table, IndexDefinition $def): void { /* no-op */ }
     public function dropIndex(string $table, string $name): void { /* no-op */ }
+    public function addForeignKey(string $table, \Ishmael\Core\Database\Schema\ForeignKeyDefinition $def): void { /* no-op */ }
     public function tableExists(string $table): bool { $s = $this->pdo->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = :n"); $s->execute([':n' => $table]); return (bool)$s->fetch(); }
     public function columnExists(string $table, string $column): bool { $s = $this->pdo->query('PRAGMA table_info(' . $table . ')'); foreach ($s->fetchAll() as $r) { if ($r['name'] === $column) return true; } return false; }
     public function getTableDefinition(string $table): TableDefinition { return new TableDefinition($table); }

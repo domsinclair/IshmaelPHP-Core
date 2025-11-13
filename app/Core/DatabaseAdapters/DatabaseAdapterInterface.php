@@ -8,6 +8,7 @@
     use Ishmael\Core\Database\Schema\TableDefinition;
     use Ishmael\Core\Database\Schema\ColumnDefinition;
     use Ishmael\Core\Database\Schema\IndexDefinition;
+    use Ishmael\Core\Database\Schema\ForeignKeyDefinition;
 
     interface DatabaseAdapterInterface
     {
@@ -148,6 +149,15 @@
          * @param IndexDefinition $def Index definition.
          */
         public function addIndex(string $table, IndexDefinition $def): void;
+
+        /**
+         * Add a foreign key constraint to an existing table, when supported.
+         * Implementations may throw if the engine requires table rebuilds for this operation.
+         *
+         * @param string $table Table name.
+         * @param ForeignKeyDefinition $def Foreign key definition.
+         */
+        public function addForeignKey(string $table, ForeignKeyDefinition $def): void;
 
         /**
          * Drop an index by its name.

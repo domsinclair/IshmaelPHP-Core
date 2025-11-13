@@ -8,6 +8,7 @@ use Ishmael\Core\Database\Schema\TableDefinition;
 use Ishmael\Core\Database\Schema\ColumnDefinition;
 use Ishmael\Core\Database\Schema\IndexDefinition;
 use Ishmael\Core\Database\Schema\SchemaDiff;
+use Ishmael\Core\Database\Schema\ForeignKeyDefinition;
 use Ishmael\Core\Logger;
 use Psr\Log\LoggerInterface;
 
@@ -304,7 +305,20 @@ final class SchemaManager
                 extras: (array)($i['extras'] ?? []),
             );
         }
-        return new TableDefinition($name, $columns, $indexes, (array)($arr['extras'] ?? []));
+        $foreignKeys = [];
+        foreach ((array)($arr['foreignKeys'] ?? []) as $f) {
+            if ($f instanceof ForeignKeyDefinition) { $foreignKeys[] = $f; continue; }
+            $foreignKeys[] = new ForeignKeyDefinition(
+                name: (string)($f['name'] ?? ''),
+                columns: (array)($f['columns'] ?? []),
+                referencesTable: (string)($f['referencesTable'] ?? ''),
+                referencesColumns: (array)($f['referencesColumns'] ?? ['id']),
+                onDelete: isset($f['onDelete']) ? (string)$f['onDelete'] : null,
+                onUpdate: isset($f['onUpdate']) ? (string)$f['onUpdate'] : null,
+                extras: (array)($f['extras'] ?? []),
+            );
+        }
+        return new TableDefinition($name, $columns, $indexes, $foreignKeys, (array)($arr['extras'] ?? []));
     }
 
     private function resolveLogger(): LoggerInterface

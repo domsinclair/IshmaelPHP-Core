@@ -146,6 +146,16 @@
             if ($primary !== null) {
                 $cols[] = 'PRIMARY KEY (' . $this->quoteIdent($primary) . ')';
             }
+            // Append foreign key constraints
+            foreach ($def->foreignKeys as $fk) {
+                if (!$fk instanceof \Ishmael\Core\Database\Schema\ForeignKeyDefinition) { continue; }
+                $local = '(' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->columns)) . ')';
+                $ref = $this->quoteIdent($fk->referencesTable) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns)) . ')';
+                $seg = 'FOREIGN KEY ' . $local . ' REFERENCES ' . $ref;
+                if ($fk->onDelete) { $seg .= ' ON DELETE ' . strtoupper($fk->onDelete); }
+                if ($fk->onUpdate) { $seg .= ' ON UPDATE ' . strtoupper($fk->onUpdate); }
+                $cols[] = $seg;
+            }
             $sql = 'CREATE TABLE ' . $this->quoteIdent($def->name) . ' (' . implode(', ', $cols) . ')';
             $this->runSql($sql);
 
@@ -206,6 +216,11 @@
         }
         public function dropIndex(string $table, string $name): void
         { $this->runSql('DROP INDEX IF EXISTS ' . $this->quoteIdent($name)); }
+        public function addForeignKey(string $table, \Ishmael\Core\Database\Schema\ForeignKeyDefinition $def): void
+        {
+            // Adding FKs post-creation can require access exclusive locks; keep conservative for now.
+            throw new \LogicException('Adding foreign keys post-creation requires an explicit migration in Postgres.');
+        }
         public function tableExists(string $table): bool
         { $stmt = $this->requirePdo()->prepare("SELECT to_regclass(:t) AS t"); $stmt->execute([':t'=>$table]); $row=$stmt->fetch(); return !empty($row['t']); }
         public function columnExists(string $table, string $column): bool

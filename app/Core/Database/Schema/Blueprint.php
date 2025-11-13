@@ -20,6 +20,8 @@ final class Blueprint
     private array $columns = [];
     /** @var IndexDefinition[] */
     private array $indexes = [];
+    /** @var ForeignKeyDefinition[] */
+    private array $foreignKeys = [];
 
     /**
      * @param string $table Table name this blueprint targets.
@@ -124,10 +126,58 @@ final class Blueprint
     }
 
     /**
+     * Define a foreign key on one or more columns.
+     *
+     * Example:
+     *   $bp->foreignKey('user_id', 'users', 'id', onDelete: 'cascade');
+     *
+     * @param string|array $columns Local column name(s).
+     * @param string $referencesTable Referenced table name.
+     * @param string|array $referencesColumns Referenced column name(s). Defaults to 'id'.
+     * @param string|null $name Optional constraint name. If omitted, a deterministic name is generated.
+     * @param string|null $onDelete Action on delete (cascade|restrict|set null|no action) when supported.
+     * @param string|null $onUpdate Action on update when supported.
+     * @return $this Fluent builder.
+     */
+    public function foreignKey(string|array $columns, string $referencesTable, string|array $referencesColumns = 'id', ?string $name = null, ?string $onDelete = null, ?string $onUpdate = null): self
+    {
+        $localCols = is_array($columns) ? $columns : [$columns];
+        $refCols = is_array($referencesColumns) ? $referencesColumns : [$referencesColumns];
+        $constraintName = $name ?? ('fk_' . $this->table . '_' . implode('_', $localCols) . '__' . $referencesTable . '_' . implode('_', $refCols));
+        $this->foreignKeys[] = new ForeignKeyDefinition(
+            name: $constraintName,
+            columns: $localCols,
+            referencesTable: $referencesTable,
+            referencesColumns: $refCols,
+            onDelete: $onDelete,
+            onUpdate: $onUpdate,
+        );
+        return $this;
+    }
+
+    /**
+     * Convenience: add a nullable/non-nullable integer column and a foreign key to another table's id.
+     *
+     * @param string $name Local column name (e.g., user_id).
+     * @param string $referencesTable Referenced table (e.g., users).
+     * @param bool $nullable Whether the FK column allows NULL.
+     * @param string $type Column type (adapter maps appropriately). Defaults to INTEGER.
+     * @param string $referencesColumn Referenced column (default 'id').
+     * @param string|null $onDelete Action on delete.
+     * @param string|null $onUpdate Action on update.
+     * @return $this
+     */
+    public function foreignId(string $name, string $referencesTable, bool $nullable = false, string $type = 'INTEGER', string $referencesColumn = 'id', ?string $onDelete = null, ?string $onUpdate = null): self
+    {
+        $this->columns[] = new ColumnDefinition($name, $type, nullable: $nullable);
+        return $this->foreignKey($name, $referencesTable, $referencesColumn, null, $onDelete, $onUpdate);
+    }
+
+    /**
      * Convert to a TableDefinition for adapter consumption.
      */
     public function toTableDefinition(): TableDefinition
     {
-        return new TableDefinition($this->table, $this->columns, $this->indexes);
+        return new TableDefinition($this->table, $this->columns, $this->indexes, $this->foreignKeys);
     }
 }

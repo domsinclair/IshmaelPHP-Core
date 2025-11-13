@@ -100,6 +100,16 @@
             if ($pk) {
                 $cols[] = 'PRIMARY KEY (' . $this->quoteIdent($pk) . ')';
             }
+            // Append foreign key constraints
+            foreach ($def->foreignKeys as $fk) {
+                if (!$fk instanceof \Ishmael\Core\Database\Schema\ForeignKeyDefinition) { continue; }
+                $local = '(' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->columns)) . ')';
+                $ref = $this->quoteIdent($fk->referencesTable) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns)) . ')';
+                $seg = 'FOREIGN KEY ' . $local . ' REFERENCES ' . $ref;
+                if ($fk->onDelete) { $seg .= ' ON DELETE ' . strtoupper($fk->onDelete); }
+                if ($fk->onUpdate) { $seg .= ' ON UPDATE ' . strtoupper($fk->onUpdate); }
+                $cols[] = $seg;
+            }
             $sql = 'CREATE TABLE ' . $this->quoteIdent($def->name) . ' (' . implode(', ', $cols) . ') ENGINE=InnoDB DEFAULT CHARSET=utf8mb4';
             $this->runSql($sql);
         }
@@ -133,6 +143,11 @@
         }
         public function dropIndex(string $table, string $name): void
         { $this->runSql('DROP INDEX ' . $this->quoteIdent($name) . ' ON ' . $this->quoteIdent($table)); }
+        public function addForeignKey(string $table, \Ishmael\Core\Database\Schema\ForeignKeyDefinition $def): void
+        {
+            // For safety in this phase, require explicit migrations for adding FKs after table creation.
+            throw new \LogicException('Adding foreign keys post-creation requires an explicit migration in MySQL.');
+        }
         public function tableExists(string $table): bool
         { $stmt = $this->requirePdo()->prepare('SHOW TABLES LIKE :t'); $stmt->execute([':t'=>$table]); return (bool)$stmt->fetch(); }
         public function columnExists(string $table, string $column): bool

@@ -154,8 +154,25 @@
                 }
                 $cols[] = $col;
             }
+            // Foreign keys (constraints) appended at end of CREATE TABLE
+            foreach ($def->foreignKeys as $fk) {
+                if (!$fk instanceof \Ishmael\Core\Database\Schema\ForeignKeyDefinition) { continue; }
+                $local = '(' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->columns)) . ')';
+                $ref = $this->quoteIdent($fk->referencesTable) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns)) . ')';
+                $segment = 'FOREIGN KEY ' . $local . ' REFERENCES ' . $ref;
+                if ($fk->onDelete) { $segment .= ' ON DELETE ' . strtoupper($fk->onDelete); }
+                if ($fk->onUpdate) { $segment .= ' ON UPDATE ' . strtoupper($fk->onUpdate); }
+                $cols[] = $segment;
+            }
             $sql = 'CREATE TABLE ' . $this->quoteIdent($def->name) . ' (' . implode(', ', $cols) . ')';
             $this->runSql($sql);
+
+            // Create non-primary indexes after table creation
+            foreach ($def->indexes as $idx) {
+                if (!$idx instanceof IndexDefinition) { continue; }
+                if (strtolower($idx->type) === 'primary') { continue; }
+                $this->addIndex($def->name, $idx);
+            }
         }
 
         public function dropTable(string $table): void
@@ -209,6 +226,12 @@
         public function dropIndex(string $table, string $name): void
         {
             $this->runSql('DROP INDEX IF EXISTS ' . $this->quoteIdent($name));
+        }
+
+        public function addForeignKey(string $table, \Ishmael\Core\Database\Schema\ForeignKeyDefinition $def): void
+        {
+            // SQLite generally requires table rebuilds to add FKs post-creation; be explicit.
+            throw new \LogicException('SQLite cannot add foreign keys to existing tables without rebuild. Define FKs at table creation.');
         }
 
         public function tableExists(string $table): bool
