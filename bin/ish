@@ -23,6 +23,7 @@ declare(strict_types=1);
 use Ishmael\Core\Database;
 use Ishmael\Core\Database\Migrations\Migrator;
 use Ishmael\Core\Database\Seeding\SeedManager;
+use Ishmael\Core\ModuleManager;
 
 /**
  * Locate the Composer autoloader.
@@ -416,6 +417,33 @@ function cliCommandRegistry(): array
                 ['name' => '--force', 'description' => 'Overwrite existing APP_KEY'],
             ],
         ],
+        [
+            'name' => 'pack',
+            'description' => 'Build an environment-specific deployment bundle (Phase 11 Packer).',
+            'options' => [
+                ['name' => '--env', 'description' => 'Environment: production|development|testing', 'accepts' => 'ENV'],
+                ['name' => '--include-dev', 'description' => 'Include development modules even in production'],
+                ['name' => '--target', 'description' => 'Target: webhost|container', 'accepts' => 'TARGET'],
+                ['name' => '--out', 'description' => 'Output directory (default: ./dist)', 'accepts' => 'PATH'],
+                ['name' => '--dry-run', 'description' => 'Do not copy files; print bundle plan'],
+            ],
+        ],
+        [
+            'name' => 'route:cache',
+            'description' => 'Compile and cache application routes (stub spec for Phase 11).',
+            'options' => [
+                ['name' => '--out', 'description' => 'Output cache file (default: ./storage/cache/routes.cache.php)', 'accepts' => 'PATH'],
+                ['name' => '--modules', 'description' => 'Modules root (default: ./Modules)', 'accepts' => 'PATH'],
+                ['name' => '--env', 'description' => 'Environment for module filtering', 'accepts' => 'ENV'],
+            ],
+        ],
+        [
+            'name' => 'route:clear',
+            'description' => 'Delete the compiled routes cache file (stub).',
+            'options' => [
+                ['name' => '--file', 'description' => 'Cache file path (default: ./storage/cache/routes.cache.php)', 'accepts' => 'PATH'],
+            ],
+        ],
     ];
 }
 
@@ -486,9 +514,14 @@ Usage:
   ish migrate:rollback [--module=Name] [--steps=N]
   ish status [--module=Name]
   ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV]
+  ish modules:cache [--env=production|development|testing] [--allow-dev] [--modules=PATH] [--cache=PATH]
+  ish modules:clear [--cache=PATH]
+  ish route:cache [--out=PATH] [--modules=PATH] [--env=ENV]
+  ish route:clear [--file=PATH]
   ish examples:list
   ish examples:install <ModuleName> [--force] [--path=Modules]
   ish examples:install --all [--force] [--path=Modules]
+  ish pack --env=production [--include-dev] [--target=webhost|container] [--out=./dist] [--dry-run]
 
 Options:
   --config=PATH      Path to database config (defaults to <appRoot>/config/database.php)
@@ -661,6 +694,71 @@ TXT;
             exit(0);
         }
 
+        case 'modules:cache': {
+            $modulesDir = isset($options['modules']) ? (string)$options['modules'] : ($appRoot . DIRECTORY_SEPARATOR . 'Modules');
+            $env = isset($options['env']) ? (string)$options['env'] : ((getenv('APP_ENV') ?: 'development'));
+            $allowDev = isset($options['allow-dev']) ? true : ((bool)(getenv('ALLOW_DEV_MODULES') ?: false));
+            $cachePath = isset($options['cache']) ? (string)$options['cache'] : ($appRoot . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'modules.cache.json');
+            ensureDirectory(dirname($cachePath));
+            ModuleManager::discover($modulesDir, [
+                'appEnv' => $env,
+                'allowDevModules' => $allowDev,
+                'cachePath' => $cachePath,
+            ]);
+            ModuleManager::writeCache($cachePath);
+            echo 'Modules cache written to: ' . $cachePath . PHP_EOL;
+            exit(0);
+        }
+
+        case 'modules:clear': {
+            $cachePath = isset($options['cache']) ? (string)$options['cache'] : ($appRoot . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'modules.cache.json');
+            ModuleManager::clearCache($cachePath);
+            echo 'Modules cache cleared: ' . $cachePath . PHP_EOL;
+            exit(0);
+        }
+
+        case 'route:cache': {
+            // Stub implementation: discover modules and serialize a compact table from any array-based routes.
+            $modulesDir = isset($options['modules']) ? (string)$options['modules'] : ($appRoot . DIRECTORY_SEPARATOR . 'Modules');
+            $env = isset($options['env']) ? (string)$options['env'] : ((getenv('APP_ENV') ?: 'development'));
+            $outPath = isset($options['out']) ? (string)$options['out'] : ($appRoot . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'routes.cache.php');
+            ensureDirectory(dirname($outPath));
+
+            // Discover without executing closures. We will only serialize routes provided as arrays.
+            ModuleManager::discover($modulesDir, [
+                'appEnv' => $env,
+                'allowDevModules' => (bool)(getenv('ALLOW_DEV_MODULES') ?: false),
+            ]);
+
+            $compiled = [];
+            foreach (ModuleManager::$modules as $name => $mod) {
+                $routes = $mod['routes'] ?? [];
+                if (is_array($routes) && !empty($routes)) {
+                    foreach ($routes as $r) {
+                        if (is_array($r)) {
+                            $compiled[] = $r;
+                        }
+                    }
+                }
+            }
+
+            $php = "<?php\n/**\n * Fast-load route table (stub). Generated by `ish route:cache`.\n * This file may be extended in a future phase to include compiled closures.\n * @return array<int, array<string, mixed>>\n */\nreturn " . var_export($compiled, true) . ";\n";
+            writeFile($outPath, $php, true);
+            echo 'Routes cache written to: ' . $outPath . ' (entries: ' . count($compiled) . ')' . PHP_EOL;
+            exit(0);
+        }
+
+        case 'route:clear': {
+            $filePath = isset($options['file']) ? (string)$options['file'] : ($appRoot . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'routes.cache.php');
+            if (is_file($filePath)) {
+                @unlink($filePath);
+                echo 'Routes cache cleared: ' . $filePath . PHP_EOL;
+            } else {
+                echo 'No routes cache to clear at: ' . $filePath . PHP_EOL;
+            }
+            exit(0);
+        }
+
         case 'make:seeder': {
             $moduleArg = $argv[2] ?? '';
             $classArg = $argv[3] ?? '';
@@ -805,6 +903,31 @@ TXT;
                 throw new RuntimeException('Failed to write .env at ' . $envPath);
             }
             echo "Application key set successfully.\n";
+            exit(0);
+        }
+
+        case 'pack': {
+            // Minimal Packer wiring per Phase 11 (Milestone 3)
+            $env = isset($options['env']) ? (string)$options['env'] : ((string)(getenv('APP_ENV') ?: 'development'));
+            $includeDev = isset($options['include-dev']);
+            $target = isset($options['target']) ? (string)$options['target'] : 'webhost';
+            $out = isset($options['out']) ? (string)$options['out'] : ($appRoot . DIRECTORY_SEPARATOR . 'dist');
+            $dry = isset($options['dry-run']);
+
+            $packer = new \Ishmael\Core\Packer($appRoot);
+            $packer->configure($env, $includeDev, $target, $out, $dry);
+            $manifest = $packer->pack();
+
+            if ($dry) {
+                echo "[DRY-RUN] ish pack plan (" . ($manifest['env'] ?? $env) . ")\n";
+                $files = $manifest['files'] ?? [];
+                foreach ($files as $f) {
+                    $p = is_array($f) && isset($f['path']) ? (string)$f['path'] : (string)$f;
+                    echo " - " . $p . "\n";
+                }
+            } else {
+                echo "Bundle created successfully. Manifest: " . ($manifest['env'] ?? $env) . ", files: " . count($manifest['files'] ?? []) . "\n";
+            }
             exit(0);
         }
 

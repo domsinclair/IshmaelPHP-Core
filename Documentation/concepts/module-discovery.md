@@ -134,6 +134,53 @@ return [
 ];
 ```
 
+### 2.2) Lifecycle hooks (preview)
+
+Hooks prepare modules for a future Event Bus without enforcing runtime behavior today. The loader will parse and store the `hooks` section as-is. Execution is deferred until the Event Bus phase ships.
+
+What you can declare
+
+- boot: callable reference to run early in the module lifecycle (after DI, before routes are finalized)
+- shutdown: callable reference to run during graceful termination
+- onEvents: map of `eventName => handler reference` (subscribed in a future phase)
+
+Handler reference formats
+
+- "FQCN@method" (e.g., "Modules\\Blog\\Bootstrap@boot")
+- [FQCN, "method"] array (e.g., [Modules\\Blog\\Bootstrap::class, "boot"])
+- FQCN string for invokable classes (e.g., Modules\\Blog\\Listeners\\InvalidateCache::class)
+- Absolute path to a PHP file returning a Closure
+
+Example (module.php)
+
+```php
+<?php
+declare(strict_types=1);
+
+/**
+ * Hooks preview for future Event Bus.
+ * @return array<string, mixed>
+ */
+return [
+    'name' => 'Blog',
+    'env' => 'shared',
+    'routes' => __DIR__ . '/routes.php',
+    'hooks' => [
+        'boot' => [Modules\\Blog\\Bootstrap::class, 'boot'],
+        'shutdown' => 'Modules\\Blog\\Bootstrap@shutdown',
+        'onEvents' => [
+            'user.registered' => [Modules\\Blog\\Listeners\\SendWelcomeEmail::class, 'handle']
+        ]
+    ]
+];
+```
+
+Constraints
+
+- Hooks are optional and currently inert (not executed). They will be activated in a future phase.
+- Keep handlers small and idempotent; avoid heavy work in boot/shutdown.
+- Follow PascalCase for classes and camelCase for methods; include PHPDoc in your examples.
+
 Production module (module.json):
 ```json
 {
@@ -164,6 +211,34 @@ This means a module is immediately active after adding it to the Modules directo
 
 ### Registration order
 - By default, modules are processed in alphabetical directory order. If you have inter-module route dependencies, keep paths disjoint or use unique route prefixes.
+
+## 4) Environment filtering (runtime)
+
+The ModuleManager supports environment-aware filtering when discovering modules.
+
+Truth table (APP_ENV vs module env):
+
+- APP_ENV=production
+  - module env=production → load
+  - module env=shared → load
+  - module env=development → skip by default; load only if ALLOW_DEV_MODULES=true
+- APP_ENV=development or testing
+  - module env=production/shared/development → load
+
+Notes:
+- If a development-only module is present in production without explicit override, a warning is logged and the module is skipped.
+- You can also pass options to discover():
+  - discover($path, ['appEnv' => 'production', 'allowDevModules' => true])
+
+## 5) Module discovery cache (stub)
+
+To speed up boot, a simple modules cache snapshot can be written and read:
+
+- CLI: `php IshmaelPHP-Core/bin/ish modules:cache [--env=production|development|testing] [--allow-dev] [--modules=PATH] [--cache=PATH]`
+- CLI: `php IshmaelPHP-Core/bin/ish modules:clear [--cache=PATH]`
+
+Behavior:
+- The cache stores the discovered modules array as JSON. It is safe to delete; the framework will rediscover modules as needed.
 - When using the route cache (see Guide — Route Cache), discovery runs once to build the cache; subsequent requests load the cached routes for speed.
 
 ## 4) Controllers and namespaces
