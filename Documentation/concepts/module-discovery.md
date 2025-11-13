@@ -4,7 +4,8 @@ Ishmael applications are composed of modules. A module is a small, portable pack
 
 What you’ll learn on this page:
 - Where modules live and how discovery works
-- The minimal files a module needs (`module.json`, `routes.php`)
+- The minimal files a module needs (`module.php` preferred; `module.json` supported) and `routes.php`
+- Module manifest specification and environment awareness
 - How controllers, views, assets, and migrations are registered
 - Load order, enabling/disabling modules, and route caching
 - Practical examples and troubleshooting tips
@@ -20,16 +21,36 @@ The root can be configured in your app config; most apps keep the default. Each 
 ## 2) Minimal module structure
 
 A simple module requires two files:
-- `Modules/Blog/module.json` — metadata and flags
+- `Modules/Blog/module.php` — manifest (preferred) returning an array of metadata and flags
 - `Modules/Blog/routes.php` — route registrations
 
-Example `module.json` created by the CLI:
+The JSON variant `module.json` is supported as a fallback when a PHP manifest is not present. If both exist, `module.php` takes precedence.
+
+Example `module.php` created by the CLI (preferred):
+```php
+<?php
+/**
+ * Module manifest (preferred format).
+ * @return array<string, mixed>
+ */
+return [
+    'name' => 'Blog',
+    'description' => 'Tutorial Blog module',
+    'version' => '0.1.0',
+    'enabled' => true,
+    // Environment: development | shared | production
+    'env' => 'shared',
+];
+```
+
+Example `module.json` (fallback):
 ```json
 {
   "name": "Blog",
   "description": "Tutorial Blog module",
   "version": "0.1.0",
-  "enabled": true
+  "enabled": true,
+  "env": "shared"
 }
 ```
 
@@ -45,18 +66,94 @@ $router->get('/blog/posts/{id}', [PostController::class, 'show'])->name('blog.po
 ```
 
 You can generate this structure with the CLI:
-```bash
+```
 php IshmaelPHP-Core/bin/ishmael make:module Blog
 ```
 See also: Guide — Application Bootstrap, and Blog Tutorial Part 1.
+
+## 2.1) Module manifest specification
+
+Ishmael prefers a PHP manifest file named `module.php` that returns an associative array. A JSON manifest (`module.json`) is supported for simple cases. If both files exist, `module.php` is used.
+
+Supported keys (for both formats):
+- name: string — human‑readable module name
+- version: string — semantic version (e.g., 1.0.0)
+- description: string (optional)
+- enabled: bool (optional; default true) — discovery toggle
+- env: string — one of `development`, `shared`, `production`
+- dependencies: string[] (optional) — packages required by this module
+- peerDependencies: string[] (optional) — environment prerequisites (e.g., PHP extensions)
+- conflicts: string[] (optional) — modules or packages that cannot coexist
+- routes: string|array (optional) — path to `routes.php` or list of route files
+- commands: string[] (optional) — fully qualified class names of CLI commands
+- migrations: string|array (optional) — path(s) to migration files or directory
+- assets: string|array (optional) — assets or directories to publish
+- services: array (optional) — DI registrations (service id => class or factory)
+- hooks: array (optional) — lifecycle hooks (boot/shutdown callbacks; event prep)
+- schema: string|array (optional) — points to `schema.php` or inline metadata for future SchemaManager integration
+- export: string[] — files/directories the packer should include
+
+Validation and precedence rules:
+- `module.php` > `module.json` when both exist in the same module directory.
+- `env` must be one of `development`, `shared`, or `production`.
+- Unknown keys SHOULD be ignored by the loader but may be validated by tooling.
+- Paths must be inside the module directory or a configured safe path.
+
+Environment‑aware examples
+
+Development‑only (module.php):
+```php
+<?php
+/**
+ * Development-only module manifest.
+ * @return array<string, mixed>
+ */
+return [
+    'name' => 'FakerSeeder',
+    'version' => '1.0.0',
+    'env' => 'development',
+    'dependencies' => ['fakerphp/faker'],
+    'routes' => __DIR__ . '/routes.php',
+    'export' => ['src', 'assets'],
+];
+```
+
+Shared module (module.php):
+```php
+<?php
+/**
+ * Shared module manifest usable in dev and prod.
+ * @return array<string, mixed>
+ */
+return [
+    'name' => 'Editor',
+    'version' => '0.3.0',
+    'env' => 'shared',
+    'routes' => __DIR__ . '/routes.php',
+    'export' => ['src', 'Views', 'Resources'],
+];
+```
+
+Production module (module.json):
+```json
+{
+  "name": "PaymentGateway",
+  "version": "1.0.0",
+  "env": "production",
+  "dependencies": ["psr/log"],
+  "peerDependencies": ["ext-curl"],
+  "export": ["src", "config", "views"]
+}
+```
 
 ## 3) How discovery works
 
 At boot, the `ModuleManager`:
 1. Reads the configured Modules directory.
 2. Finds immediate subdirectories (candidate modules).
-3. For each, loads and parses `module.json`.
+3. For each, loads and parses a manifest: prefer `module.php`; if absent, parse `module.json`.
    - If `enabled` is `false`, the module is skipped.
+   - The `env` key is recorded for later environment‑aware filtering by the runtime and packer.
 4. Registers module resources in this order:
    - Routes: if `routes.php` exists, it is required and receives a `Router` instance.
    - Views: the module’s `Views/` directory is added to the view resolver paths.
@@ -119,7 +216,7 @@ Place module views under `Modules/<Name>/Views`. The view resolver is aware of m
 ## 7) Migrations and seeds (optional)
 
 If your module ships database changes, keep them under `Modules/<Name>/Database/Migrations` and seeds under `Modules/<Name>/Database/Seeds`. The CLI can pick these up:
-```bash
+```
 php IshmaelPHP-Core/bin/ishmael migrate --module=Blog
 php IshmaelPHP-Core/bin/ishmael db:seed --module=Blog
 ```
