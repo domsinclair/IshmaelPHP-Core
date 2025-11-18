@@ -97,3 +97,9 @@ Attach it to selected routes in `routes.php` according to your router’s API (s
 - How to work with named routes in views and controllers.
 - How to add CSRF protection to forms.
 - How to introduce and attach a simple rate limiting middleware.
+
+---
+
+Looking for a reusable Markdown editor module with live preview and a comprehensive, step‑by‑step walkthrough? See the dedicated Part 5.5:
+
+- Interlude 5.5: Reusable Markdown Editor Module (Full Guide) → [blog-part-5-5-markdown-editor-module.md](./blog-part-5-5-markdown-editor-module.md)
