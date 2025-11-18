@@ -6,6 +6,7 @@ declare(strict_types=1);
 // - Generates Documentation/reference/config-keys.md from config/*.php
 // - Generates Documentation/reference/routes/<Module>.md from Modules/*/routes.php (if present)
 // - Generates Documentation/reference/core-api/*.md from app/* via Reflection
+// - Generates Documentation/reference/cli-commands.md from a local registry (kept in sync with bin/ish)
 
 $core = dirname(__DIR__);
 $docs = $core . DIRECTORY_SEPARATOR . 'Documentation' . DIRECTORY_SEPARATOR . 'reference';
@@ -190,5 +191,186 @@ foreach ($coreIndex as $n) {
     $indexMd .= "- [{$n}](./{$n}.md)\n";
 }
 writeFile($coreApiDir . DIRECTORY_SEPARATOR . 'index.md', $indexMd);
+
+// 4) CLI Commands (generated): mirror the registry used by bin/ish for documentation output
+// Keep this list in sync with IshmaelPHP-Core/bin/ish::cliCommandRegistry()
+// Intentionally duplicated to avoid executing the CLI entrypoint during docs generation.
+$cliCommands = [
+    [
+        'name' => 'help',
+        'description' => 'Show CLI usage and available commands.',
+        'options' => [
+            ['name' => '--config', 'description' => 'Path to database config file', 'accepts' => 'PATH'],
+            ['name' => '--templates', 'description' => 'Override templates directory', 'accepts' => 'PATH'],
+            ['name' => '--app-root', 'description' => 'Override application root', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'make:module',
+        'description' => 'Scaffold a new module skeleton (controllers, models, views, routes.php, module.json).',
+        'options' => [
+            ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'make:resource',
+        'description' => 'Scaffold a CRUD resource inside a module (controller, routes, views).',
+        'options' => [
+            ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'make:controller',
+        'description' => 'Create a controller class inside a module.',
+        'options' => [
+            ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+            ['name' => '--invokable', 'description' => 'Generate an invokable controller (__invoke)'],
+            ['name' => '--api', 'description' => 'Hint API-style responses in the stub (if available)'],
+        ],
+    ],
+    [
+        'name' => 'make:service',
+        'description' => 'Create a service class inside a module.',
+        'options' => [
+            ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'make:view',
+        'description' => 'Create a single view file inside a module from the view stub.',
+        'options' => [
+            ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'make:views',
+        'description' => 'Create a standard set of CRUD views inside a module (index, show, create, edit, _form).',
+        'options' => [
+            ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'make:migration',
+        'description' => 'Create a timestamped migration file (supports --module=Name or positional module).',
+        'options' => [
+            ['name' => '--module', 'description' => 'Target module name for the migration', 'accepts' => 'Name'],
+        ],
+    ],
+    [
+        'name' => 'make:seeder',
+        'description' => 'Create a seeder class inside a module.',
+        'options' => [],
+    ],
+    [
+        'name' => 'migrate',
+        'description' => 'Run outstanding migrations.',
+        'options' => [
+            ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+            ['name' => '--steps', 'description' => 'Limit number of steps', 'accepts' => 'N'],
+            ['name' => '--pretend', 'description' => 'Dry-run without executing'],
+        ],
+    ],
+    [
+        'name' => 'migrate:rollback',
+        'description' => 'Rollback the last or N batches.',
+        'options' => [
+            ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+            ['name' => '--steps', 'description' => 'Number of steps to rollback', 'accepts' => 'N'],
+        ],
+    ],
+    [
+        'name' => 'status',
+        'description' => 'Show migration status.',
+        'options' => [
+            ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+        ],
+    ],
+    [
+        'name' => 'seed',
+        'description' => 'Run database seeders.',
+        'options' => [
+            ['name' => '--module', 'description' => 'Limit to a specific module', 'accepts' => 'Name'],
+            ['name' => '--class', 'description' => 'Seeder FQCN to run', 'accepts' => 'FQCN'],
+            ['name' => '--force', 'description' => 'Bypass environment guard'],
+            ['name' => '--env', 'description' => 'Environment name', 'accepts' => 'ENV'],
+        ],
+    ],
+    [
+        'name' => 'modules:cache',
+        'description' => 'Discover and cache module metadata for faster boot.',
+        'options' => [
+            ['name' => '--env', 'description' => 'Environment (production|development|testing)', 'accepts' => 'ENV'],
+            ['name' => '--allow-dev', 'description' => 'Include dev-only modules'],
+            ['name' => '--modules', 'description' => 'Modules directory path', 'accepts' => 'PATH'],
+            ['name' => '--cache', 'description' => 'Cache file path', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'modules:clear',
+        'description' => 'Clear module metadata cache.',
+        'options' => [
+            ['name' => '--cache', 'description' => 'Cache file path', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'route:cache',
+        'description' => 'Compile and cache routes for faster dispatch.',
+        'options' => [
+            ['name' => '--out', 'description' => 'Output file path', 'accepts' => 'PATH'],
+            ['name' => '--modules', 'description' => 'Modules directory path', 'accepts' => 'PATH'],
+            ['name' => '--env', 'description' => 'Environment name', 'accepts' => 'ENV'],
+        ],
+    ],
+    [
+        'name' => 'route:clear',
+        'description' => 'Clear route cache file.',
+        'options' => [
+            ['name' => '--file', 'description' => 'Route cache file path', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'examples:list',
+        'description' => 'List example modules available in the core repository.',
+        'options' => [],
+    ],
+    [
+        'name' => 'examples:install',
+        'description' => 'Install example module(s) into your app.',
+        'options' => [
+            ['name' => '--all', 'description' => 'Install all examples'],
+            ['name' => '--force', 'description' => 'Overwrite existing files if present'],
+            ['name' => '--path', 'description' => 'Destination modules path', 'accepts' => 'PATH'],
+        ],
+    ],
+    [
+        'name' => 'pack',
+        'description' => 'Bundle the app for deployment (webhost or container).',
+        'options' => [
+            ['name' => '--env', 'description' => 'Environment (production recommended)', 'accepts' => 'ENV'],
+            ['name' => '--include-dev', 'description' => 'Include dev dependencies'],
+            ['name' => '--target', 'description' => 'Target (webhost|container)', 'accepts' => 'TARGET'],
+            ['name' => '--out', 'description' => 'Output directory', 'accepts' => 'PATH'],
+            ['name' => '--dry-run', 'description' => 'Print actions without writing files'],
+        ],
+    ],
+];
+
+$cliMd = "# CLI Commands (generated)\n\nThis page is generated from Ishmael's CLI registry.\n\n";
+foreach ($cliCommands as $cmd) {
+    $cliMd .= h2($cmd['name']);
+    $cliMd .= $cmd['description'] . "\n\n";
+    if (!empty($cmd['options'])) {
+        $cliMd .= "**Options**\n\n";
+        $cliMd .= "| Option | Description | Accepts |\n|---|---|---|\n";
+        foreach ($cmd['options'] as $opt) {
+            $name = $opt['name'] ?? '';
+            $desc = $opt['description'] ?? '';
+            $acc = $opt['accepts'] ?? '';
+            $cliMd .= "| `{$name}` | {$desc} | {$acc} |\n";
+        }
+        $cliMd .= "\n";
+    }
+}
+writeFile($docs . DIRECTORY_SEPARATOR . 'cli-commands.md', $cliMd);
 
 echo "DocGen completed.\n";

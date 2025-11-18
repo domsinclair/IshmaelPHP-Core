@@ -1,0 +1,12 @@
+<?php
+declare(strict_types=1);
+
+namespace Modules\<ModuleName>\Services;
+
+final class <Name>Service
+{
+    public function __construct()
+    {
+        // Inject dependencies as needed.
+    }
+}

@@ -1,0 +1,17 @@
+<?php
+declare(strict_types=1);
+
+namespace Modules\<ModuleName>\Controllers;
+
+use Ishmael\Core\Controller;
+
+final class <Name>Controller extends Controller
+{
+    /**
+     * Example index action.
+     */
+    public function index(): string
+    {
+        return $this->json(['ok' => true, 'controller' => '<Name>Controller@index']);
+    }
+}

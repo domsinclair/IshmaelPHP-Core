@@ -231,7 +231,7 @@ PHP;
     // 2) Load database config from app unless overridden (only for commands that need DB)
     $options = parseOptions(array_slice($argv, 2));
     $nonDbCommands = [
-            'help','make:module','make:resource','make:view',
+            'help','make:module','make:resource','make:view','make:views','make:controller','make:service',
             'examples:list','examples:install','pack',
             'modules:cache','modules:clear','route:cache','route:clear'
     ];
@@ -354,8 +354,31 @@ PHP;
                         ],
                 ],
                 [
+                        'name' => 'make:controller',
+                        'description' => 'Create a controller class inside a module.',
+                        'options' => [
+                                ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+                                ['name' => '--invokable', 'description' => 'Generate an invokable controller (__invoke)'],
+                                ['name' => '--api', 'description' => 'Hint API-style responses in the stub (if available)'],
+                        ],
+                ],
+                [
+                        'name' => 'make:service',
+                        'description' => 'Create a service class inside a module.',
+                        'options' => [
+                                ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+                        ],
+                ],
+                [
                         'name' => 'make:view',
                         'description' => 'Create a single view file inside a module from the view stub.',
+                        'options' => [
+                                ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+                        ],
+                ],
+                [
+                        'name' => 'make:views',
+                        'description' => 'Create a standard set of CRUD views inside a module (index, show, create, edit, _form).',
                         'options' => [
                                 ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
                         ],
@@ -516,6 +539,9 @@ Usage:
   ish help
   ish make:module <Name> [--templates=PATH]
   ish make:resource <Module> <Name> [--templates=PATH]
+  ish make:controller <Module> <Name> [--invokable] [--templates=PATH]
+  ish make:service <Module> <Name> [--templates=PATH]
+  ish make:views <Module> <resource> [--templates=PATH]
   ish make:view <Module> <resource>/<view> [--templates=PATH]
   ish make:migration <name> [--module=Name]
   ish make:migration <Module> <name>
@@ -830,6 +856,99 @@ TPL;
                 $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . $resource . DIRECTORY_SEPARATOR . $view . '.php';
                 writeFile($dest, $contents);
                 echo 'View created at: ' . $dest . PHP_EOL;
+                exit(0);
+            }
+
+            case 'make:views': {
+                // Generate the standard CRUD set of views: index, show, create, edit, _form
+                $moduleArg = $argv[2] ?? '';
+                $resourceArg = $argv[3] ?? '';
+                if ($moduleArg === '' || $resourceArg === '') {
+                    throw new InvalidArgumentException('Usage: ish make:views <Module> <resource> [--templates=PATH]');
+                }
+                $moduleStudly = toStudlyCase($moduleArg);
+                $resourceLower = strtolower($resourceArg);
+                // Reuse Resource view stubs bundle
+                $resTpl = resolveTemplateDir('Resource', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+                $views = ['index.php.stub' => 'index.php', 'show.php.stub' => 'show.php', 'create.php.stub' => 'create.php', 'edit.php.stub' => 'edit.php', '_form.php.stub' => '_form.php'];
+                foreach ($views as $src => $dst) {
+                    $candidates = [
+                            $resTpl . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . 'resource' . DIRECTORY_SEPARATOR . $src,
+                            $resTpl . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . $resourceLower . DIRECTORY_SEPARATOR . $src,
+                            $resTpl . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . $src,
+                    ];
+                    $stubPath = '';
+                    foreach ($candidates as $cand) {
+                        if (is_file($cand)) { $stubPath = $cand; break; }
+                    }
+                    $contents = '';
+                    if ($stubPath !== '') {
+                        $contents = (string)file_get_contents($stubPath);
+                    } else {
+                        $title = ucfirst(pathinfo($dst, PATHINFO_FILENAME));
+                        $contents = "<h1>" . ucfirst($resourceLower) . " {$title}</h1>\n<p>Placeholder view generated by ish.</p>\n";
+                    }
+                    $contents = replaceTokens($contents, [
+                            'ModuleName' => $moduleStudly,
+                            'resource' => $resourceLower,
+                            'resources' => $resourceLower . 's',
+                    ]);
+                    $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . 'Views' . DIRECTORY_SEPARATOR . $resourceLower . DIRECTORY_SEPARATOR . $dst;
+                    writeFile($dest, $contents);
+                }
+                echo 'Views created for resource: ' . $moduleStudly . '/' . $resourceLower . PHP_EOL;
+                exit(0);
+            }
+
+            case 'make:controller': {
+                $moduleArg = $argv[2] ?? '';
+                $nameArg = $argv[3] ?? '';
+                if ($moduleArg === '' || $nameArg === '') {
+                    throw new InvalidArgumentException('Usage: ish make:controller <Module> <Name> [--invokable] [--templates=PATH]');
+                }
+                $moduleStudly = toStudlyCase($moduleArg);
+                $nameStudly = toStudlyCase($nameArg);
+                $ctrlTplDir = resolveTemplateDir('Controller', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+                $invokable = isset($options['invokable']);
+                $stubFile = $ctrlTplDir . DIRECTORY_SEPARATOR . ($invokable ? 'Controller.invokable.php.stub' : 'Controller.php.stub');
+                if (!is_file($stubFile)) {
+                    // Fallback to a minimal inline stub
+                    $contents = "<?php\ndeclare(strict_types=1);\n\nnamespace Modules\\{$moduleStudly}\\Controllers;\n\nuse Ishmael\\Core\\Controller;\n\nfinal class {$nameStudly}Controller extends Controller\n{\n    public function index(): string\n    {\n        return \$this->json(['ok' => true, 'controller' => '{$nameStudly}Controller@index']);\n    }\n}\n";
+                } else {
+                    $contents = (string)file_get_contents($stubFile);
+                    $contents = replaceTokens($contents, [
+                            'ModuleName' => $moduleStudly,
+                            'Name' => $nameStudly,
+                    ]);
+                }
+                $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . $nameStudly . 'Controller.php';
+                writeFile($dest, $contents);
+                echo 'Controller created at: ' . $dest . PHP_EOL;
+                exit(0);
+            }
+
+            case 'make:service': {
+                $moduleArg = $argv[2] ?? '';
+                $nameArg = $argv[3] ?? '';
+                if ($moduleArg === '' || $nameArg === '') {
+                    throw new InvalidArgumentException('Usage: ish make:service <Module> <Name> [--templates=PATH]');
+                }
+                $moduleStudly = toStudlyCase($moduleArg);
+                $nameStudly = toStudlyCase($nameArg);
+                $svcTplDir = resolveTemplateDir('Service', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
+                $stubFile = $svcTplDir . DIRECTORY_SEPARATOR . 'Service.php.stub';
+                if (!is_file($stubFile)) {
+                    $contents = "<?php\ndeclare(strict_types=1);\n\nnamespace Modules\\{$moduleStudly}\\Services;\n\nfinal class {$nameStudly}Service\n{\n    public function __construct()\n    {\n    }\n}\n";
+                } else {
+                    $contents = (string)file_get_contents($stubFile);
+                    $contents = replaceTokens($contents, [
+                            'ModuleName' => $moduleStudly,
+                            'Name' => $nameStudly,
+                    ]);
+                }
+                $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . 'Services' . DIRECTORY_SEPARATOR . $nameStudly . 'Service.php';
+                writeFile($dest, $contents);
+                echo 'Service created at: ' . $dest . PHP_EOL;
                 exit(0);
             }
 

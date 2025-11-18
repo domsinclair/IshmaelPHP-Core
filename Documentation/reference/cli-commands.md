@@ -1,118 +1,233 @@
-# CLI Reference
+# CLI Commands (generated)
 
-Auto-generated from command metadata.
+This page is generated from Ishmael's CLI registry.
 
-| Command | Synopsis | Description |
+
+## help
+
+Show CLI usage and available commands.
+
+**Options**
+
+| Option | Description | Accepts |
 |---|---|---|
-| `help` | ish help | Show CLI help. |
-| `version` | ish --version \| -V \| version | Print the Ishmael CLI version. |
-| `make:module` | ish make:module <Name> | Scaffold a new module skeleton (controllers, models, views, routes.php, module.json). |
-| `make:migration` | ish make:migration <name> [--module=Name] | Create a new migration file. |
-| `migrate` | ish migrate [--module=Name] [--steps=N] [--pretend] [--force] | Run outstanding migrations. |
-| `migrate:rollback` | ish migrate:rollback [--module=Name] [--steps=N] | Rollback the last batch or specified steps. |
-| `status` | ish status [--module=Name] | Show migration status. |
-| `seed` | ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV] | Run database seeders. |
-| `route:list` | ish route:list [--method=GET] [--module=Name] | List registered routes. |
-| `route:cache` | ish route:cache [--force] | Compile and cache route map. |
-| `route:clear` | ish route:clear | Clear route cache file. |
-| `config:cache` | ish config:cache | Compile and cache configuration. |
-| `config:clear` | ish config:clear | Clear configuration cache. |
-| `cache:clear` | ish cache:clear [--stats] | Clear application cache. |
-| `docs:generate` | ish docs:generate | Generate documentation (CLI and Module references). |
-| `docs:check-links` | ish docs:check-links [--fail-on-warn] | Scan site/ output for broken internal links (href/src). |
+| `--config` | Path to database config file | PATH |
+| `--templates` | Override templates directory | PATH |
+| `--app-root` | Override application root | PATH |
 
-## Options
 
-### help
+## make:module
 
-(No options)
+Scaffold a new module skeleton (controllers, models, views, routes.php, module.json).
 
-### version
+**Options**
 
-(No options)
+| Option | Description | Accepts |
+|---|---|---|
+| `--templates` | Override template source directory | PATH |
 
-### make:module
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| <Name> | yes |  | Module name (StudlyCase preferred). |
+## make:resource
 
-### make:migration
+Scaffold a CRUD resource inside a module (controller, routes, views).
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| <name> | yes |  | Migration name (e.g., CreatePostsTable). |
-| --module | yes |  | Target module (optional). |
+**Options**
 
-### migrate
+| Option | Description | Accepts |
+|---|---|---|
+| `--templates` | Override template source directory | PATH |
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --module | yes |  | Restrict to a module. |
-| --steps | yes | 0 | Limit number of steps. |
-| --pretend | no | false | Dry run (print SQL without executing). |
-| --force | no | false | Run in production without confirmation. |
 
-### migrate:rollback
+## make:controller
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --module | yes |  | Restrict to a module. |
-| --steps | yes | 1 | Number of steps to rollback (default 1). |
+Create a controller class inside a module.
 
-### status
+**Options**
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --module | yes |  | Restrict to a module. |
+| Option | Description | Accepts |
+|---|---|---|
+| `--templates` | Override template source directory | PATH |
+| `--invokable` | Generate an invokable controller (__invoke) |  |
+| `--api` | Hint API-style responses in the stub (if available) |  |
 
-### seed
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --module | yes |  | Restrict to a module. |
-| --class | yes |  | Seeder class FQCN. |
-| --force | no | false | Run in production without confirmation. |
-| --env | yes |  | Environment name (e.g., ci). |
+## make:service
 
-### route:list
+Create a service class inside a module.
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --method | yes |  | HTTP method filter. |
-| --module | yes |  | Module name filter. |
+**Options**
 
-### route:cache
+| Option | Description | Accepts |
+|---|---|---|
+| `--templates` | Override template source directory | PATH |
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --force | no | false | Strip non-cacheable entries instead of failing. |
 
-### route:clear
+## make:view
 
-(No options)
+Create a single view file inside a module from the view stub.
 
-### config:cache
+**Options**
 
-(No options)
+| Option | Description | Accepts |
+|---|---|---|
+| `--templates` | Override template source directory | PATH |
 
-### config:clear
 
-(No options)
+## make:views
 
-### cache:clear
+Create a standard set of CRUD views inside a module (index, show, create, edit, _form).
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --stats | no | false | Print driver and item count after clearing. |
+**Options**
 
-### docs:generate
+| Option | Description | Accepts |
+|---|---|---|
+| `--templates` | Override template source directory | PATH |
 
-(No options)
 
-### docs:check-links
+## make:migration
 
-| Option | Takes Value | Default | Description |
-|---|---|---|---|
-| --fail-on-warn | no | false | Exit non-zero even if only warnings found. |
+Create a timestamped migration file (supports --module=Name or positional module).
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--module` | Target module name for the migration | Name |
+
+
+## make:seeder
+
+Create a seeder class inside a module.
+
+
+## migrate
+
+Run outstanding migrations.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--module` | Limit to a specific module | Name |
+| `--steps` | Limit number of steps | N |
+| `--pretend` | Dry-run without executing |  |
+
+
+## migrate:rollback
+
+Rollback the last or N batches.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--module` | Limit to a specific module | Name |
+| `--steps` | Number of steps to rollback | N |
+
+
+## status
+
+Show migration status.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--module` | Limit to a specific module | Name |
+
+
+## seed
+
+Run database seeders.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--module` | Limit to a specific module | Name |
+| `--class` | Seeder FQCN to run | FQCN |
+| `--force` | Bypass environment guard |  |
+| `--env` | Environment name | ENV |
+
+
+## modules:cache
+
+Discover and cache module metadata for faster boot.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--env` | Environment (production|development|testing) | ENV |
+| `--allow-dev` | Include dev-only modules |  |
+| `--modules` | Modules directory path | PATH |
+| `--cache` | Cache file path | PATH |
+
+
+## modules:clear
+
+Clear module metadata cache.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--cache` | Cache file path | PATH |
+
+
+## route:cache
+
+Compile and cache routes for faster dispatch.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--out` | Output file path | PATH |
+| `--modules` | Modules directory path | PATH |
+| `--env` | Environment name | ENV |
+
+
+## route:clear
+
+Clear route cache file.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--file` | Route cache file path | PATH |
+
+
+## examples:list
+
+List example modules available in the core repository.
+
+
+## examples:install
+
+Install example module(s) into your app.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--all` | Install all examples |  |
+| `--force` | Overwrite existing files if present |  |
+| `--path` | Destination modules path | PATH |
+
+
+## pack
+
+Bundle the app for deployment (webhost or container).
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--env` | Environment (production recommended) | ENV |
+| `--include-dev` | Include dev dependencies |  |
+| `--target` | Target (webhost|container) | TARGET |
+| `--out` | Output directory | PATH |
+| `--dry-run` | Print actions without writing files |  |
 
