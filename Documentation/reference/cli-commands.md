@@ -3,6 +3,21 @@
 This page is generated from Ishmael's CLI registry.
 
 
+## ui:tailwind
+
+Install Tailwind CSS (v4+) and scaffold CSS input/output for Ishmael.
+
+**Options**
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--css` | Input CSS path (default: resources\css\app.css) | PATH |
+| `--out` | Output CSS path (default: public\assets\app.css) | PATH |
+| `--force` | Overwrite existing files if present |  |
+| `--dry-run` | Print actions without making changes |  |
+| `--no-build` | Skip initial build step |  |
+
+
 ## help
 
 Show CLI usage and available commands.

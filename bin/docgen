@@ -197,6 +197,17 @@ writeFile($coreApiDir . DIRECTORY_SEPARATOR . 'index.md', $indexMd);
 // Intentionally duplicated to avoid executing the CLI entrypoint during docs generation.
 $cliCommands = [
     [
+        'name' => 'ui:tailwind',
+        'description' => 'Install Tailwind CSS (v4+) and scaffold CSS input/output for Ishmael.',
+        'options' => [
+            ['name' => '--css', 'description' => 'Input CSS path (default: resources\\css\\app.css)', 'accepts' => 'PATH'],
+            ['name' => '--out', 'description' => 'Output CSS path (default: public\\assets\\app.css)', 'accepts' => 'PATH'],
+            ['name' => '--force', 'description' => 'Overwrite existing files if present'],
+            ['name' => '--dry-run', 'description' => 'Print actions without making changes'],
+            ['name' => '--no-build', 'description' => 'Skip initial build step'],
+        ],
+    ],
+    [
         'name' => 'help',
         'description' => 'Show CLI usage and available commands.',
         'options' => [

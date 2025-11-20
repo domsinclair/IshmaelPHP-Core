@@ -17,6 +17,8 @@ declare(strict_types=1);
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title><?= $sections->yield('title', '<ModuleName>') ?></title>
+    <!-- If you ran `ish ui:tailwind`, your compiled CSS lives at /assets/app.css -->
+    <!-- <link rel="stylesheet" href="/assets/app.css"> -->
     <!-- Tailwind-friendly: add your Tailwind build or CDN if desired -->
     <!-- <script src="https://cdn.tailwindcss.com"></script> -->
 </head>

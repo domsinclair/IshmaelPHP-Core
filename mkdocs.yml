@@ -96,6 +96,7 @@ nav:
       - Use Request IDs in Logs: how-to/use-request-ids.md
       - Implement a new Adapter: how-to/implement-a-new-adapter.md
       - Run migrations and seeds without the CLI: how-to/run-migrations-and-seeds-without-cli.md
+      - Add Tailwind CSS: how-to/add-tailwind-to-project.md
 
   - Explanations:
       - Request & Response: concepts/request-response.md

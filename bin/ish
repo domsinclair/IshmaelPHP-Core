@@ -331,6 +331,17 @@ PHP;
     {
         return [
                 [
+                        'name' => 'ui:tailwind',
+                        'description' => 'Install Tailwind CSS (v4+) and scaffold CSS input/output for Ishmael.',
+                        'options' => [
+                                ['name' => '--css', 'description' => 'Input CSS path (default: resources\\css\\app.css)', 'accepts' => 'PATH'],
+                                ['name' => '--out', 'description' => 'Output CSS path (default: public\\assets\\app.css)', 'accepts' => 'PATH'],
+                                ['name' => '--force', 'description' => 'Overwrite existing files if present'],
+                                ['name' => '--dry-run', 'description' => 'Print actions without making changes'],
+                                ['name' => '--no-build', 'description' => 'Skip initial build step'],
+                        ],
+                ],
+                [
                         'name' => 'help',
                         'description' => 'Show CLI usage and available commands.',
                         'options' => [
@@ -533,7 +544,7 @@ PHP;
             case '--help':
             case '-h':
                 echo <<<TXT
-Ishmael CLI (Core distribution)
+        Ishmael CLI (Core distribution)
 
 Usage:
   ish help
@@ -550,6 +561,7 @@ Usage:
   ish migrate:rollback [--module=Name] [--steps=N]
   ish status [--module=Name]
   ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV]
+  ish ui:tailwind [--css=resources\\css\\app.css] [--out=public\\assets\\app.css] [--force] [--dry-run] [--no-build]
   ish modules:cache [--env=production|development|testing] [--allow-dev] [--modules=PATH] [--cache=PATH]
   ish modules:clear [--cache=PATH]
   ish route:cache [--out=PATH] [--modules=PATH] [--env=ENV]
@@ -565,6 +577,110 @@ Options:
   --app-root=PATH    Override application root (defaults to current working directory)
 TXT;
                 exit(0);
+
+            case 'tailwind:init':
+            case 'tailwind:install':
+            case 'ui:tailwind': {
+                $dryRun = isset($options['dry-run']);
+                $force = isset($options['force']);
+                $skipBuild = isset($options['no-build']);
+                $cssIn = (string)($options['css'] ?? ('resources' . DIRECTORY_SEPARATOR . 'css' . DIRECTORY_SEPARATOR . 'app.css'));
+                $cssOut = (string)($options['out'] ?? ('public' . DIRECTORY_SEPARATOR . 'assets' . DIRECTORY_SEPARATOR . 'app.css'));
+
+                // Helper: run a shell command and stream output
+                $run = function(string $cmd) use ($dryRun): void {
+                    if ($dryRun) {
+                        echo "DRY-RUN: {$cmd}\n";
+                        return;
+                    }
+                    passthru($cmd, $code);
+                    if ($code !== 0) {
+                        throw new RuntimeException("Command failed ({$code}): {$cmd}");
+                    }
+                };
+
+                // Preflight: npm and node present
+                $checkBin = function(string $bin) use ($run): void {
+                    // We deliberately avoid throwing on Windows where 'where' may not exist in restricted envs; try running --version
+                    $cmd = $bin . ' -v';
+                    ob_start();
+                    passthru($cmd, $code);
+                    ob_end_clean();
+                    if ($code !== 0) {
+                        throw new RuntimeException("{$bin} not found or not executable. Please install Node.js and npm and ensure they are in PATH.");
+                    }
+                };
+                $checkBin('node');
+                $checkBin('npm');
+
+                // Ensure package.json exists and update scripts
+                $pkgPath = $appRoot . DIRECTORY_SEPARATOR . 'package.json';
+                $pkg = [];
+                if (is_file($pkgPath)) {
+                    $pkg = json_decode((string)file_get_contents($pkgPath), true) ?: [];
+                } else {
+                    $pkg = [
+                        'name' => 'ish-app',
+                        'private' => true,
+                        'version' => '0.0.0',
+                    ];
+                }
+                $pkg['scripts'] = $pkg['scripts'] ?? [];
+                if (!isset($pkg['scripts']['dev'])) {
+                    $pkg['scripts']['dev'] = 'tailwindcss -i resources/css/app.css -o public/assets/app.css -w';
+                }
+                if (!isset($pkg['scripts']['build'])) {
+                    $pkg['scripts']['build'] = 'tailwindcss -i resources/css/app.css -o public/assets/app.css --minify';
+                }
+                $newPkgJson = json_encode($pkg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
+                if ($dryRun) {
+                    echo "DRY-RUN: write package.json (create or update)\n";
+                } else {
+                    file_put_contents($pkgPath, (string)$newPkgJson);
+                }
+
+                // npm install tailwindcss (latest)
+                $run('npm i -D tailwindcss@latest');
+
+                // Create input CSS with Tailwind and @source for Modules views
+                $cssInAbs = $appRoot . DIRECTORY_SEPARATOR . $cssIn;
+                $cssDir = dirname($cssInAbs);
+                ensureDirectory($cssDir);
+                $inputCss = <<<CSS
+        @import "tailwindcss";
+
+        /* Tailwind v4 content sources for Ishmael Modules views */
+        @source "../../Modules/**/*.{php,html,js,ts,jsx,tsx,vue}";
+        CSS;
+                if ($dryRun) {
+                    echo "DRY-RUN: write {$cssIn} (force=" . ($force ? 'true' : 'false') . ")\n";
+                } else {
+                    if (file_exists($cssInAbs) && !$force) {
+                        // Leave existing file intact
+                    } else {
+                        file_put_contents($cssInAbs, $inputCss);
+                    }
+                }
+
+                // Ensure output directory exists
+                $cssOutAbs = $appRoot . DIRECTORY_SEPARATOR . $cssOut;
+                ensureDirectory(dirname($cssOutAbs));
+
+                // Initial build
+                if (!$skipBuild) {
+                    // Use npx to run Tailwind CLI
+                    $inArg = str_replace('/', DIRECTORY_SEPARATOR, $cssIn);
+                    $outArg = str_replace('/', DIRECTORY_SEPARATOR, $cssOut);
+                    $cmd = 'npx tailwindcss -i ' . escapeshellarg($inArg) . ' -o ' . escapeshellarg($outArg) . ' --minify';
+                    $run($cmd);
+                }
+
+                echo "Tailwind installed and CSS scaffolded.\n";
+                echo "- Input: {$cssIn}\n";
+                echo "- Output: {$cssOut}\n";
+                echo "Tip: add this to your layout head (uncomment):\n<!-- <link rel=\"stylesheet\" href=\"/assets/app.css\"> -->\n";
+                exit(0);
+            }
 
             case 'make:module': {
                 $name = $argv[2] ?? '';
