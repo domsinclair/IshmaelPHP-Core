@@ -626,11 +626,18 @@ TXT;
                     ];
                 }
                 $pkg['scripts'] = $pkg['scripts'] ?? [];
+                // If existing scripts reference the old v3 CLI `tailwindcss`, gently upgrade them to use the v4 CLI package
+                foreach (['dev', 'build'] as $scriptName) {
+                    if (isset($pkg['scripts'][$scriptName]) && is_string($pkg['scripts'][$scriptName])) {
+                        $pkg['scripts'][$scriptName] = str_replace('tailwindcss ', '@tailwindcss/cli ', $pkg['scripts'][$scriptName]);
+                    }
+                }
                 if (!isset($pkg['scripts']['dev'])) {
-                    $pkg['scripts']['dev'] = 'tailwindcss -i resources/css/app.css -o public/assets/app.css -w';
+                    // Tailwind v4 uses the separate CLI package
+                    $pkg['scripts']['dev'] = '@tailwindcss/cli -i resources/css/app.css -o public/assets/app.css -w';
                 }
                 if (!isset($pkg['scripts']['build'])) {
-                    $pkg['scripts']['build'] = 'tailwindcss -i resources/css/app.css -o public/assets/app.css --minify';
+                    $pkg['scripts']['build'] = '@tailwindcss/cli -i resources/css/app.css -o public/assets/app.css --minify';
                 }
                 $newPkgJson = json_encode($pkg, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n";
                 if ($dryRun) {
@@ -639,8 +646,8 @@ TXT;
                     file_put_contents($pkgPath, (string)$newPkgJson);
                 }
 
-                // npm install tailwindcss (latest)
-                $run('npm i -D tailwindcss@latest');
+                // Install Tailwind v4 requirements: core + CLI
+                $run('npm i -D tailwindcss@latest @tailwindcss/cli@latest');
 
                 // Create input CSS with Tailwind and @source for Modules views
                 $cssInAbs = $appRoot . DIRECTORY_SEPARATOR . $cssIn;
@@ -671,7 +678,7 @@ TXT;
                     // Use npx to run Tailwind CLI
                     $inArg = str_replace('/', DIRECTORY_SEPARATOR, $cssIn);
                     $outArg = str_replace('/', DIRECTORY_SEPARATOR, $cssOut);
-                    $cmd = 'npx tailwindcss -i ' . escapeshellarg($inArg) . ' -o ' . escapeshellarg($outArg) . ' --minify';
+                    $cmd = 'npx @tailwindcss/cli -i ' . escapeshellarg($inArg) . ' -o ' . escapeshellarg($outArg) . ' --minify';
                     $run($cmd);
                 }
 

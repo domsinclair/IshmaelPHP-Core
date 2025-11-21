@@ -15,9 +15,9 @@ ish ui:tailwind
 What this does
 - Verifies `node` and `npm` are available.
 - Creates/updates `package.json` with convenient scripts:
-  - `dev`: `tailwindcss -i resources/css/app.css -o public/assets/app.css -w`
-  - `build`: `tailwindcss -i resources/css/app.css -o public/assets/app.css --minify`
-- Installs the latest Tailwind CSS as a dev dependency.
+  - `dev`: `@tailwindcss/cli -i resources/css/app.css -o public/assets/app.css -w`
+  - `build`: `@tailwindcss/cli -i resources/css/app.css -o public/assets/app.css --minify`
+- Installs Tailwind v4 requirements as dev dependencies: `tailwindcss` and `@tailwindcss/cli`.
 - Creates `resources/css/app.css` (if missing) with:
 
 ```css
