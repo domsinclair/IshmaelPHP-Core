@@ -139,63 +139,159 @@ Verify that `authors` and `posts` exist in your database. `posts.author_id` shou
 
 ---
 
-## 3) Create and run a seeder (linked Authors → Posts)
+## 3) Seeding in Ishmael: concepts, contract, and an Authors → Posts example
 
-Generate a seeder:
+This section explains how seeding is intended to work in Ishmael and then walks you through a compliant example for the Blog module.
+
+How Ishmael seeding works (the model)
+- Module-first: Each module owns its seeders under `Modules/<Module>/Database/Seeders/`.
+- Simple contract: A seeder is a class that implements `run(DatabaseAdapterInterface $adapter, LoggerInterface $logger): void`. Extend `BaseSeeder` to get a default empty `dependsOn(): array` and helper behavior.
+- Deterministic ordering: Seeders can declare dependencies via `dependsOn(): string[]`. The runner builds a dependency graph and executes seeders in a deterministic topological order.
+- Entrypoint orchestration: If a `DatabaseSeeder` class exists inside the module folder, the runner resolves and executes that entrypoint and all of its transitive dependencies. If there is no `DatabaseSeeder`, the runner executes all seeders in the folder in a deterministic order.
+- Environment guard: By default, seeding is only permitted in development/test/local environments. You must explicitly pass a force/override to seed in other environments.
+- Idempotency by design: Seeders should be re-runnable. Use unique keys and “check then insert” or adapter-level upsert so running seeders multiple times does not create duplicates.
+- Logging: Every run is logged (plan + each seeder + summary) via PSR-3 so you can diagnose ordering and data applied.
+
+Why `DatabaseSeeder` and an “example” seeder exist
+- `DatabaseSeeder` is the module’s coordinator. It typically does minimal work itself and lists the seeders to run using `dependsOn()`. This makes your intent explicit and keeps the module’s seeding flow predictable and discoverable.
+- A sample concrete seeder (like `ExampleSeeder`) demonstrates the contract and idempotent pattern you should follow for your own data seeders.
+
+What this means for the Blog tutorial
+- We’ll create a concrete seeder `AuthorsAndPostsSeeder` that inserts two authors and two posts, but only if they don’t already exist.
+- We’ll wire it into the module’s `DatabaseSeeder` so normal module-level seeding picks it up.
+
+Generate the seeder class
 
 ```bash
 php vendor/bin/ish make:seeder Blog AuthorsAndPostsSeeder
 ```
 
-Edit `Modules/Blog/Database/Seeders/AuthorsAndPostsSeeder.php` and add:
+Edit `Modules/Blog/Database/Seeders/AuthorsAndPostsSeeder.php` and replace its contents with the following compliant implementation (extends `BaseSeeder`, accepts `$adapter` + `$logger`, uses deterministic checks):
 
 ```php
 <?php
 
 declare(strict_types=1);
 
-namespace Modules\Blog\Database\Seeders;
+use Ishmael\Core\Database\Seeders\BaseSeeder;
+use Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface;
+use Psr\Log\LoggerInterface;
 
-use Ishmael\Core\Database;
-
-final class AuthorsAndPostsSeeder
+final class AuthorsAndPostsSeeder extends BaseSeeder
 {
-    public function run(): void
+    /**
+     * If this seeder depends on other seeders, list them here.
+     * For this example, none.
+     * @return string[]
+     */
+    public function dependsOn(): array
     {
-        // Insert authors
-        Database::query(
-            'INSERT INTO authors (name, email, created_at, updated_at) VALUES (:n, :e, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-            ['n' => 'Ada Lovelace', 'e' => 'ada@example.test']
-        );
-        $adaId = (int) Database::lastInsertId();
+        return [];
+    }
 
-        Database::query(
-            'INSERT INTO authors (name, email, created_at, updated_at) VALUES (:n, :e, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
-            ['n' => 'Grace Hopper', 'e' => 'grace@example.test']
-        );
-        $graceId = (int) Database::lastInsertId();
+    /**
+     * Insert sample authors and posts deterministically (safe to re-run).
+     */
+    public function run(DatabaseAdapterInterface $adapter, LoggerInterface $logger): void
+    {
+        // Ensure Ada exists
+        $ada = $adapter->query('SELECT id FROM authors WHERE email = :e', [':e' => 'ada@example.test'])->first();
+        if (!$ada) {
+            $adapter->execute(
+                'INSERT INTO authors (name, email, created_at, updated_at) VALUES (:n, :e, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+                [':n' => 'Ada Lovelace', ':e' => 'ada@example.test']
+            );
+            $adaId = (int) $adapter->lastInsertId();
+        } else {
+            $adaId = (int) $ada['id'];
+        }
 
-        // Insert posts tied to authors
-        Database::query(
-            'INSERT INTO posts (title, slug, body, author_id, created_at, updated_at) VALUES (:t,:s,:b,:a,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)',
-            ['t' => 'Hello Ishmael', 's' => 'hello-ishmael', 'b' => 'First post body', 'a' => $adaId]
-        );
+        // Ensure Grace exists
+        $grace = $adapter->query('SELECT id FROM authors WHERE email = :e', [':e' => 'grace@example.test'])->first();
+        if (!$grace) {
+            $adapter->execute(
+                'INSERT INTO authors (name, email, created_at, updated_at) VALUES (:n, :e, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)',
+                [':n' => 'Grace Hopper', ':e' => 'grace@example.test']
+            );
+            $graceId = (int) $adapter->lastInsertId();
+        } else {
+            $graceId = (int) $grace['id'];
+        }
 
-        Database::query(
-            'INSERT INTO posts (title, slug, body, author_id, created_at, updated_at) VALUES (:t,:s,:b,:a,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)',
-            ['t' => 'Soft deletes later', 's' => 'soft-deletes', 'b' => 'A second post', 'a' => $graceId]
-        );
+        // Ensure post for Ada exists
+        $post1 = $adapter->query('SELECT id FROM posts WHERE slug = :s', [':s' => 'hello-ishmael'])->first();
+        if (!$post1) {
+            $adapter->execute(
+                'INSERT INTO posts (title, slug, body, author_id, created_at, updated_at) VALUES (:t,:s,:b,:a,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)',
+                [
+                    ':t' => 'Hello Ishmael',
+                    ':s' => 'hello-ishmael',
+                    ':b' => 'First post body',
+                    ':a' => $adaId,
+                ]
+            );
+        }
+
+        // Ensure post for Grace exists
+        $post2 = $adapter->query('SELECT id FROM posts WHERE slug = :s', [':s' => 'soft-deletes'])->first();
+        if (!$post2) {
+            $adapter->execute(
+                'INSERT INTO posts (title, slug, body, author_id, created_at, updated_at) VALUES (:t,:s,:b,:a,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP)',
+                [
+                    ':t' => 'Soft deletes later',
+                    ':s' => 'soft-deletes',
+                    ':b' => 'A second post',
+                    ':a' => $graceId,
+                ]
+            );
+        }
+
+        $logger->info('AuthorsAndPostsSeeder completed.');
     }
 }
 ```
 
-Run the seeder:
+Wire the seeder into the module’s DatabaseSeeder
+
+Open `Modules/Blog/Database/Seeders/DatabaseSeeder.php` and add the new seeder to `dependsOn()` so it runs during standard module seeding:
+
+```php
+public function dependsOn(): array
+{
+    return [
+        ExampleSeeder::class,            // existing sample seeder (optional)
+        AuthorsAndPostsSeeder::class,    // add this line
+    ];
+}
+```
+
+Run the seeder(s)
+
+- Module-level (executes DatabaseSeeder plus its dependency graph):
 
 ```bash
+php vendor/bin/ish seed --module=Blog
+```
+
+- A specific seeder (and its dependencies). Depending on your runner configuration, you can pass the short class name or FQCN:
+
+```bash
+php vendor/bin/ish seed --module=Blog --class=AuthorsAndPostsSeeder
+# or, if FQCN is required in your app setup:
 php vendor/bin/ish seed --module=Blog --class=Modules\\Blog\\Database\\Seeders\\AuthorsAndPostsSeeder
 ```
 
-Check that both tables now contain data and that posts reference valid `author_id` values.
+Environment guard reminder
+
+- Seeding runs only in dev/test/local by default. To run elsewhere, you must explicitly force it and provide an env override (dangerous; ensure you know what you’re doing):
+
+```bash
+php vendor/bin/ish seed --module=Blog --force --env=production
+```
+
+Verification
+
+- Confirm rows exist in `authors` and `posts`, and that `posts.author_id` references a valid author ID. Re-run the same command to confirm idempotency (no duplicates should be created).
 
 ---
 

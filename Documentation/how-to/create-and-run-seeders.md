@@ -1,20 +1,48 @@
 # Create and Run Seeders
 
-Date: 2025-11-04
+Date: 2025-11-04 (expanded)
 
-Seeders populate your database with deterministic dev/test data. Ishmael keeps seeders module-first and provides a small, explicit API with environment guards.
+Seeders populate your database with deterministic dev/test data. Ishmael keeps seeding module-first and provides an explicit, minimal contract with environment guards and deterministic execution. This guide explains the intent (theory), the contract, discovery/ordering rules, and provides compliant examples you can copy.
 
-Key points
-- Filesystem layout: Modules/<Module>/Database/Seeders/
-- Each seeder is a class with run() and optional dependsOn()
-- Execution is ordered deterministically with a topological sort
-- Environment guard: runs only in dev/test/local by default (force to override)
+Key points (at a glance)
+- Filesystem layout: `Modules/<Module>/Database/Seeders/`
+- Contract: `run(DatabaseAdapterInterface $adapter, LoggerInterface $logger): void`; optional `dependsOn(): string[]`
+- Ordering: topological sort based on declared dependencies
+- Orchestration: optional `DatabaseSeeder` entrypoint per module
+- Safety: environment guard (dev/test/local by default) and idempotent logic
+- Logging: start, plan, each seeder execution, and summary via PSR‑3
 
-Seeder contracts
+Why seeders exist (the theory)
+- Deterministic fixtures: Local dev and CI need predictable, repeatable data that mirrors schema expectations (unique keys, FKs) without hand-editing.
+- Module boundaries: Seed data should live near the schema and services it supports, not as a global dump. That’s why Ishmael is module-first.
+- Declarative orchestration: Dependencies model real “data prerequisites” (e.g., authors before posts). The runner turns this into a DAG and executes in a stable order.
+- Re-runnability: No global “seeded flags.” Seeders must be written so they can be run repeatedly without side effects (no duplication, no errors). This makes development flows fast and safe.
 
-- Implement SeederInterface, or extend BaseSeeder for a convenient default implementation of dependsOn().
+Seeder contract
+- Implement `SeederInterface` or extend `BaseSeeder` (recommended). `BaseSeeder` provides a default `dependsOn(): array` and shared ergonomics.
+- Required method:
+  - `public function run(DatabaseAdapterInterface $adapter, LoggerInterface $logger): void`
+- Optional method:
+  - `public function dependsOn(): array` returning an array of class names (FQCNs preferred) that must run before this one.
 
-Example seeder
+Discovery and execution rules
+- Where runner looks: `Modules/<Module>/Database/Seeders/` of each module discovered by your app.
+- With DatabaseSeeder present: Runner executes that `DatabaseSeeder` class plus all of its transitive dependencies (from `dependsOn()`), in topological order.
+- Without DatabaseSeeder: Runner executes all seeder classes found in the folder, ordered deterministically by dependency resolution.
+- Cycles are errors: If A depends on B and B depends on A (directly or indirectly), the runner aborts with a diagnostic.
+
+Environment guard (safety)
+- Allowed envs by default: `dev`, `development`, `test`, `testing`, `local`.
+- Outside those envs, runner throws an error unless you explicitly override.
+- CLI usually exposes `--force` and `--env=` flags. Use sparingly and only when you understand the impact (e.g., staging refresh).
+
+Idempotency strategies (write once, run many times)
+- Check-then-insert: Query by a unique key (email, slug) and insert only if missing.
+- Upsert/merge: Use adapter-supported upsert for atomic write-once semantics where available.
+- Stable anchors: Prefer unique constraints on natural keys (e.g., author email) to ensure re-runs don’t create duplicates.
+- Foreign keys first: Ensure parent rows exist before inserting children; this is often naturally expressed via dependsOn() or by checks within a single seeder.
+
+Example: a minimal seeder
 
 ```php
 <?php
@@ -22,7 +50,7 @@ use Ishmael\Core\Database\Seeders\BaseSeeder;
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface;
 use Psr\Log\LoggerInterface;
 
-class ExampleSeeder extends BaseSeeder
+final class ExampleSeeder extends BaseSeeder
 {
     /** @return string[] */
     public function dependsOn(): array
@@ -36,26 +64,44 @@ class ExampleSeeder extends BaseSeeder
         // Deterministic logic: check then insert
         $row = $adapter->query('SELECT id FROM widgets WHERE slug = :s', [':s' => 'example'])->first();
         if (!$row) {
-            $adapter->execute('INSERT INTO widgets (slug, name) VALUES (:s,:n)', [':s' => 'example', ':n' => 'Example']);
+            $adapter->execute(
+                'INSERT INTO widgets (slug, name) VALUES (:s,:n)',
+                [':s' => 'example', ':n' => 'Example']
+            );
         }
         $logger->info('ExampleSeeder completed.');
     }
 }
 ```
 
-Module entrypoint seeder
+Module entrypoint seeder (orchestration)
+- Purpose: Coordinate module seeding. Typically empty `run()` and a populated `dependsOn()` listing concrete seeders.
+- Behavior: If present, the runner starts from `DatabaseSeeder` and executes its dependency graph.
 
-- You may add a DatabaseSeeder class in the same folder to serve as an entrypoint. If present, the runner will resolve and execute DatabaseSeeder and all its dependencies. Otherwise, all seeders in the folder are executed.
+```php
+<?php
+use Ishmael\Core\Database\Seeders\BaseSeeder;
+use Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface;
+use Psr\Log\LoggerInterface;
 
-Template files
+final class DatabaseSeeder extends BaseSeeder
+{
+    /** @return string[] */
+    public function dependsOn(): array
+    {
+        return [
+            ExampleSeeder::class,
+            // Add more seeders here, e.g., AuthorsAndPostsSeeder::class
+        ];
+    }
 
-- Templates/Module/Database/Seeders/DatabaseSeeder.php
-- Templates/Module/Database/Seeders/ExampleSeeder.php
-
-Environment guard
-
-- SeederRunner only runs in environments: dev, development, test, testing, local.
-- To run in other environments (e.g., staging or production) you must explicitly force it.
+    public function run(DatabaseAdapterInterface $adapter, LoggerInterface $logger): void
+    {
+        // Optional: lightweight coordination or summary logging
+        $logger->info('DatabaseSeeder completed (module entrypoint).');
+    }
+}
+```
 
 Programmatic API
 
@@ -79,28 +125,26 @@ $runner->seed(module: 'HelloWorld', class: 'ExampleSeeder');
 $runner->seed(module: 'HelloWorld', force: true, env: 'production');
 ```
 
-Determinism and re-runnability
-
-- Seeders should be idempotent: checking for existence before inserting, or using upsert logic.
-- The runner does not store seeding state; re-running should not create duplicates when coded deterministically.
-
-Logging
-
-- SeederRunner logs start, plan, each seeder execution, and a final summary via PSR-3.
+CLI usage (typical)
+- Module-level: `php vendor/bin/ish seed --module=Blog`
+- Specific class (short name): `php vendor/bin/ish seed --module=Blog --class=ExampleSeeder`
+- Specific class (FQCN, if required by your app’s resolver):
+  `php vendor/bin/ish seed --module=Blog --class=Modules\\Blog\\Database\\Seeders\\ExampleSeeder`
 
 Top-level app orchestration (optional)
-
-- You can create an application-level DatabaseSeeder (e.g., under your app) that coordinates module seeders by declaring dependsOn() entries for module DatabaseSeeder classes.
+- You can create an application-level `DatabaseSeeder` that declares `dependsOn()` entries pointing at module `DatabaseSeeder` classes to coordinate all modules from one place.
 
 Troubleshooting
+- “Seeding is disabled”: You are outside allowed environments. Pass `--force --env=<env>` intentionally.
+- “Cyclic dependency detected”: Break the cycle in your `dependsOn()` graph.
+- Seeder not running: Ensure the class file is in `Modules/<Module>/Database/Seeders/`, class name matches file, autoloading is configured, and it’s either listed by `DatabaseSeeder` or discoverable when no entrypoint exists.
+- Duplicate rows on re-run: Add a unique constraint and change logic to check-then-insert or use upsert.
 
-- "Seeding is disabled" error: you are outside the allowed environments; pass force: true to override.
-- Cyclic dependency detected: resolve the cycle in dependsOn() declarations.
+Templates and stubs
+- Module templates typically provide `DatabaseSeeder.php` and `ExampleSeeder.php` stubs to copy from.
+- The CLI `make:seeder` uses the core stub at `Resources/stubs/Seeder/seeder.php.stub` to generate compliant classes.
 
-
----
-
-## Related reference
+Related reference
 - Reference: [CLI Route Commands](../reference/cli-route-commands.md)
 - Reference: [Config Keys](../reference/config-keys.md)
 - Reference: [Core API (Markdown stubs)](../reference/core-api/_index.md)
