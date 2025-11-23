@@ -185,6 +185,8 @@
 declare(strict_types=1);
 
 use Ishmael\\Core\\Database\\Migrations\\BaseMigration;
+use Ishmael\\Core\\Database\\Schema\\Schema;
+use Ishmael\\Core\\Database\\Schema\\Blueprint;
 
 /**
  * Auto-generated migration{$tableComment}
@@ -198,8 +200,12 @@ final class {$className} extends BaseMigration
      */
     public function up(): void
     {
-        // TODO: Use SchemaManager (when available) or raw SQL via:
-        // \$this->sql('...');
+        // Example:
+        // Schema::create('table_name', function (Blueprint $table): void {
+        //     $table->id();
+        //     $table->string('name', 191);
+        //     $table->timestamps();
+        // });
     }
 
     /**
@@ -208,7 +214,8 @@ final class {$className} extends BaseMigration
      */
     public function down(): void
     {
-        // TODO: implement reversal
+        // Example:
+        // Schema::dropIfExists('table_name');
     }
 }
 PHP;
@@ -1091,22 +1098,50 @@ TPL;
                 } else {
                     $nameArg = $arg2;
                 }
-                if ($nameArg === '') {
+                if (trim($nameArg) === '') {
                     throw new InvalidArgumentException('Migration name is required: ish make:migration <name> [--module=Name] or ish make:migration <Module> <name>');
                 }
+                // Validate module if provided
+                if ($module !== null) {
+                    $m = (string)$module;
+                    if (!preg_match('/^[A-Za-z0-9]+$/', $m)) {
+                        throw new InvalidArgumentException('Invalid module name. Use alphanumeric characters only (StudlyCaps preferred).');
+                    }
+                }
+                // Derive class name from original input (StudlyCase)
                 $className = toStudlyCase($nameArg);
-                $timestamp = date('YmdHis');
-                $fileName = $timestamp . '__' . $className . '.php';
-                if ($module) {
-                    $dir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . toStudlyCase((string)$module) . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations';
+                // Build sanitized filename segment from raw input
+                $sanitized = preg_replace('/[^A-Za-z0-9]+/', '_', (string)$nameArg);
+                $sanitized = preg_replace('/_+/', '_', (string)$sanitized);
+                $sanitized = trim((string)$sanitized, '_');
+                if ($sanitized === '') {
+                    throw new InvalidArgumentException('Migration name must contain alphanumeric characters.');
+                }
+                // Resolve target directory
+                $targetModule = $module ? toStudlyCase((string)$module) : null;
+                if ($targetModule) {
+                    $dir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $targetModule . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations';
                 } else {
                     $dir = $appRoot . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations';
                 }
                 ensureDirectory($dir);
-                $path = $dir . DIRECTORY_SEPARATOR . $fileName;
+                // Ensure unique timestamp without adding suffixes
+                $path = '';
+                do {
+                    $timestamp = date('YmdHis');
+                    $fileName = sprintf('%s_%s.php', $timestamp, $sanitized);
+                    $path = $dir . DIRECTORY_SEPARATOR . $fileName;
+                    if (file_exists($path)) { usleep(200000); } // 200ms then retry until next second
+                } while (file_exists($path));
+
                 $contents = createMigrationContent($className);
                 writeFile($path, $contents);
-                echo 'Created migration: ' . $path . PHP_EOL;
+
+                // Post-generation validation: match discovery regex
+                $ok = (bool)preg_match('/^\d{14}_.+\.php$/', $fileName);
+                $discoverable = $ok ? ' (discoverable)' : ' (warning: not discoverable)';
+                echo 'Created: ' . $path . $discoverable . PHP_EOL;
+                if (!$ok) { exit(2); }
                 exit(0);
             }
 

@@ -43,7 +43,7 @@ final class MigrateSeedTest extends CliTestCase
 
         // Find migration file and replace contents with a simple table create
         $migrationsDir = $this->moduleDir . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations';
-        $files = glob($migrationsDir . DIRECTORY_SEPARATOR . '*__CreateItemsTable.php') ?: [];
+        $files = glob($migrationsDir . DIRECTORY_SEPARATOR . '*_CreateItemsTable.php') ?: [];
         $this->assertNotEmpty($files, 'Expected migration file to be created');
         $migPath = $files[0];
         $className = 'CreateItemsTable' . substr(bin2hex(random_bytes(2)), 0, 4);
