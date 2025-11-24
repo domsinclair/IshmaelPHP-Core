@@ -223,6 +223,12 @@ PHP;
 
     // 1) Resolve app root and autoload
     $appRoot = getcwd();
+    // Hint base_path() to use the host application's root rather than the vendor package path
+    if (!defined('ISH_APP_BASE')) {
+        define('ISH_APP_BASE', $appRoot);
+    }
+    // Also expose via server/env for any components that look it up this way
+    $_SERVER['ISH_APP_BASE'] = $appRoot;
     $autoload = resolveAutoloadPath($appRoot);
 
     // Guard to prevent HTTP router dispatch
