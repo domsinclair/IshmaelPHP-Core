@@ -5,6 +5,7 @@
 
     use Ishmael\Core\Http\Request;
     use Ishmael\Core\Http\Response;
+    use Psr\Container\ContainerInterface;
 
     /**
      * Minimal HTTP router supporting fluent route definitions, groups, and module-aware dispatch.
@@ -558,6 +559,117 @@
             }
         }
 
+        /**
+         * Optional PSR-11 container for resolving controllers (and their dependencies).
+         */
+        private ?ContainerInterface $container = null;
+
+        /**
+         * Enable minimal reflection-based autowiring for controllers.
+         * When disabled, falls back to invoking zero-arg constructors only.
+         */
+        private bool $autowireControllers = true;
+
+        /**
+         * Track resolution stack to detect circular dependencies during autowiring.
+         * @var array<int,string>
+         */
+        private array $resolvingStack = [];
+
+        /**
+         * Set or clear an application-provided PSR-11 container.
+         */
+        public function setContainer(?ContainerInterface $container): void
+        {
+            $this->container = $container;
+        }
+
+        /**
+         * Enable/disable controller autowiring. Enabled by default during alpha.
+         */
+        public function setAutoWireControllers(bool $enabled = true): void
+        {
+            $this->autowireControllers = $enabled;
+        }
+
+        /**
+         * Resolve a class instance using container if available or minimal autowiring fallback.
+         */
+        private function resolveClass(string $class): object
+        {
+            // 1) Container first, if present
+            if ($this->container && $this->container->has($class)) {
+                return $this->container->get($class);
+            }
+
+            // 2) Minimal autowire
+            if (!$this->autowireControllers) {
+                return new $class();
+            }
+
+            // Cycle detection
+            if (in_array($class, $this->resolvingStack, true)) {
+                $cycle = array_merge($this->resolvingStack, [$class]);
+                throw new \RuntimeException('Circular dependency detected: ' . implode(' -> ', $cycle));
+            }
+            $this->resolvingStack[] = $class;
+
+            try {
+                // Reflection metadata caches
+                static $refCache = [];
+                static $ctorParamsCache = [];
+
+                if (!isset($refCache[$class])) {
+                    $refCache[$class] = new \ReflectionClass($class);
+                }
+                /** @var \ReflectionClass $ref */
+                $ref = $refCache[$class];
+                $ctor = $ref->getConstructor();
+                if (!$ctor || $ctor->getNumberOfRequiredParameters() === 0) {
+                    return new $class();
+                }
+
+                if (!isset($ctorParamsCache[$class])) {
+                    $ctorParamsCache[$class] = $ctor->getParameters();
+                }
+                $args = [];
+                foreach ($ctorParamsCache[$class] as $p) {
+                    $t = $p->getType();
+                    $named = $t instanceof \ReflectionNamedType ? $t : null;
+                    $name = $named && !$named->isBuiltin() ? $named->getName() : null;
+
+                    if ($name && class_exists($name)) {
+                        // Recurse for class-typed param
+                        $args[] = $this->resolveClass($name);
+                        continue;
+                    }
+
+                    if ($p->isDefaultValueAvailable()) {
+                        $args[] = $p->getDefaultValue();
+                        continue;
+                    }
+
+                    if ($named && $named->allowsNull()) {
+                        $args[] = null;
+                        continue;
+                    }
+
+                    throw new \RuntimeException(
+                        sprintf(
+                            'Cannot resolve dependency $%s (%s) for %s::__construct(). Provide it via the container or make the parameter optional with a default.',
+                            $p->getName(),
+                            $name ?: ($named?->getName() ?? 'scalar'),
+                            $class
+                        )
+                    );
+                }
+
+                return $ref->newInstanceArgs($args);
+            } finally {
+                array_pop($this->resolvingStack);
+            }
+        }
+
         private function invokeControllerHandler(?string $module, string $controller, string $action, array $params, Request $req, Response $res): Response
         {
             // Ensure controller suffix for non-FQCN
@@ -587,7 +699,7 @@
                 }
                 return Response::text($msg, 404);
             }
-            $ctrl = new $class();
+            $ctrl = $this->resolveClass($class);
             if (!method_exists($ctrl, $action)) {
                 // Suggest available public methods (excluding magic/constructor)
                 $refClass = new \ReflectionClass($ctrl);

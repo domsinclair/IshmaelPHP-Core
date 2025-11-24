@@ -12,6 +12,8 @@ Auto-generated from command metadata.
 | `migrate:rollback` | ish migrate:rollback [--module=Name] [--steps=N] | Rollback the last batch or specified steps. |
 | `status` | ish status [--module=Name] | Show migration status. |
 | `seed` | ish seed [--module=Name] [--class=FQCN] [--force] [--env=ENV] | Run database seeders. |
+| `db:seed` | ish db:seed [--module=Name] [--class=FQCN] [--force] [--env=ENV] | Alias of seed; runs database seeders. |
+| `db:reset` | ish db:reset [--purge] [--force] | Reset database identities/sequences; with --purge truncate all tables FK-safely. |
 | `route:list` | ish route:list [--method=GET] [--module=Name] | List registered routes. |
 | `route:cache` | ish route:cache [--force] | Compile and cache route map. |
 | `route:clear` | ish route:clear | Clear route cache file. |
@@ -74,6 +76,22 @@ Auto-generated from command metadata.
 | --class | yes |  | Seeder class FQCN. |
 | --force | no | false | Run in production without confirmation. |
 | --env | yes |  | Environment name (e.g., ci). |
+
+### db:seed
+
+| Option | Takes Value | Default | Description |
+|---|---|---|---|
+| --module | yes |  | Restrict to a module. |
+| --class | yes |  | Seeder class FQCN. |
+| --force | no | false | Run in production without confirmation. |
+| --env | yes |  | Environment name (e.g., ci). |
+
+### db:reset
+
+| Option | Takes Value | Default | Description |
+|---|---|---|---|
+| --purge | no | false | Truncate all user tables and reset identities. |
+| --force | no | false | Run in production without confirmation. |
 
 ### route:list
 
