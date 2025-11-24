@@ -365,20 +365,61 @@ final class SeederRunner
      */
     private function normalizeDeps(array $seeders, string $fqcn, array $universe): array
     {
+        // Build lookup maps for exact and case-insensitive resolution
         $shortMap = [];
+        $shortMapLower = [];
+        $fqcnMapLower = [];
         foreach (array_keys($seeders) as $k) {
             $pos = strrpos($k, '\\');
             $short = ($pos !== false) ? substr($k, $pos + 1) : $k;
             $shortMap[$short] = $k;
+            $shortMapLower[strtolower($short)] = $k;
+            $fqcnMapLower[strtolower($k)] = $k;
         }
+
         $declared = [];
         try { $declared = $seeders[$fqcn]->dependsOn(); } catch (\Throwable $_) { /* ignore */ }
         $resolved = [];
         foreach ($declared as $d) {
-            $fq = $seeders[$d] ?? ($shortMap[$d] ?? null);
-            if ($fq && in_array($fq, $universe, true)) { $resolved[] = $fq; }
+            $fq = null;
+            // 1) Exact match by FQCN key
+            if (isset($seeders[$d])) {
+                $fq = $d;
+            }
+            // 2) Exact match by short name
+            elseif (isset($shortMap[$d])) {
+                $fq = $shortMap[$d];
+            }
+            else {
+                // 3) If a FQCN was provided, try its short/basename
+                $pos = strrpos($d, '\\');
+                if ($pos !== false) {
+                    $base = substr($d, $pos + 1);
+                    if (isset($shortMap[$base])) {
+                        $fq = $shortMap[$base];
+                    }
+                }
+            }
+
+            // 4) Case-insensitive fallbacks
+            if ($fq === null) {
+                $dl = strtolower($d);
+                if (isset($fqcnMapLower[$dl])) {
+                    $fq = $fqcnMapLower[$dl];
+                } else {
+                    $pos = strrpos($d, '\\');
+                    $base = $pos !== false ? substr($d, $pos + 1) : $d;
+                    $bl = strtolower($base);
+                    if (isset($shortMapLower[$bl])) {
+                        $fq = $shortMapLower[$bl];
+                    }
+                }
+            }
+
+            if ($fq !== null && in_array($fq, $universe, true)) {
+                $resolved[] = $fq;
+            }
         }
-        sort($resolved, SORT_STRING);
         return $resolved;
     }
 }
