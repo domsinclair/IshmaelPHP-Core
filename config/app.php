@@ -46,10 +46,10 @@
                 // Example: Ishmael\Core\Http\Middleware\RequestIdMiddleware::class,
                 // Example: Ishmael\Core\Http\Middleware\CorsMiddleware::class,
                 // Example: Ishmael\Core\Http\Middleware\JsonBodyParserMiddleware::class,
-                // To enable sessions globally, uncomment the next line:
-                // Ishmael\Core\Http\Middleware\StartSessionMiddleware::class,
-                // Once sessions are enabled, enable CSRF protection for state-changing requests:
-                // Ishmael\Core\Http\Middleware\VerifyCsrfToken::class,
+                // Enable sessions globally
+                Ishmael\Core\Http\Middleware\StartSessionMiddleware::class,
+                // Enable CSRF protection for state-changing requests by default
+                Ishmael\Core\Http\Middleware\VerifyCsrfToken::class,
                 // Apply standard Security Headers (CSP, XFO, XCTO, HSTS via config/security.php):
                 // Ishmael\Core\Http\Middleware\SecurityHeaders::class,
                 // To enable authentication primitives, bind RememberMe first to wire services and cookie handling:

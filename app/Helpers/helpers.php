@@ -432,6 +432,20 @@ ENV;
     }
 
     /**
+     * Render a <meta name="csrf-token" content="..."> tag for use by JavaScript/XHR.
+     *
+     * @return string HTML meta element markup
+     */
+    if (!function_exists('csrfMeta')) {
+        function csrfMeta(): string
+        {
+            $token = csrfToken();
+            $tokenEsc = htmlspecialchars($token, ENT_QUOTES, 'UTF-8');
+            return '<meta name="csrf-token" content="' . $tokenEsc . '">';
+        }
+    }
+
+    /**
      * Tiny flash message helper using PHP sessions.
      *
      * Behavior:

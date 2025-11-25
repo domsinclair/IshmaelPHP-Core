@@ -128,17 +128,30 @@ If you keep a simple HTML form (textarea), you can add a small upload form that 
 Example view snippet below your Body textarea:
 
 ```html
+<!-- In your base layout <head>, expose the CSRF token for XHR: -->
+<?= function_exists('csrfMeta') ? csrfMeta() : '' ?>
+
 <form id="imgUpload" action="<?= route('blog.media.upload') ?>" method="post" enctype="multipart/form-data">
+  <?= function_exists('csrfField') ? csrfField() : '' ?>
   <input type="file" name="image" accept="image/*" required />
   <button type="submit">Upload</button>
+  
+  <!-- Optional: also include the token in a header for fetch() if your middleware checks headers -->
 </form>
 
 <script>
   const form = document.getElementById('imgUpload');
+  function csrfTokenFromMeta() {
+    const m = document.querySelector('meta[name="csrf-token"]');
+    return m ? m.getAttribute('content') : null;
+  }
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
-    const res = await fetch(form.action, { method: 'POST', body: fd });
+    const headers = {};
+    const t = csrfTokenFromMeta();
+    if (t) headers['X-CSRF-Token'] = t;
+    const res = await fetch(form.action, { method: 'POST', body: fd, headers });
     if (!res.ok) { alert('Upload failed'); return; }
     const { url } = await res.json();
     // Insert Markdown syntax at cursor

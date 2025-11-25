@@ -41,7 +41,16 @@ final class VerifyCsrfToken
      */
     public function __invoke(Request $req, Response $res, callable $next): Response
     {
-        if (!($this->config['enabled'] ?? true)) {
+        // Route-level override flags (set by Router before pipeline execution)
+        $routeBypass = (bool)($_SERVER['ISH_ROUTE_CSRF_BYPASS'] ?? false);
+        $routeForce = (bool)($_SERVER['ISH_ROUTE_CSRF_FORCE'] ?? false);
+        // Router-level overrides
+        $enabledOverride = $_SERVER['ISH_CSRF_ENABLED'] ?? null;
+        if ($enabledOverride !== null) {
+            $this->config['enabled'] = filter_var((string)$enabledOverride, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        if (!($this->config['enabled'] ?? true) && !$routeForce) {
             return $next($req, $res);
         }
 
@@ -49,8 +58,17 @@ final class VerifyCsrfToken
         $path = $req->getPath();
 
         // Method exemptions
+        $exceptOverride = $_SERVER['ISH_CSRF_EXCEPT_METHODS'] ?? null;
+        if (is_string($exceptOverride) && $exceptOverride !== '') {
+            $this->config['except_methods'] = array_map('trim', explode(',', $exceptOverride));
+        }
         $exceptMethods = array_map('strtoupper', (array)($this->config['except_methods'] ?? ['GET', 'HEAD', 'OPTIONS']));
         if (in_array($method, $exceptMethods, true)) {
+            return $next($req, $res);
+        }
+
+        // Route-level bypass flag
+        if ($routeBypass) {
             return $next($req, $res);
         }
 

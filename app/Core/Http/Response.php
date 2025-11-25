@@ -53,6 +53,19 @@ class Response
         return new self($body, $status, $headers);
     }
 
+    /**
+     * Convenience: create a redirect response with Location header.
+     *
+     * @param string $location Absolute or relative URL to redirect to
+     * @param int $status HTTP status code (default 302)
+     * @param array<string,string> $headers Additional headers
+     */
+    public static function redirect(string $location, int $status = 302, array $headers = []): self
+    {
+        $headers = ['Location' => $location] + $headers;
+        return new self('', $status, $headers);
+    }
+
     public static function fromThrowable(\Throwable $e, bool $debug = false): self
     {
         $safeMessage = 'Internal Server Error';

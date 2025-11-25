@@ -69,6 +69,55 @@
             return self::forwards()->add(['GET','POST','PUT','PATCH','DELETE','OPTIONS','HEAD'], $pattern, $handler, $middleware);
         }
 
+        /**
+         * Globally enable or disable CSRF protection at runtime.
+         * This sets a server flag read by VerifyCsrfToken middleware.
+         */
+        public static function enableCsrfProtection(bool $enabled = true): void
+        {
+            $_SERVER['ISH_CSRF_ENABLED'] = $enabled ? '1' : '0';
+        }
+
+        /**
+         * Configure which HTTP methods should be subject to CSRF checks.
+         * Methods not listed will be treated as "except_methods" for the middleware.
+         *
+         * @param array<int,string> $methods Methods like POST, PUT, PATCH, DELETE
+         */
+        public static function setCsrfMethods(array $methods): void
+        {
+            $provided = array_map('strtoupper', $methods);
+            $all = ['GET','HEAD','POST','PUT','PATCH','DELETE','OPTIONS'];
+            $except = [];
+            foreach ($all as $m) {
+                if (!in_array($m, $provided, true)) {
+                    $except[] = $m;
+                }
+            }
+            $_SERVER['ISH_CSRF_EXCEPT_METHODS'] = implode(',', $except);
+        }
+
+        /**
+         * Convenience group wrapper that opts out of CSRF for all routes inside.
+         * Accepts same options as group(), merges _csrf flag.
+         * @param array<string,mixed> $options
+         */
+        public static function groupWithoutCsrf(array $options, callable $callback): void
+        {
+            $options['_csrf'] = 'bypass';
+            self::group($options, $callback);
+        }
+
+        /**
+         * Convenience group wrapper that forces CSRF for all routes inside even if disabled globally.
+         * @param array<string,mixed> $options
+         */
+        public static function groupWithCsrf(array $options, callable $callback): void
+        {
+            $options['_csrf'] = 'force';
+            self::group($options, $callback);
+        }
+
         /** Group routes with options: prefix, middleware, module */
         public static function group(array $options, callable $callback): void
         {
@@ -178,8 +227,36 @@
             if (!empty($ctx['module'])) {
                 $entry['module'] = (string)$ctx['module'];
             }
+            // Inherit CSRF group policy when present and not overridden for this route
+            if (isset($ctx['_csrf']) && !isset($entry['_csrf'])) {
+                $entry['_csrf'] = $ctx['_csrf'];
+            }
             $this->routes[] = $entry;
             $this->lastAddedIndex = count($this->routes) - 1;
+            return $this;
+        }
+
+        /**
+         * Opt out of CSRF protection for the most recently added route.
+         */
+        public function withoutCsrf(): self
+        {
+            if ($this->lastAddedIndex === null) {
+                throw new \LogicException('Cannot call withoutCsrf() before adding a route.');
+            }
+            $this->routes[$this->lastAddedIndex]['_csrf'] = 'bypass';
+            return $this;
+        }
+
+        /**
+         * Explicitly require CSRF for the most recently added route, even if globally disabled.
+         */
+        public function withCsrf(): self
+        {
+            if ($this->lastAddedIndex === null) {
+                throw new \LogicException('Cannot call withCsrf() before adding a route.');
+            }
+            $this->routes[$this->lastAddedIndex]['_csrf'] = 'force';
             return $this;
         }
 
@@ -499,6 +576,19 @@
 
                 return $this->invokeControllerHandler($module, $controller, $action, $params, $req, $res);
             };
+
+            // Expose route-level CSRF flags to middleware via server vars before building pipeline
+            if (isset($route['_csrf'])) {
+                if ($route['_csrf'] === 'bypass') {
+                    $_SERVER['ISH_ROUTE_CSRF_BYPASS'] = '1';
+                    unset($_SERVER['ISH_ROUTE_CSRF_FORCE']);
+                } elseif ($route['_csrf'] === 'force') {
+                    $_SERVER['ISH_ROUTE_CSRF_FORCE'] = '1';
+                    unset($_SERVER['ISH_ROUTE_CSRF_BYPASS']);
+                }
+            } else {
+                unset($_SERVER['ISH_ROUTE_CSRF_BYPASS'], $_SERVER['ISH_ROUTE_CSRF_FORCE']);
+            }
 
             // Build middleware pipeline: global -> route (group middleware already merged into route)
             $stack = array_merge(RouterMiddleware::resolveStack($this->globalMiddleware), RouterMiddleware::resolveStack($route['middleware']));
@@ -856,6 +946,7 @@
                 'prefix' => $this->joinPaths($current['prefix'] ?? '', (string)($options['prefix'] ?? '')),
                 'middleware' => array_merge($current['middleware'] ?? [], (array)($options['middleware'] ?? [])),
                 'module' => $options['module'] ?? ($current['module'] ?? null),
+                '_csrf' => $options['_csrf'] ?? ($current['_csrf'] ?? null),
             ];
         }
 
@@ -864,7 +955,7 @@
             array_pop($this->groupStack);
         }
 
-        /** @return array{prefix:string, middleware:callable[], module?:string} */
+        /** @return array{prefix:string, middleware:callable[], module?:string, _csrf?:string} */
         private function currentGroup(): array
         {
             return $this->groupStack[count($this->groupStack) - 1] ?? ['prefix' => '', 'middleware' => []];

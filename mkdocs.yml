@@ -54,6 +54,7 @@ nav:
       - "Routing v2: Parameters, Constraints, and Named Routes": guide/routing-v2-parameters-constraints-and-named-routes.md
       - Middleware Pipeline: guide/middleware-pipeline.md
       - Route Cache: guide/route-cache.md
+      - CSRF, Idempotency, and Flash (Phase-14): guide/csrf-idempotency-flash.md
       - Security Headers: guide/security-headers.md
       - Controllers & Views: guide/controllers-and-views.md
       - Configuration: guide/configuration.md

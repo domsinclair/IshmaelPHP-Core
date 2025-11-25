@@ -42,9 +42,9 @@ In controllers, redirect using names if a helper is available, or continue using
 return $response->redirect(route('blog.posts.show', ['id' => $id]));
 ```
 
-## 3) CSRF protection for forms
+## 3) CSRF protection for forms and XHR
 
-If CSRF middleware is enabled globally, ensure your forms include a CSRF token field. If your version provides `csrfField()` helper, add it inside `<form>`:
+As of Phase‑14, CSRF protection is enabled by default for state‑changing methods (POST/PUT/PATCH/DELETE) via global middleware. Ensure your forms include a CSRF token field. If your version provides `csrfField()` helper, add it inside `<form>`:
 
 ```php
 <form method="post" action="<?php echo route('blog.posts.store'); ?>">
@@ -54,6 +54,32 @@ If CSRF middleware is enabled globally, ensure your forms include a CSRF token f
 ```
 
 If you don’t have the helper, include a hidden input named according to your middleware’s expectation and pull the token from session.
+
+For JavaScript/XHR requests, expose a meta tag in your base layout and send the token as a header:
+
+```php
+<!-- layout.php <head> -->
+<?= function_exists('csrfMeta') ? csrfMeta() : '' ?>
+```
+
+```js
+// In your JS file
+function csrfTokenFromMeta() {
+  const m = document.querySelector('meta[name="csrf-token"]');
+  return m ? m.getAttribute('content') : null;
+}
+
+async function postJson(url, data) {
+  const headers = { 'Content-Type': 'application/json' };
+  const t = csrfTokenFromMeta();
+  if (t) headers['X-CSRF-Token'] = t;
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(data) });
+  if (!res.ok) throw new Error('Request failed');
+  return res.json();
+}
+```
+
+To bypass CSRF for legitimate cross‑origin endpoints like public webhooks, you can mark specific routes without CSRF if your router exposes that API, e.g. `Router::post('/webhook/...', handler)->withoutCsrf();` Use sparingly.
 
 ## 4) Example rate limiting middleware
 

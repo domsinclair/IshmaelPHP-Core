@@ -8,6 +8,7 @@
 - `text(string $body, int $status, array $headers)`
 - `json(mixed $data, int $status, array $headers)`
 - `html(string $body, int $status, array $headers)`
+- `redirect(string $location, int $status, array $headers)`
 - `fromThrowable(Throwable $e, bool $debug)`
 - `setStatusCode(int $code)`
 - `getStatusCode()`

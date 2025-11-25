@@ -15,4 +15,5 @@
 - `prepare(string $sql)`
 - `query(string $sql, array $params)`
 - `execute(string $sql, array $params)`
+- `lastInsertId(string $sequence)`
 - `normalizeParams(array $params)`

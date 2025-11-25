@@ -42,6 +42,7 @@ The following symbols were discovered under `IshmaelPHP-Core/app/` and summarize
 - [HandleValidationExceptions](./HandleValidationExceptions.md)
 - [HasherInterface](./HasherInterface.md)
 - [HttpValidators](./HttpValidators.md)
+- [Idempotency](./Idempotency.md)
 - [IndexDefinition](./IndexDefinition.md)
 - [JsonBodyParserMiddleware](./JsonBodyParserMiddleware.md)
 - [JsonLinesFormatter](./JsonLinesFormatter.md)

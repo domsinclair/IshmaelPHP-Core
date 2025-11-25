@@ -10,7 +10,7 @@ In this revised Part 2 you will:
 Prerequisites:
 - You completed Part 1 and have the Blog module scaffolded.
 - You can run the Ishmael CLI from your app root:
-  
+
   ```bash
   php vendor/bin/ish
   ```
@@ -34,6 +34,8 @@ Generate Posts migration:
 ```bash
 php vendor/bin/ish make:migration Blog CreatePosts
 ```
+
+At this point you can safely delete the Create Example Migration file.
 
 Open each generated migration file under `Modules/Blog/Database/Migrations/…` and replace the class contents with the following code.
 
@@ -482,11 +484,7 @@ Examples:
 
 ---
 
-## Useful references
-- Guide: [Writing and running migrations](../guide/writing-and-running-migrations.md)
-- How‑to: [Create and Run Seeders](../how-to/create-and-run-seeders.md)
-- Reference: [CLI Commands (generated)](../reference/cli-commands.md)
-- Reference: [Config Keys](../reference/config-keys.md)
+
 
 ---
 

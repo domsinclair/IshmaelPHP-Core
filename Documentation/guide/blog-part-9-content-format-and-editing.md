@@ -112,6 +112,7 @@ Views/posts/_form.php:
 ```php
 <?php /** @var array{post?: array} $data */ $post = $data['post'] ?? []; ?>
 <form method="post" action="<?= $data['action'] ?>">
+  <?= function_exists('csrfField') ? csrfField() : '' ?>
   <label>Title
     <input type="text" name="title" value="<?= htmlspecialchars($post['title'] ?? '') ?>" required />
   </label>
