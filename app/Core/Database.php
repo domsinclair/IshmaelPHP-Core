@@ -209,6 +209,17 @@
         }
 
         /**
+         * Return the last auto-increment ID from the most recent INSERT.
+         *
+         * For PostgreSQL, you may provide a sequence name; for MySQL/SQLite the
+         * parameter is ignored. This delegates to the active database adapter.
+         */
+        public static function lastInsertId(?string $sequence = null): string
+        {
+            return self::adapter()->lastInsertId($sequence);
+        }
+
+        /**
          * Normalize parameter values for binding. Converts DateTimeInterface to ISO8601 strings,
          * booleans to integers, and leaves other scalar values unchanged. Nulls are preserved.
          *
