@@ -245,7 +245,7 @@ PHP;
     $options = parseOptions(array_slice($argv, 2));
     $nonDbCommands = [
             'help','make:module','make:resource','make:view','make:views','make:controller','make:service',
-            'examples:list','examples:install','pack',
+            'examples:list','examples:install','pack','make:routes',
             'modules:cache','modules:clear','route:cache','route:clear'
     ];
     if (!in_array($command, $nonDbCommands, true)) {
@@ -368,6 +368,7 @@ PHP;
                         'description' => 'Scaffold a new module skeleton (controllers, models, views, routes.php, module.json).',
                         'options' => [
                                 ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+                                ['name' => '--api', 'description' => 'Hint API-style module (no session/CSRF route grouping)'],
                         ],
                 ],
                 [
@@ -375,6 +376,8 @@ PHP;
                         'description' => 'Scaffold a CRUD resource inside a module (controller, routes, views).',
                         'options' => [
                                 ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
+                                ['name' => '--api', 'description' => 'Generate API routes (no session/CSRF and no HTML assumptions)'],
+                                ['name' => '--public-get-only', 'description' => 'Generate GET-only routes (index/show) without session/CSRF'],
                         ],
                 ],
                 [
@@ -501,6 +504,13 @@ PHP;
                                 ['name' => '--file', 'description' => 'Cache file path (default: ./storage/cache/routes.cache.php)', 'accepts' => 'PATH'],
                         ],
                 ],
+                [
+                        'name' => 'make:routes',
+                        'description' => 'Scan a module’s Views and generate appropriate routes (web by default, use --api for stateless).',
+                        'options' => [
+                                ['name' => '--api', 'description' => 'Generate routes without session/CSRF grouping (for API/stateless)'],
+                        ],
+                ],
         ];
     }
 
@@ -561,8 +571,8 @@ PHP;
 
 Usage:
   ish help
-  ish make:module <Name> [--templates=PATH]
-  ish make:resource <Module> <Name> [--templates=PATH]
+  ish make:module <Name> [--templates=PATH] [--api]
+  ish make:resource <Module> <Name> [--templates=PATH] [--api] [--public-get-only]
   ish make:controller <Module> <Name> [--invokable] [--templates=PATH]
   ish make:service <Module> <Name> [--templates=PATH]
   ish make:views <Module> <resource> [--templates=PATH]
@@ -579,6 +589,7 @@ Usage:
   ish modules:clear [--cache=PATH]
   ish route:cache [--out=PATH] [--modules=PATH] [--env=ENV]
   ish route:clear [--file=PATH]
+  ish make:routes <Module> [--api]
   ish examples:list
   ish examples:install <ModuleName> [--force] [--path=Modules]
   ish examples:install --all [--force] [--path=Modules]
@@ -773,6 +784,12 @@ TXT;
                                 $rendered = $header . $firstBlock . "\n";
                             }
                         }
+                        // If not API-oriented module, hint a CSRF/session group comment for developers
+                        if (!isset($options['api'])) {
+                            $hint = "\n    // Tip: Web routes typically run with session + CSRF middleware.\n    // You can wrap routes into a group with StartSessionMiddleware then VerifyCsrfToken.\n";
+                            // Insert the hint after the opening of the closure
+                            $rendered = preg_replace('#(return function \(Router \\$router\): void \{\n)#', '$1' . str_replace('\\', '\\\\', $hint), (string)$rendered, 1);
+                        }
                     }
                     writeFile($outPath, $rendered);
                 }
@@ -791,6 +808,8 @@ TXT;
                 $resourceStudly = toStudlyCase($nameArg);
                 $resourceLower = strtolower($resourceStudly);
                 $resourcesLower = rtrim($resourceLower, 's') !== $resourceLower ? $resourceLower : $resourceLower . 's';
+                $isApi = isset($options['api']);
+                $publicGetOnly = isset($options['public-get-only']);
 
                 $moduleDir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly;
                 ensureDirectory($moduleDir);
@@ -893,15 +912,20 @@ TXT;
                     }
                     // Build canonical resource routes irrespective of stub quirks
                     $basePath = '/' . $moduleSlug . '/' . $resourcesLower;
-                    // Build route lines with escaped $ to avoid PHP variable interpolation at generation time
-                    $rc = ''
-                            . "\$router->get('{$basePath}', '" . $resourceStudly . "Controller@index')->name('{$moduleSlug}.{$resourcesLower}.index');\n"
-                            . "\$router->get('{$basePath}/create', '" . $resourceStudly . "Controller@create')->name('{$moduleSlug}.{$resourcesLower}.create');\n"
-                            . "\$router->post('{$basePath}', '" . $resourceStudly . "Controller@store')->name('{$moduleSlug}.{$resourcesLower}.store');\n"
-                            . "\$router->get('{$basePath}/{id:int}', '" . $resourceStudly . "Controller@show')->name('{$moduleSlug}.{$resourcesLower}.show');\n"
-                            . "\$router->get('{$basePath}/{id:int}/edit', '" . $resourceStudly . "Controller@edit')->name('{$moduleSlug}.{$resourcesLower}.edit');\n"
-                            . "\$router->post('{$basePath}/{id:int}', '" . $resourceStudly . "Controller@update')->name('{$moduleSlug}.{$resourcesLower}.update');\n"
-                            . "\$router->post('{$basePath}/{id:int}/delete', '" . $resourceStudly . "Controller@destroy')->name('{$moduleSlug}.{$resourcesLower}.destroy');\n";
+                    // Build route lines (escaped $). Respect --public-get-only by omitting POST routes.
+                    $lines = [];
+                    $lines[] = "\$ROUTER->get('{$basePath}', '" . $resourceStudly . "Controller@index')->name('{$moduleSlug}.{$resourcesLower}.index');";
+                    $lines[] = "\$ROUTER->get('{$basePath}/create', '" . $resourceStudly . "Controller@create')->name('{$moduleSlug}.{$resourcesLower}.create');";
+                    if (!$publicGetOnly) {
+                        $lines[] = "\$ROUTER->post('{$basePath}', '" . $resourceStudly . "Controller@store')->name('{$moduleSlug}.{$resourcesLower}.store');";
+                    }
+                    $lines[] = "\$ROUTER->get('{$basePath}/{id:int}', '" . $resourceStudly . "Controller@show')->name('{$moduleSlug}.{$resourcesLower}.show');";
+                    $lines[] = "\$ROUTER->get('{$basePath}/{id:int}/edit', '" . $resourceStudly . "Controller@edit')->name('{$moduleSlug}.{$resourcesLower}.edit');";
+                    if (!$publicGetOnly) {
+                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}', '" . $resourceStudly . "Controller@update')->name('{$moduleSlug}.{$resourcesLower}.update');";
+                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}/delete', '" . $resourceStudly . "Controller@destroy')->name('{$moduleSlug}.{$resourcesLower}.destroy');";
+                    }
+                    $rc = implode("\n", $lines) . "\n";
 
                     $routesPath = $moduleDir . DIRECTORY_SEPARATOR . 'routes.php';
                     if (!is_file($routesPath)) {
@@ -938,15 +962,34 @@ TPL;
                                 [$moduleSlug, $moduleStudly],
                                 $homeTpl
                         );
-                        // Indent resource lines
-                        $rcIndented = preg_replace('#^#m', '    ', $rc) ?? $rc;
-                        $updated = $header . $home . "    // Resource: {$resourceStudly}\n" . $rcIndented . "};\n";
+                        // Wrap in web middleware group by default unless --api
+                        $body = "    // Resource: {$resourceStudly}\n";
+                        if ($isApi) {
+                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $rc)) ?? $rc;
+                            $updated = $header . $home . $body . $rcIndented . "};\n";
+                        } else {
+                            $groupHead = "    // Web group: Start session then enforce CSRF\n";
+                            $groupOpen = '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
+                            $rcUseR = str_replace('$ROUTER', '$r', $rc);
+                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
+                            $groupClose = "    });\n";
+                            $updated = $header . $home . $groupHead . $groupOpen . $rcIndented . $groupClose . "};\n";
+                        }
                     } else {
                         // Insert before the last closing "};"
                         $pos = strrpos($existing, '};');
                         if ($pos === false) { $pos = strlen($existing); }
-                        $rcIndented = preg_replace('#^#m', '    ', $rc) ?? $rc;
-                        $insertion = "\n    // Resource: {$resourceStudly}\n" . $rcIndented;
+                        $insertion = "\n    // Resource: {$resourceStudly}\n";
+                        if ($isApi) {
+                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $rc)) ?? $rc;
+                            $insertion .= $rcIndented;
+                        } else {
+                            $groupOpen = '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
+                            $rcUseR = str_replace('$ROUTER', '$r', $rc);
+                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
+                            $groupClose = "    });\n";
+                            $insertion .= $groupOpen . $rcIndented . $groupClose;
+                        }
                         $updated = substr($existing, 0, $pos) . rtrim("\n" . $insertion) . "\n};\n";
                     }
                     // Final sanitation: ensure leading slashes and module prefix on resource routes
@@ -963,6 +1006,133 @@ TPL;
                 }
 
                 echo 'Resource scaffolded: ' . $moduleStudly . '/' . $resourceStudly . PHP_EOL;
+                exit(0);
+            }
+
+            case 'make:routes': {
+                $moduleArg = $argv[2] ?? '';
+                if ($moduleArg === '') {
+                    throw new InvalidArgumentException('Usage: ish make:routes <Module> [--api]');
+                }
+                $moduleStudly = toStudlyCase($moduleArg);
+                $moduleSlug = strtolower($moduleStudly);
+                $isApi = isset($options['api']);
+                $moduleDir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly;
+                $viewsDir = $moduleDir . DIRECTORY_SEPARATOR . 'Views';
+                if (!is_dir($viewsDir)) {
+                    throw new RuntimeException('Views directory not found for module: ' . $viewsDir);
+                }
+                // Discover resource folders under Views
+                $items = scandir($viewsDir) ?: [];
+                $resources = [];
+                foreach ($items as $item) {
+                    if ($item === '.' || $item === '..') { continue; }
+                    $path = $viewsDir . DIRECTORY_SEPARATOR . $item;
+                    if (is_dir($path)) {
+                        $resources[] = strtolower($item);
+                    }
+                }
+                if (empty($resources)) {
+                    echo "No resource directories found under Views. Nothing to do.\n";
+                    exit(0);
+                }
+                $routesPath = $moduleDir . DIRECTORY_SEPARATOR . 'routes.php';
+                if (!is_file($routesPath)) {
+                    // Bootstrap with minimal routes file
+                    $bootstrap = '<?php' . "\n" . 'declare(strict_types=1);' . "\n\n" . 'use Ishmael\\Core\\Router;' . "\n\n" . 'return function (Router $router): void {' . "\n" . '};' . "\n";
+                    writeFile($routesPath, $bootstrap);
+                }
+                $existing = file_get_contents($routesPath) ?: '';
+                $hasWrapper = (strpos($existing, 'return function (Router $router): void {') !== false);
+                if (trim($existing) === '') { $hasWrapper = false; }
+
+                $blocks = [];
+                foreach ($resources as $res) {
+                    $resDir = $viewsDir . DIRECTORY_SEPARATOR . $res;
+                    $files = array_flip(array_map('strtolower', scandir($resDir) ?: []));
+                    // Build conventional route set based on available views
+                    $resPlural = (str_ends_with($res, 's') ? $res : $res . 's');
+                    $resStudly = toStudlyCase(rtrim($resPlural, 's'));
+                    $basePath = '/' . $moduleSlug . '/' . $resPlural;
+                    $lines = [];
+                    if (isset($files['index.php'])) {
+                        $lines[] = "\$ROUTER->get('{$basePath}', '" . $resStudly . "Controller@index')->name('{$moduleSlug}.{$resPlural}.index');";
+                    }
+                    if (isset($files['create.php'])) {
+                        $lines[] = "\$ROUTER->get('{$basePath}/create', '" . $resStudly . "Controller@create')->name('{$moduleSlug}.{$resPlural}.create');";
+                        $lines[] = "\$ROUTER->post('{$basePath}', '" . $resStudly . "Controller@store')->name('{$moduleSlug}.{$resPlural}.store');";
+                    }
+                    if (isset($files['show.php'])) {
+                        $lines[] = "\$ROUTER->get('{$basePath}/{id:int}', '" . $resStudly . "Controller@show')->name('{$moduleSlug}.{$resPlural}.show');";
+                    }
+                    if (isset($files['edit.php'])) {
+                        $lines[] = "\$ROUTER->get('{$basePath}/{id:int}/edit', '" . $resStudly . "Controller@edit')->name('{$moduleSlug}.{$resPlural}.edit');";
+                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}', '" . $resStudly . "Controller@update')->name('{$moduleSlug}.{$resPlural}.update');";
+                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}/delete', '" . $resStudly . "Controller@destroy')->name('{$moduleSlug}.{$resPlural}.destroy');";
+                    }
+                    if (!empty($lines)) {
+                        $blocks[] = [
+                                'title' => 'Resource: ' . $resStudly,
+                                'content' => implode("\n", $lines) . "\n",
+                        ];
+                    }
+                }
+                if (empty($blocks)) {
+                    echo "Found no recognizable CRUD view sets. Nothing to do.\n";
+                    exit(0);
+                }
+
+                if (!$hasWrapper) {
+                    $header = '<?php' . "\n" . 'declare(strict_types=1);' . "\n\n" . 'use Ishmael\\Core\\Router;' . "\n\n" . 'return function (Router $router): void {' . "\n";
+                    $homeTpl = <<<'TPL'
+    $router->get('/%MODULE_SLUG%', function($req, \\Ishmael\\Core\\Http\\Response $res): \\Ishmael\\Core\\Http\\Response {
+        return $res->setBody('%MODULE_STUDLY% module home');
+    })->name('%MODULE_SLUG%.home');
+
+TPL;
+                    $home = str_replace(['%MODULE_SLUG%', '%MODULE_STUDLY%'], [$moduleSlug, $moduleStudly], $homeTpl);
+                    $body = '';
+                    if ($isApi) {
+                        foreach ($blocks as $b) {
+                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $b['content'])) ?? $b['content'];
+                            $body .= "    // {$b['title']}\n" . $rcIndented;
+                        }
+                        $updated = $header . $home . $body . "};\n";
+                    } else {
+                        $groupOpen = '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
+                        $groupBody = '';
+                        foreach ($blocks as $b) {
+                            $rcUseR = str_replace('$ROUTER', '$r', $b['content']);
+                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
+                            $groupBody .= "        // {$b['title']}\n" . $rcIndented;
+                        }
+                        $groupClose = "    });\n";
+                        $updated = $header . $home . $groupOpen . $groupBody . $groupClose . "};\n";
+                    }
+                    writeFile($routesPath, $updated, true);
+                } else {
+                    $pos = strrpos($existing, '};');
+                    if ($pos === false) { $pos = strlen($existing); }
+                    $insertion = "\n";
+                    if ($isApi) {
+                        foreach ($blocks as $b) {
+                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $b['content'])) ?? $b['content'];
+                            $insertion .= "    // {$b['title']}\n" . $rcIndented;
+                        }
+                    } else {
+                        $insertion .= '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
+                        foreach ($blocks as $b) {
+                            $rcUseR = str_replace('$ROUTER', '$r', $b['content']);
+                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
+                            $insertion .= "        // {$b['title']}\n" . $rcIndented;
+                        }
+                        $insertion .= "    });\n";
+                    }
+                    $updated = substr($existing, 0, $pos) . rtrim("\n" . $insertion) . "\n};\n";
+                    writeFile($routesPath, $updated, true);
+                }
+
+                echo 'Routes generated for module: ' . $moduleStudly . PHP_EOL;
                 exit(0);
             }
 
