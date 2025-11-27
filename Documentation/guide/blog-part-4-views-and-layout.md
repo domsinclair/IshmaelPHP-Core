@@ -176,7 +176,7 @@ Create (or replace) `Modules/Blog/Views/posts/index.php` (responsive and dark‑
 ```php
 <?php
 /** @var array{items: array<int, array{id:int,title:string,slug?:string,author_name?:string,created_at?:string}>, page?:int, perPage?:int, total?:int} $data */
-$layoutFile = __DIR__ . '/../layout.php';
+$layoutFile = 'layout';
 if (isset($sections)) { $sections->start('title'); echo 'Posts'; $sections->end(); $sections->start('content'); }
 ?>
 
@@ -225,7 +225,7 @@ Create (or replace) `Modules/Blog/Views/posts/show.php` (responsive and dark‑m
 ```php
 <?php
 /** @var array{post: array{id:int,title:string,slug?:string,body:string,author_name?:string}} $data */
-$layoutFile = __DIR__ . '/../layout.php';
+$layoutFile = 'layout';
 $post = $post ?? ($data['post'] ?? []);
 if (isset($sections)) { $sections->start('title'); echo htmlspecialchars((string)($post['title'] ?? 'Post')); $sections->end(); $sections->start('content'); }
 ?>
@@ -252,7 +252,7 @@ Create (or replace) `Modules/Blog/Views/posts/create.php` (responsive and dark�
 ```php
 <?php
 /** @var array{authors: array<int,array{id:int,name:string}>} $data */
-$layoutFile = __DIR__ . '/../layout.php';
+$layoutFile = 'layout';
 if (isset($sections)) { $sections->start('title'); echo 'Create Post'; $sections->end(); $sections->start('content'); }
 $authors = $authors ?? ($data['authors'] ?? []);
 ?>
@@ -277,7 +277,7 @@ Create (or replace) `Modules/Blog/Views/posts/edit.php` (responsive and dark‑m
 ```php
 <?php
 /** @var array{post: array, authors: array<int,array{id:int,name:string}>} $data */
-$layoutFile = __DIR__ . '/../layout.php';
+$layoutFile = 'layout';
 if (isset($sections)) { $sections->start('title'); echo 'Edit Post'; $sections->end(); $sections->start('content'); }
 $post = $post ?? ($data['post'] ?? []);
 $authors = $authors ?? ($data['authors'] ?? []);
@@ -306,7 +306,7 @@ Add a basic list so you can link to it from the layout. Create `Modules/Blog/Vie
 ```php
 <?php
 /** @var array{items?: array<int,array{id:int,name:string,email?:string}>} $data */
-$layoutFile = __DIR__ . '/../layout.php';
+$layoutFile = 'layout';
 if (isset($sections)) { $sections->start('title'); echo 'Authors'; $sections->end(); $sections->start('content'); }
 ?>
 
@@ -349,7 +349,7 @@ Depending on your Ishmael version, you might have a sections helper injected as 
 
 ```php
 // Child view pseudo‑pattern
-$layoutFile = __DIR__ . '/../layout.php';
+$layoutFile = 'layout';
 $sections->start('title'); ?>Page Title<?php $sections->end();
 $sections->start('content');
 ?>
