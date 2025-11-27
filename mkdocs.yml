@@ -57,6 +57,7 @@ nav:
       - CSRF, Idempotency, and Flash (Phase-14): guide/csrf-idempotency-flash.md
       - Security Headers: guide/security-headers.md
       - Controllers & Views: guide/controllers-and-views.md
+      - Views and Layouts: guide/views-and-layouts.md
       - Configuration: guide/configuration.md
       - Config Cache: guide/config-cache.md
       - Logging: guide/logging.md

@@ -98,21 +98,45 @@
                     $sections->set('content', $childOutput);
                 }
 
-                // Resolve layout path relative to Views/
+                // Resolve layout path:
+                // - Absolute paths (Windows drive-letter, Windows UNC, or Unix '/') are honored as-is.
+                // - Relative paths are resolved against the module's Views/ base.
                 $layoutPath = $layoutFile;
+                // Normalize directory separators for portability
+                $layoutPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $layoutPath);
+                // Append .php if not present
                 if (substr($layoutPath, -4) !== '.php') {
                     $layoutPath .= '.php';
                 }
-                $layoutPath = $basePath . ltrim($layoutPath, '/\\');
 
-                if (!file_exists($layoutPath)) {
+                $isAbsolute = static function (string $path): bool {
+                    // Windows drive letter, e.g., C:\...
+                    if (preg_match('~^[a-zA-Z]:\\\\~', $path) === 1) {
+                        return true;
+                    }
+                    // Windows UNC path, e.g., \\server\share\...
+                    if (preg_match('~^\\\\\\\\~', $path) === 1) {
+                        return true;
+                    }
+                    // Unix absolute
+                    return str_starts_with($path, '/');
+                };
+
+                if (!$isAbsolute($layoutPath)) {
+                    $layoutPath = $basePath . ltrim($layoutPath, DIRECTORY_SEPARATOR);
+                }
+
+                // Try to resolve to a canonical path if the file exists, otherwise keep as constructed
+                $resolvedLayoutPath = realpath($layoutPath) ?: $layoutPath;
+
+                if (!file_exists($resolvedLayoutPath)) {
                     http_response_code(500);
                     echo "Layout not found: {$layoutPath}";
                     return;
                 }
 
                 // Include the layout in the same scope so it can access $sections and any view variables
-                include $layoutPath;
+                include $resolvedLayoutPath;
                 return;
             }
 

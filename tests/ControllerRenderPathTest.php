@@ -65,6 +65,56 @@ final class ControllerRenderPathTest extends TestCase
         $this->assertStringContainsString('<p>Hi Alice</p>', $out);
     }
 
+    public function testRenderWithRelativeParentLayoutPath(): void
+    {
+        if (!class_exists(Modules\Foo\Controllers\RenderDemoController3::class)) {
+            eval('namespace Modules\\Foo\\Controllers; class RenderDemoController3 extends \\Ishmael\\Core\\Controller { public function show(array $vars = []): void { $this->render("subdir/child_with_relative_parent", $vars); } }');
+        }
+        // Ensure the subdir exists and file is present in fixtures
+        $ctrl = new Modules\Foo\Controllers\RenderDemoController3();
+
+        ob_start();
+        $ctrl->show(['who' => 'Bob']);
+        $out = (string)ob_get_clean();
+
+        $this->assertStringContainsString('<header>Header</header>', $out);
+        $this->assertStringContainsString('<footer>Footer</footer>', $out);
+        $this->assertStringContainsString('<p>Hi Bob</p>', $out);
+    }
+
+    public function testRenderWithAbsoluteLayoutPathHonored(): void
+    {
+        if (!class_exists(Modules\Foo\Controllers\RenderDemoController4::class)) {
+            eval('namespace Modules\\Foo\\Controllers; class RenderDemoController4 extends \\Ishmael\\Core\\Controller { public function show(array $vars = []): void { $this->render("child_with_absolute_layout", $vars); } }');
+        }
+        $ctrl = new Modules\Foo\Controllers\RenderDemoController4();
+
+        ob_start();
+        $ctrl->show(['who' => 'Cara']);
+        $out = (string)ob_get_clean();
+
+        $this->assertStringContainsString('<header>Header</header>', $out);
+        $this->assertStringContainsString('<footer>Footer</footer>', $out);
+        $this->assertStringContainsString('<p>Hi Cara</p>', $out);
+    }
+
+    public function testAutoContentSectionWhenChildDoesNotDefineSections(): void
+    {
+        if (!class_exists(Modules\Foo\Controllers\RenderDemoController5::class)) {
+            eval('namespace Modules\\Foo\\Controllers; class RenderDemoController5 extends \\Ishmael\\Core\\Controller { public function show(array $vars = []): void { $this->render("child_auto_content", $vars); } }');
+        }
+        $ctrl = new Modules\Foo\Controllers\RenderDemoController5();
+
+        ob_start();
+        $ctrl->show(['who' => 'Dora']);
+        $out = (string)ob_get_clean();
+
+        $this->assertStringContainsString('<header>Header</header>', $out);
+        $this->assertStringContainsString('<footer>Footer</footer>', $out);
+        // The child output should be yielded as 'content' automatically
+        $this->assertStringContainsString('<p>Hi Dora</p>', $out);
+    }
+
     public function testRedirectHelperReturnsResponseWithLocation(): void
     {
         if (!class_exists(Tests\RevealRedirectController::class)) {
@@ -75,5 +125,20 @@ final class ControllerRenderPathTest extends TestCase
         $this->assertInstanceOf(Response::class, $res);
         $this->assertSame(302, $res->getStatusCode());
         $this->assertSame('/next', $res->getHeaders()['Location'] ?? null);
+    }
+
+    public function testDataArrayIsVisibleInLayout(): void
+    {
+        if (!class_exists(Modules\Foo\Controllers\RenderDemoController6::class)) {
+            eval('namespace Modules\\Foo\\Controllers; class RenderDemoController6 extends \\Ishmael\\Core\\Controller { public function show(): void { $this->data["appName"] = "DemoApp"; $this->render("child_with_data_layout", []); } }');
+        }
+        $ctrl = new Modules\Foo\Controllers\RenderDemoController6();
+
+        ob_start();
+        $ctrl->show();
+        $out = (string)ob_get_clean();
+
+        $this->assertStringContainsString('DemoApp', $out, 'Expected $data[appName] to be visible in layout output');
+        $this->assertStringContainsString('<p>Body</p>', $out);
     }
 }
