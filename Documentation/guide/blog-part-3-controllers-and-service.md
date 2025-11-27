@@ -354,33 +354,42 @@ Notes
 
 ---
 
-## 4) Routes
+## 4) Routes (Phase 14 ready: session + CSRF)
 
-Edit `Modules/Blog/routes.php` and add routes for posts and authors. If the file doesn’t exist, create it with this wrapper.
+Edit `Modules/Blog/routes.php` and add routes for posts and authors. If the file doesn’t exist, create it with this wrapper. Since Phase 14, browser routes should run with StartSessionMiddleware first and then VerifyCsrfToken.
 
 ```php
 <?php
 declare(strict_types=1);
 
 use Ishmael\Core\Router;
+use Ishmael\Core\Http\Middleware\StartSessionMiddleware;
+use Ishmael\Core\Http\Middleware\VerifyCsrfToken;
 
 return function (Router $router): void {
-    // Lists
-    // Use short controller names so the Router can prefix the Blog module correctly
-    $router->get('/blog/authors', ['AuthorsController', 'index'])->name('blog.authors.index');
-    $router->get('/blog/posts', ['PostsController', 'index'])->name('blog.posts.index');
+    // Web group: start session then enforce CSRF
+    $router->group(['middleware' => [StartSessionMiddleware::class, VerifyCsrfToken::class]], function (Router $r): void {
+        // Lists
+        // Use short controller names so the Router can prefix the Blog module correctly
+        $r->get('/blog/authors', ['AuthorsController', 'index'])->name('blog.authors.index');
+        $r->get('/blog/posts', ['PostsController', 'index'])->name('blog.posts.index');
 
-    // Show post by slug (shortened path to avoid collision with static "/blog/posts/create")
-    $router->get('/blog/p/{slug:slug}', ['PostsController', 'show'])->name('blog.posts.show');
+        // Show post by slug (shortened path to avoid collision with static "/blog/posts/create")
+        $r->get('/blog/p/{slug:slug}', ['PostsController', 'show'])->name('blog.posts.show');
 
-    // Create/edit
-    $router->get('/blog/posts/create', ['PostsController', 'create'])->name('blog.posts.create');
-    $router->post('/blog/posts', ['PostsController', 'store'])->name('blog.posts.store');
-    $router->get('/blog/posts/{id}/edit', ['PostsController', 'edit'])->name('blog.posts.edit');
-    $router->post('/blog/posts/{id}', ['PostsController', 'update'])->name('blog.posts.update');
-    $router->post('/blog/posts/{id}/delete', ['PostsController', 'destroy'])->name('blog.posts.destroy');
+        // Create/edit
+        $r->get('/blog/posts/create', ['PostsController', 'create'])->name('blog.posts.create');
+        $r->post('/blog/posts', ['PostsController', 'store'])->name('blog.posts.store');
+        $r->get('/blog/posts/{id}/edit', ['PostsController', 'edit'])->name('blog.posts.edit');
+        $r->post('/blog/posts/{id}', ['PostsController', 'update'])->name('blog.posts.update');
+        $r->post('/blog/posts/{id}/delete', ['PostsController', 'destroy'])->name('blog.posts.destroy');
+    });
 };
 ```
+
+Notes
+- Wrapping routes in a web group ensures the CSRF helpers (csrfMeta/csrfToken) are available on GET and that POST routes are protected.
+- For stateless JSON APIs, use a separate group without session/CSRF and rely on token auth and CORS.
 
 Tip: If you cache routes in production, remember to run:
 
@@ -390,7 +399,22 @@ php vendor/bin/ish route:cache --env=production
 
 ---
 
-## 5) Minimal views to make it work
+## 5) Optional: auto-generate routes from views (make:routes)
+
+If you have created your views under `Modules/Blog/Views/posts` and `Modules/Blog/Views/authors`, you can ask the CLI to scan those folders and generate matching routes automatically.
+
+Examples
+- Default (web, grouped with session + CSRF):
+  - `php vendor/bin/ish make:routes Blog`
+  - `php vendor/bin/ish make:routes --module=Blog`
+- API/stateless variant (no session/CSRF grouping):
+  - `php vendor/bin/ish make:routes Blog --api`
+
+The command will create or update `Modules/Blog/routes.php`, wrapping generated routes in the proper web middleware group by default, and will infer which routes to add based on which view files it finds (index.php, create.php, show.php, edit.php).
+
+---
+
+## 6) Minimal views to make it work
 
 The `make:views` command created starter files in `Modules/Blog/Views/posts`. Replace their contents with the examples below to get a working UI quickly.
 

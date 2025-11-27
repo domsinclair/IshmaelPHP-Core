@@ -440,9 +440,9 @@ final class PostsController extends Controller
 }
 ```
 
-### Add routes
+### Add routes (Phase 14 ready: session + CSRF)
 
-If `Modules/Blog/routes.php` doesn’t exist, create it with the wrapper function below. If it exists, add these GET routes inside the function.
+If `Modules/Blog/routes.php` doesn’t exist, create it with the wrapper function below. If it exists, add these routes inside the function. Since Phase 14, browser routes should run with StartSessionMiddleware first and then VerifyCsrfToken to avoid CSRF/session errors.
 
 ```php
 <?php
@@ -450,17 +450,26 @@ If `Modules/Blog/routes.php` doesn’t exist, create it with the wrapper functio
 declare(strict_types=1);
 
 use Ishmael\Core\Router;
+use Ishmael\Core\Http\Middleware\StartSessionMiddleware;
+use Ishmael\Core\Http\Middleware\VerifyCsrfToken;
 use Modules\Blog\Controllers\AuthorsController;
 use Modules\Blog\Controllers\PostsController;
 
 return function (Router $router): void {
-    // Authors
-    $router->get('/blog/authors', [AuthorsController::class, 'index'])->name('blog.authors.index');
+    // Web group: start session then enforce CSRF
+    $router->group(['middleware' => [StartSessionMiddleware::class, VerifyCsrfToken::class]], function (Router $r): void {
+        // Authors
+        $r->get('/blog/authors', [AuthorsController::class, 'index'])->name('blog.authors.index');
 
-    // Posts
-    $router->get('/blog/posts', [PostsController::class, 'index'])->name('blog.posts.index');
+        // Posts
+        $r->get('/blog/posts', [PostsController::class, 'index'])->name('blog.posts.index');
+    });
 };
 ```
+
+Note
+- Wrapping routes in this web group ensures the CSRF helpers (csrfMeta/csrfToken) work during GET and that POST/PUT/DELETE are protected.
+- For stateless APIs, use a separate group without session/CSRF and rely on token auth + CORS instead.
 
 Navigate to:
 - `/blog/authors` → JSON list of authors.

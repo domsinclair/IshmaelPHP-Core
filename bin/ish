@@ -1055,23 +1055,30 @@ TPL;
                     $files = array_flip(array_map('strtolower', scandir($resDir) ?: []));
                     // Build conventional route set based on available views
                     $resPlural = (str_ends_with($res, 's') ? $res : $res . 's');
+                    // Title uses singular form for readability, controllers remain plural to match generated class names
                     $resStudly = toStudlyCase(rtrim($resPlural, 's'));
+                    // Controllers are generated with plural resource names (e.g., PostsController, AuthorsController)
+                    $controllerStudly = toStudlyCase($resPlural);
                     $basePath = '/' . $moduleSlug . '/' . $resPlural;
                     $lines = [];
                     if (isset($files['index.php'])) {
-                        $lines[] = "\$ROUTER->get('{$basePath}', '" . $resStudly . "Controller@index')->name('{$moduleSlug}.{$resPlural}.index');";
+                        $lines[] = "\$ROUTER->get('{$basePath}', '" . $controllerStudly . "Controller@index')->name('{$moduleSlug}.{$resPlural}.index');";
                     }
                     if (isset($files['create.php'])) {
-                        $lines[] = "\$ROUTER->get('{$basePath}/create', '" . $resStudly . "Controller@create')->name('{$moduleSlug}.{$resPlural}.create');";
-                        $lines[] = "\$ROUTER->post('{$basePath}', '" . $resStudly . "Controller@store')->name('{$moduleSlug}.{$resPlural}.store');";
+                        $lines[] = "\$ROUTER->get('{$basePath}/create', '" . $controllerStudly . "Controller@create')->name('{$moduleSlug}.{$resPlural}.create');";
+                        $lines[] = "\$ROUTER->post('{$basePath}', '" . $controllerStudly . "Controller@store')->name('{$moduleSlug}.{$resPlural}.store');";
                     }
                     if (isset($files['show.php'])) {
-                        $lines[] = "\$ROUTER->get('{$basePath}/{id:int}', '" . $resStudly . "Controller@show')->name('{$moduleSlug}.{$resPlural}.show');";
+                        $lines[] = "\$ROUTER->get('{$basePath}/{id:int}', '" . $controllerStudly . "Controller@show')->name('{$moduleSlug}.{$resPlural}.show');";
+                        // Back-compat and tutorial alignment: add slug-based public show route for Posts
+                        if ($resPlural === 'posts') {
+                            $lines[] = "\$ROUTER->get('/{$moduleSlug}/p/{slug}', '" . $controllerStudly . "Controller@show')->name('{$moduleSlug}.{$resPlural}.show.slug');";
+                        }
                     }
                     if (isset($files['edit.php'])) {
-                        $lines[] = "\$ROUTER->get('{$basePath}/{id:int}/edit', '" . $resStudly . "Controller@edit')->name('{$moduleSlug}.{$resPlural}.edit');";
-                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}', '" . $resStudly . "Controller@update')->name('{$moduleSlug}.{$resPlural}.update');";
-                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}/delete', '" . $resStudly . "Controller@destroy')->name('{$moduleSlug}.{$resPlural}.destroy');";
+                        $lines[] = "\$ROUTER->get('{$basePath}/{id:int}/edit', '" . $controllerStudly . "Controller@edit')->name('{$moduleSlug}.{$resPlural}.edit');";
+                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}', '" . $controllerStudly . "Controller@update')->name('{$moduleSlug}.{$resPlural}.update');";
+                        $lines[] = "\$ROUTER->post('{$basePath}/{id:int}/delete', '" . $controllerStudly . "Controller@destroy')->name('{$moduleSlug}.{$resPlural}.destroy');";
                     }
                     if (!empty($lines)) {
                         $blocks[] = [
