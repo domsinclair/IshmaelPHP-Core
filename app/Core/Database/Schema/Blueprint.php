@@ -44,6 +44,21 @@ final class Blueprint
     }
 
     /**
+     * Add an auto-incrementing primary key with a custom name (module style: posts_id).
+     *
+     * Note: SQLite treats any single INTEGER PRIMARY KEY column as rowid. Our adapters
+     * infer primary keys from autoIncrement flag.
+     *
+     * @param string $name Column name.
+     * @return $this Fluent return.
+     */
+    public function increments(string $name): self
+    {
+        $this->columns[] = new ColumnDefinition($name, 'INTEGER', nullable: false, autoIncrement: true);
+        return $this;
+    }
+
+    /**
      * Define a VARCHAR/TEXT-like column.
      *
      * @param string $name Column name.

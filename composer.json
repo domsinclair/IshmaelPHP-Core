@@ -19,6 +19,11 @@
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
+  "extra": {
+    "branch-alias": {
+      "dev-main": "1.x-dev"
+    }
+  },
   "conflict": {
     "erusev/parsedown": "*"
   },

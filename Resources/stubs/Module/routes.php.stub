@@ -6,6 +6,12 @@ declare(strict_types=1);
  *
  * This closure is discovered by the Router during module boot.
  * Replace <ModuleName> with your actual module name.
+ *
+ * CSRF NOTE: CSRF protection is enforced globally by middleware in config/app.php
+ * (VerifyCsrfToken). You do NOT need to wrap routes in CSRF groups. Only add
+ * exemptions in config/security.php (csrf.except_uris) for endpoints that should
+ * skip CSRF (e.g., webhooks), or use explicit Router::groupWithoutCsrf() if you
+ * truly need route-level overrides.
  */
 
 use Ishmael\Core\Router;

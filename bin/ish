@@ -964,34 +964,17 @@ TPL;
                                 [$moduleSlug, $moduleStudly],
                                 $homeTpl
                         );
-                        // Wrap in web middleware group by default unless --api
+                        // Insert resource routes directly (CSRF is enforced globally via middleware; no per-route CSRF groups needed)
                         $body = "    // Resource: {$resourceStudly}\n";
-                        if ($isApi) {
-                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $rc)) ?? $rc;
-                            $updated = $header . $home . $body . $rcIndented . "};\n";
-                        } else {
-                            $groupHead = "    // Web group: Start session then enforce CSRF\n";
-                            $groupOpen = '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
-                            $rcUseR = str_replace('$ROUTER', '$r', $rc);
-                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
-                            $groupClose = "    });\n";
-                            $updated = $header . $home . $groupHead . $groupOpen . $rcIndented . $groupClose . "};\n";
-                        }
+                        $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $rc)) ?? $rc;
+                        $updated = $header . $home . $body . $rcIndented . "};\n";
                     } else {
                         // Insert before the last closing "};"
                         $pos = strrpos($existing, '};');
                         if ($pos === false) { $pos = strlen($existing); }
                         $insertion = "\n    // Resource: {$resourceStudly}\n";
-                        if ($isApi) {
-                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $rc)) ?? $rc;
-                            $insertion .= $rcIndented;
-                        } else {
-                            $groupOpen = '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
-                            $rcUseR = str_replace('$ROUTER', '$r', $rc);
-                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
-                            $groupClose = "    });\n";
-                            $insertion .= $groupOpen . $rcIndented . $groupClose;
-                        }
+                        $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $rc)) ?? $rc;
+                        $insertion .= $rcIndented;
                         $updated = substr($existing, 0, $pos) . rtrim("\n" . $insertion) . "\n};\n";
                     }
                     // Final sanitation: ensure leading slashes and module prefix on resource routes
@@ -1102,41 +1085,20 @@ TPL;
 TPL;
                     $home = str_replace(['%MODULE_SLUG%', '%MODULE_STUDLY%'], [$moduleSlug, $moduleStudly], $homeTpl);
                     $body = '';
-                    if ($isApi) {
-                        foreach ($blocks as $b) {
-                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $b['content'])) ?? $b['content'];
-                            $body .= "    // {$b['title']}\n" . $rcIndented;
-                        }
-                        $updated = $header . $home . $body . "};\n";
-                    } else {
-                        $groupOpen = '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
-                        $groupBody = '';
-                        foreach ($blocks as $b) {
-                            $rcUseR = str_replace('$ROUTER', '$r', $b['content']);
-                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
-                            $groupBody .= "        // {$b['title']}\n" . $rcIndented;
-                        }
-                        $groupClose = "    });\n";
-                        $updated = $header . $home . $groupOpen . $groupBody . $groupClose . "};\n";
+                    foreach ($blocks as $b) {
+                        $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $b['content'])) ?? $b['content'];
+                        $body .= "    // {$b['title']}\n" . $rcIndented;
                     }
+                    // CSRF is enforced globally via middleware in config/app.php; no CSRF group wrapping here
+                    $updated = $header . $home . $body . "};\n";
                     writeFile($routesPath, $updated, true);
                 } else {
                     $pos = strrpos($existing, '};');
                     if ($pos === false) { $pos = strlen($existing); }
                     $insertion = "\n";
-                    if ($isApi) {
-                        foreach ($blocks as $b) {
-                            $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $b['content'])) ?? $b['content'];
-                            $insertion .= "    // {$b['title']}\n" . $rcIndented;
-                        }
-                    } else {
-                        $insertion .= '    ' . '$router' . "->group(['middleware' => [\\Ishmael\\Core\\Http\\Middleware\\StartSessionMiddleware::class, \\Ishmael\\Core\\Http\\Middleware\\VerifyCsrfToken::class]], function(Router " . '$r' . ") {\n";
-                        foreach ($blocks as $b) {
-                            $rcUseR = str_replace('$ROUTER', '$r', $b['content']);
-                            $rcIndented = preg_replace('#^#m', '        ', $rcUseR) ?? $rcUseR;
-                            $insertion .= "        // {$b['title']}\n" . $rcIndented;
-                        }
-                        $insertion .= "    });\n";
+                    foreach ($blocks as $b) {
+                        $rcIndented = preg_replace('#^#m', '    ', str_replace('$ROUTER', '$router', $b['content'])) ?? $b['content'];
+                        $insertion .= "    // {$b['title']}\n" . $rcIndented;
                     }
                     $updated = substr($existing, 0, $pos) . rtrim("\n" . $insertion) . "\n};\n";
                     writeFile($routesPath, $updated, true);

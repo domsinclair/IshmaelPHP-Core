@@ -10,6 +10,12 @@ use Ishmael\Core\Router;
  * - <ModuleName> (StudlyCase)
  * - <ResourceName> (StudlyCase, e.g., Post)
  * - <resource> (kebab/plural path, e.g., posts)
+ *
+ * CSRF NOTE: CSRF protection is enforced globally by middleware in config/app.php
+ * (VerifyCsrfToken). You do NOT need to wrap resource routes in CSRF groups.
+ * If you must exempt specific endpoints, prefer adding URI patterns to
+ * config/security.php => csrf.except_uris, or explicitly use
+ * Router::groupWithoutCsrf([...], fn() => ...) around those endpoints only.
  */
 return function (Router $router): void {
     // Index

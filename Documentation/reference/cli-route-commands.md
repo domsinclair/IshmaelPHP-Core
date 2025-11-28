@@ -41,3 +41,17 @@ ish route:clear
 ```
 
 In production, the Kernel loads the cache when present and fresh; in development, dynamic discovery remains the default.
+
+---
+
+## CSRF and generated routes
+
+The route generation performed by CLI commands and templates does NOT wrap routes in CSRF-specific groups. CSRF protection is enforced globally by the VerifyCsrfToken middleware registered in `config/app.php` starting with Phase 14.
+
+- No need to add `['middleware' => ['csrf']]` to groups; it’s redundant.
+- To exempt specific endpoints (e.g., third-party webhooks), add patterns to `config/security.php` → `csrf.except_uris`.
+- Token names: form field `_token`; request headers `X-CSRF-Token` or `X-XSRF-Token`.
+
+Quick sanity test:
+- POST to any route without a token → expect 419 “CSRF token mismatch.”
+- Submit a form with `<input type="hidden" name="_token" value="<?= csrfToken() ?>">` → request should pass.
