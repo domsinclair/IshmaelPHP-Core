@@ -181,7 +181,7 @@ LOG_LEVEL=debug
 DB_CONNECTION=sqlite
 
 # Sqlite
-DB_DATABASE=ishmael.sqlite
+DB_DATABASE=storage/ishmael.sqlite
 
 # MySQL
 # DB_HOST=127.0.0.1
