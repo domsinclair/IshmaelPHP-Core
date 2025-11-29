@@ -124,6 +124,23 @@
                 return;
             }
 
+            // If the application provides a .env.example, prefer copying that
+            $examplePath = base_path('.env.example');
+            if (file_exists($examplePath)) {
+                // Ensure log directory exists before logging
+                $logDir = base_path('storage/logs');
+                if (!is_dir($logDir)) {
+                    mkdir($logDir, 0755, true);
+                }
+
+                // Copy example to .env
+                @copy($examplePath, $envPath);
+
+                $message = ".env not found. Copied from .env.example to {$envPath}";
+                log_message('info', $message);
+                return;
+            }
+
             // Default .env template
             $defaultEnv = <<<ENV
 # -------------------------------------------------------------

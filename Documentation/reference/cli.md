@@ -7,7 +7,7 @@ Auto-generated from command metadata.
 | `help` | ish help | Show CLI help. |
 | `version` | ish --version \| -V \| version | Print the Ishmael CLI version. |
 | `make:module` | ish make:module <Name> | Scaffold a new module skeleton (controllers, models, views, routes.php, module.json). |
-| `make:migration` | ish make:migration <name> [--module=Name] | Create a new migration file. |
+| `make:migration` | ish make:migration <name> [--module=Name] [--pk=module\|id] [--type=int\|uuid\|ulid] [--soft-deletes\|--no-soft-deletes] [--audit\|--no-audit] [--audit-relations] | Create a new migration file with defaults based on env/config flags. |
 | `migrate` | ish migrate [--module=Name] [--steps=N] [--pretend] [--force] | Run outstanding migrations. |
 | `migrate:rollback` | ish migrate:rollback [--module=Name] [--steps=N] | Rollback the last batch or specified steps. |
 | `status` | ish status [--module=Name] | Show migration status. |
@@ -45,6 +45,13 @@ Auto-generated from command metadata.
 |---|---|---|---|
 | <name> | yes |  | Migration name (e.g., CreatePostsTable). |
 | --module | yes |  | Target module (optional). |
+| --pk | yes |  | Primary key naming strategy: module (posts_id) or id. |
+| --type | yes |  | Primary key type: int\|uuid\|ulid. |
+| --soft-deletes | no |  | Include deleted_at column. |
+| --no-soft-deletes | no |  | Do not include deleted_at. |
+| --audit | no |  | Include auditing fields (timestamps, created_by, updated_by). |
+| --no-audit | no |  | Do not include auditing fields. |
+| --audit-relations | no |  | Also add FK constraints to users if applicable. |
 
 ### migrate
 

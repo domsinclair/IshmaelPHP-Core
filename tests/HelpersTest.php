@@ -110,8 +110,19 @@ final class HelpersTest extends TestCase
         ensure_env_file();
         $this->assertFileExists($envPath);
         $envText = file_get_contents($envPath);
-        $this->assertStringContainsString('APP_NAME=Ishmael', $envText);
-        $this->assertStringContainsString('DB_CONNECTION=sqlite', $envText);
+        // If a .env.example exists at the app root, it should be copied verbatim
+        $examplePath = base_path('.env.example');
+        if (file_exists($examplePath)) {
+            $exampleText = file_get_contents($examplePath);
+            // Spot-check a couple of lines from the example template
+            $this->assertStringContainsString('IshmaelPHP Starter — .env.example', $exampleText);
+            $this->assertStringContainsString('APP_NAME="Ishmael Starter"', $envText);
+            $this->assertStringContainsString('DB_CONNECTION=sqlite', $envText);
+        } else {
+            // Otherwise the core default should be used
+            $this->assertStringContainsString('APP_NAME=Ishmael', $envText);
+            $this->assertStringContainsString('DB_CONNECTION=sqlite', $envText);
+        }
     }
 
     public function testLoadEnvParsesFileAndEnvHelperReadsValues(): void
