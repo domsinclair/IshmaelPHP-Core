@@ -45,7 +45,28 @@
                 }
             }
 
-            // 4) Fallback to path relative to this helpers.php file (works for both core and vendor install)
+            // 4) If loaded from a vendor install, resolve to the consumer app root (parent of "vendor")
+            if ($base === null) {
+                $dir = __DIR__;
+                $steps = 0;
+                while ($dir !== dirname($dir) && $steps < 12) {
+                    if (basename($dir) === 'vendor') {
+                        $appRoot = dirname($dir);
+                        // Heuristic sanity check: an app root typically has a composer.json
+                        if (file_exists($appRoot . DIRECTORY_SEPARATOR . 'composer.json')) {
+                            $base = realpath($appRoot) ?: $appRoot;
+                        } else {
+                            // Even without composer.json, prefer the parent of vendor as app root
+                            $base = $appRoot;
+                        }
+                        break;
+                    }
+                    $dir = dirname($dir);
+                    $steps++;
+                }
+            }
+
+            // 5) Fallback to path relative to this helpers.php file (works for developing the core repo)
             if ($base === null) {
                 $base = dirname(__DIR__, 2);
             }
@@ -141,30 +162,62 @@
                 return;
             }
 
-            // Default .env template
+            // Default .env template (realistic starter-style fallback)
             $defaultEnv = <<<ENV
-# -------------------------------------------------------------
-# Ishmael Environment Configuration
-# -------------------------------------------------------------
-APP_NAME=Ishmael
-APP_ENV=development
+# IshmaelPHP Starter — .env.example (private beta)
+
+# --- App ---
+APP_NAME="Ishmael Starter"
+APP_ENV=local
 APP_DEBUG=true
-APP_URL=http://ishmaelphp.test
+APP_URL=http://localhost:8080
+TIMEZONE=UTC
 
-# Database Configuration
-DB_CONNECTION=sqlite
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=database.sqlite
-DB_USERNAME=root
-DB_PASSWORD=
-
-# Logging Configuration
+# --- Logging ---
 LOG_CHANNEL=stack
 LOG_LEVEL=debug
 
-# Created automatically by Ishmael Framework on first run
-# -------------------------------------------------------------
+# --- Database ---
+DB_CONNECTION=sqlite
+
+# Sqlite
+DB_DATABASE=ishmael.sqlite
+
+# MySQL
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=ishmael
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+# PostgreSQL
+# DB_HOST=127.0.0.1
+# DB_PORT=5432
+# DB_DATABASE=ishmael
+# DB_USERNAME=postgres
+# DB_PASSWORD=
+
+# --- Session (optional; defaults are safe) ---
+# SESSION_DRIVER=file
+# SESSION_LIFETIME=120
+# SESSION_COOKIE=ish_session
+# SESSION_SAME_SITE=Lax
+# SESSION_SECURE=false
+# SESSION_HTTP_ONLY=true
+
+# --- Security (optional; enable via security module/middleware) ---
+# SECURITY_CSP="default-src 'self'"
+# SECURITY_XFO=SAMEORIGIN
+# SECURITY_XCTO=nosniff
+# SECURITY_REFERRER_POLICY=no-referrer-when-downgrade
+# SECURITY_HSTS=false
+
+# --- Features (used by generators; commented by default) ---
+# FEATURE_MODULE_PK_STYLE=true
+# FEATURE_SOFT_DELETES=true
+# FEATURE_AUDIT=true
+# AUDIT_ID_TYPE=int
+# DEFAULT_PRIMARY_KEY_TYPE=int
 ENV;
 
             // Write the file
