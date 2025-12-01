@@ -64,6 +64,7 @@ nav:
       - Error Handling and Correlation IDs: guide/error-handling.md
       - Versioning & Support Policy: guide/versioning-and-support-policy.md
       - CLI: guide/cli.md
+      - "PhpStorm: CLI Integration & Aliases": guide/phpstorm-cli-integration.md
       - Install Example Modules: guide/install-examples.md
       - Using Schema Manager Safely: guide/using-schema-manager-safely.md
       - Using the Minimal Model: guide/using-the-minimal-model.md

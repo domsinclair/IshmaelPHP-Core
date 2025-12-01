@@ -1,0 +1,134 @@
+<tools>
+  <tool name="Ishmael CLI" alias="ish" enabled="true" showConsoleOnStdErr="true">
+    <description>IshmaelPHP-Core command-line interface. Import this in PhpStorm (Tools → Command Line Tool Support) to get runnable commands and completion.</description>
+    <commands>
+      <command name="help" description="Show general help for Ishmael CLI"/>
+
+      <command name="make:module" description="Generate a new module">
+        <arg name="Name"/>
+        <option name="--templates" description="Override templates directory"/>
+        <option name="--api" description="Generate API-focused scaffolding"/>
+      </command>
+
+      <command name="make:resource" description="Generate a resource in a module">
+        <arg name="Module"/>
+        <arg name="Name"/>
+        <option name="--templates"/>
+        <option name="--api"/>
+        <option name="--public-get-only"/>
+      </command>
+
+      <command name="make:controller" description="Generate a controller">
+        <arg name="Module"/>
+        <arg name="Name"/>
+        <option name="--invokable"/>
+        <option name="--templates"/>
+      </command>
+
+      <command name="make:service" description="Generate a service class">
+        <arg name="Module"/>
+        <arg name="Name"/>
+        <option name="--templates"/>
+      </command>
+
+      <command name="make:views" description="Generate a set of views for a resource">
+        <arg name="Module"/>
+        <arg name="resource"/>
+        <option name="--templates"/>
+      </command>
+
+      <command name="make:view" description="Generate a single view for a resource">
+        <arg name="Module"/>
+        <arg name="resource/view"/>
+        <option name="--templates"/>
+      </command>
+
+      <command name="make:migration" description="Create a new migration file">
+        <arg name="name" optional="true"/>
+        <option name="--module" description="Target module"/>
+      </command>
+
+      <command name="make:seeder" description="Create a database seeder class">
+        <arg name="Module"/>
+        <arg name="Class"/>
+      </command>
+
+      <command name="migrate" description="Run outstanding migrations">
+        <option name="--module"/>
+        <option name="--steps"/>
+        <option name="--pretend"/>
+      </command>
+
+      <command name="migrate:rollback" description="Rollback last or N migration steps">
+        <option name="--module"/>
+        <option name="--steps"/>
+      </command>
+
+      <command name="status" description="Show migration status">
+        <option name="--module"/>
+      </command>
+
+      <command name="seed" description="Run database seeders">
+        <option name="--module"/>
+        <option name="--class"/>
+        <option name="--force"/>
+        <option name="--env"/>
+      </command>
+
+      <command name="ui:tailwind" description="Install/prepare Tailwind CSS">
+        <option name="--css"/>
+        <option name="--out"/>
+        <option name="--force"/>
+        <option name="--dry-run"/>
+        <option name="--no-build"/>
+      </command>
+
+      <command name="modules:cache" description="Cache module metadata">
+        <option name="--env"/>
+        <option name="--allow-dev"/>
+        <option name="--modules"/>
+        <option name="--cache"/>
+      </command>
+
+      <command name="modules:clear" description="Clear cached module metadata">
+        <option name="--cache"/>
+      </command>
+
+      <command name="route:cache" description="Cache application routes">
+        <option name="--out"/>
+        <option name="--modules"/>
+        <option name="--env"/>
+      </command>
+
+      <command name="route:clear" description="Clear cached routes">
+        <option name="--file"/>
+      </command>
+
+      <command name="make:routes" description="Generate routes for a module">
+        <arg name="Module" optional="true"/>
+        <option name="--module"/>
+        <option name="--api"/>
+      </command>
+
+      <command name="examples:list" description="List example modules"/>
+
+      <command name="examples:install" description="Install example module(s)">
+        <arg name="ModuleName" optional="true"/>
+        <option name="--all"/>
+        <option name="--force"/>
+        <option name="--path"/>
+      </command>
+
+      <command name="pack" description="Produce a production build/package">
+        <option name="--env"/>
+        <option name="--include-dev"/>
+        <option name="--target"/>
+        <option name="--out"/>
+        <option name="--dry-run"/>
+      </command>
+    </commands>
+
+    <path value="$ProjectFileDir$\vendor\bin\ish.bat"/>
+    <workingDirectory value="$ProjectFileDir$"/>
+  </tool>
+</tools>

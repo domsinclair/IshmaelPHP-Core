@@ -6,6 +6,7 @@
 ## Public Methods
 
 - `id()`
+- `increments(string $name)`
 - `string(string $name, int $length, bool $nullable, string $default)`
 - `text(string $name, bool $nullable, string $default)`
 - `boolean(string $name, bool $nullable, bool $default)`
