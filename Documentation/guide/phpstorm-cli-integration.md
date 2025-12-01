@@ -1,73 +1,117 @@
-# PhpStorm: Ishmael CLI Integration and Aliases
+# PhpStorm: Ishmael CLI integration (2025-ready) and aliases
 
-This guide shows how to import an Ishmael CLI definition into PhpStorm and how to set up aliases for faster commands.
+This guide explains, step by step, how to wire the Ishmael CLI into modern PhpStorm builds and how to create handy aliases. It reflects UI changes in recent PhpStorm versions and clarifies common pitfalls.
 
-XML location inside Core (shipped to end users):
-- IshmaelPHP-Core/extras/phpstorm/ish-cli.xml
-- When installed via Composer: vendor/ishmael/ishmael-core/IshmaelPHP-Core/extras/phpstorm/ish-cli.xml
-
-What you get
-- Menu entries under Tools -> Ishmael CLI for common commands
-- Command completion and inline help for defined commands
-- Optional per-project aliases for very quick execution
+What you’ll get
+- Command completion and inline help for Ish commands in PhpStorm’s Command Line Tools Console and Run Anything
+- Optional Tools → External Tools menu item (if you want a fixed menu entry)
+- Optional per‑project aliases for very quick execution
 
 Prerequisites
-- Open the project at your application root (where composer.json lives)
-- Ishmael Core installed so vendor/bin/ish exists
+- Open your application root in PhpStorm (the directory that contains composer.json)
+- Ishmael framework installed so the CLI exists
+    - Windows: vendor\bin\ish.bat
+    - macOS/Linux: vendor/bin/ish (make it executable if needed)
 
-Windows uses vendor\\bin\\ish.bat. macOS/Linux uses vendor/bin/ish.
+Where the definition XML lives
+- In this repository (source): vendor/ishmael/framework/extras/phpstorm/ish-cli.xml
+- Distributed via Composer: vendor/ishmael/framework/extras/phpstorm/ish-cli.xml
 
-Step 1: Import the tool definition
+Important: Tool path vs. XML file
+- The XML only describes commands; it is NOT the executable.
+- The “Tool path” (or “Program”) must point to the actual CLI launcher:
+    - Windows: $ProjectFileDir$\vendor\bin\ish.bat
+    - macOS/Linux: $ProjectFileDir$/vendor/bin/ish
 
-1. Settings/Preferences -> Tools -> Command Line Tool Support
-2. Click + and choose "Custom tool"
-3. Click "Import" and select the XML from the path above
-4. Set Alias to "ish" (or any alias you prefer)
-5. Program path:
-   - Windows: $ProjectFileDir$\\vendor\\bin\\ish.bat
-   - macOS/Linux: $ProjectFileDir$/vendor/bin/ish
-6. Working directory: $ProjectFileDir$
-7. Apply / OK
 
-You should now see a Tools -> Ishmael CLI menu with predefined commands (make:module, migrate, seed, etc.).
+Option A — Use PHP Command Line Tool Support (recommended)
 
-Step 2: Run a command from PhpStorm
-- Tools -> Ishmael CLI -> help
-- Or press Ctrl twice (Run Anything), type: ish help, then Enter
+Recent PhpStorm builds show “PHP Command Line Tool Support” and may not display a separate generic “Command Line Tool Support” plugin. That’s OK — use the PHP one.
 
-Step 3: Create handy aliases
-1. Settings/Preferences -> Tools -> Command Line Tool Support
-2. Select "Ishmael CLI" -> Open alias editor
-3. Suggested aliases:
-   1.  mkm -> make:module (Args: <Name>)
-   2.  mkr -> make:resource (Args: <Module> <Name> [--api])
-   3.  mkc -> make:controller (Args: <Module> <Name> [--invokable])
-   4.  mks -> make:service (Args: <Module> <Name>)
-   5.  mig -> migrate (Args: [--module=<Name>] [--steps=<N>] [--pretend])
-   6.  rb -> migrate:rollback (Args: [--module=<Name>] [--steps=<N>])
-   7.  status -> status (Args: [--module=<Name>])
-   8.  seed -> seed (Args: [--module=<Name>] [--class=<FQCN>] [--force] [--env=<ENV>])
-   9.  routes -> make:routes (Args: [<Module>] [--api])
-   10. mods:cache -> modules:cache
-   11. mods:clear -> modules:clear
-   12. pack -> pack (Args: [--target=<dir>] [--out=<dir>] [--env=<env>] [--include-dev] [--dry-run])
+1) Import the Ish command definitions
+    - Settings/Preferences → Tools → PHP Command Line Tool Support
+    - Click + → Custom tool → Import
+    - Select: $ProjectFileDir$/vendor/ishmael/framework/extras/phpstorm/ish-cli.xml
 
-Notes
-- Keep aliases short and memorable
-- Use placeholders in the Arguments field so PhpStorm prompts you when running
+2) Configure the tool
+    - After import, select the created “Ishmael CLI” row and click the pencil icon.
+    - Alias: ish
+    - Tool path (the executable):
+        - Windows: $ProjectFileDir$\vendor\bin\ish.bat
+        - macOS/Linux: $ProjectFileDir$/vendor/bin/ish
+    - Working directory: $ProjectFileDir$
+    - Visibility: Current project
+    - Leave “Interpreter” empty (ish.bat/ish calls PHP internally).
+    - Apply / OK
 
-Updating the command list
-- Re-import the XML after upgrading Core to get newly added commands
-- Or add custom aliases manually for new commands
+3) How to run it in newer PhpStorm
+    - Tools → Command Line Tools Console → type: ish help (completion comes from the XML)
+    - Or press Ctrl twice (Run Anything) and run: ish help
+
+Notes about older instructions
+- In older screenshots you may see a Tools → Ishmael CLI submenu. Newer PhpStorm versions no longer auto‑create a per‑tool submenu here. Use the Command Line Tools Console or Run Anything instead (see above). If you want a persistent menu item, use Option B below.
+
+
+Option B — Add a Tools menu item via External Tools (optional)
+
+If you prefer a fixed Tools menu entry and/or a keyboard shortcut:
+- Settings/Preferences → Tools → External Tools → +
+    - Name: Ishmael CLI (ish)
+    - Program:
+        - Windows: $ProjectFileDir$\vendor\bin\ish.bat
+        - macOS/Linux: $ProjectFileDir$/vendor/bin/ish
+    - Arguments: $Prompt$
+    - Working directory: $ProjectFileDir$
+      This will appear under Tools → External Tools → Ishmael CLI (ish). You can assign a shortcut in Keymap.
+
+
+Creating handy aliases (within PHP Command Line Tool Support)
+1) Settings/Preferences → Tools → PHP Command Line Tool Support
+2) Select “Ishmael CLI” → Open alias editor
+3) Suggested aliases:
+    - mkm → make:module (Args: <Name>)
+    - mkr → make:resource (Args: <Module> <Name> [--api])
+    - mkc → make:controller (Args: <Module> <Name> [--invokable])
+    - mks → make:service (Args: <Module> <Name>)
+    - mig → migrate (Args: [--module=<Name>] [--steps=<N>] [--pretend])
+    - rb → migrate:rollback (Args: [--module=<Name>] [--steps=<N>])
+    - status → status (Args: [--module=<Name>])
+    - seed → seed (Args: [--module=<Name>] [--class=<FQCN>] [--force] [--env=<ENV>])
+    - routes → make:routes (Args: [<Module>] [--api])
+    - mods:cache → modules:cache
+    - mods:clear → modules:clear
+    - pack → pack (Args: [--target=<dir>] [--out=<dir>] [--env=<env>] [--include-dev] [--dry-run])
+
+Tips for aliases
+- Keep them short and memorable.
+- Use placeholders in Arguments so PhpStorm will prompt you.
+
+
+Verification checklist
+- From PhpStorm: Tools → Command Line Tools Console → ish help shows the CLI help.
+- From Run Anything (press Ctrl twice): ish help runs successfully.
+- From the built‑in Terminal at project root:
+    - Windows: .\vendor\bin\ish.bat help
+    - macOS/Linux: ./vendor/bin/ish help
+
 
 Troubleshooting
-- Program not found: check the Program path matches your OS and that vendor/bin/ish exists
-- Permission denied on macOS/Linux: run: chmod +x vendor/bin/ish
-- Wrong working directory: ensure Working directory is $ProjectFileDir$
+- No “Command Line Tools Console” menu item:
+    - Ensure you’re on a recent PhpStorm build. Use Run Anything (Ctrl twice) as an alternative.
+- It runs the wrong thing / nothing happens:
+    - Double‑check “Tool path” points to the executable (ish.bat or ish), not to the XML.
+- Program not found:
+    - Confirm the file exists at vendor/bin/ish.bat (Windows) or vendor/bin/ish (macOS/Linux).
+- Permission denied (macOS/Linux):
+    - Run: chmod +x vendor/bin/ish
+- Wrong working directory:
+    - Set Working directory to $ProjectFileDir$.
+- Still stuck?
+    - Tell us your PhpStorm build (Help → About) and what you see when you run ish help from Terminal.
 
-Repository placement and distribution
-- The XML is stored inside the Core package at IshmaelPHP-Core/extras/phpstorm/ish-cli.xml so it is included when distributed via Composer
-- End users can import it directly from vendor/ishmael/ishmael-core/IshmaelPHP-Core/extras/phpstorm/ish-cli.xml
+
+Updating the command list
+- Re‑import the XML after upgrading the framework to get newly added commands, or add custom aliases manually for new commands.
 
 Related
-- See guide/cli.md for command semantics and examples
+- See guide/cli.md for command semantics and examples.
