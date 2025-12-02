@@ -456,20 +456,7 @@ PHP;
                                 ['name' => '--env', 'description' => 'Environment name', 'accepts' => 'ENV'],
                         ],
                 ],
-                [
-                        'name' => 'examples:list',
-                        'description' => 'List available example modules that can be installed into your app.',
-                        'options' => []
-                ],
-                [
-                        'name' => 'examples:install',
-                        'description' => 'Install one or all example modules into your app. Usage: ish examples:install <ModuleName> [--force] [--path=Modules] or ish examples:install --all',
-                        'options' => [
-                                ['name' => '--all', 'description' => 'Install all examples'],
-                                ['name' => '--force', 'description' => 'Overwrite existing files by replacing the target directory'],
-                                ['name' => '--path', 'description' => 'Destination subdirectory relative to app root (default: Modules)', 'accepts' => 'PATH']
-                        ]
-                ],
+                // Phase 16: examples commands removed
                 [
                         'name' => 'key:generate',
                         'description' => 'Generate and set APP_KEY in .env.',
@@ -522,47 +509,7 @@ PHP;
     persistCliMetadata($appRoot, cliCommandRegistry());
 
     try {
-        // Helper: examples directory within core
-        $coreExamplesDir = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'Examples' . DIRECTORY_SEPARATOR . 'Modules';
-        /**
-         * Discover example modules in the core repo.
-         * @return array<int, array{name:string, path:string, description:string}>
-         */
-        $discoverExamples = function() use ($coreExamplesDir): array {
-            $list = [];
-            if (is_dir($coreExamplesDir)) {
-                $items = scandir($coreExamplesDir) ?: [];
-                foreach ($items as $item) {
-                    if ($item === '.' || $item === '..') { continue; }
-                    $modPath = $coreExamplesDir . DIRECTORY_SEPARATOR . $item;
-                    if (!is_dir($modPath)) { continue; }
-                    $metaPath = $modPath . DIRECTORY_SEPARATOR . 'module.json';
-                    if (!is_file($metaPath)) { continue; }
-                    $json = json_decode((string)file_get_contents($metaPath), true);
-                    $name = is_array($json) && isset($json['name']) ? (string)$json['name'] : $item;
-                    $desc = is_array($json) && isset($json['description']) ? (string)$json['description'] : '';
-                    $list[] = ['name' => $name, 'path' => $modPath, 'description' => $desc];
-                }
-            }
-            return $list;
-        };
-        /** Recursively delete a directory tree. */
-        $removeDirectoryRecursive = function(string $dir): void {
-            if (!is_dir($dir)) { return; }
-            $it = new RecursiveIteratorIterator(
-                    new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS),
-                    RecursiveIteratorIterator::CHILD_FIRST
-            );
-            foreach ($it as $file) {
-                $p = $file->getPathname();
-                if ($file->isDir()) {
-                    @rmdir($p);
-                } else {
-                    @unlink($p);
-                }
-            }
-            @rmdir($dir);
-        };
+        // Phase 16: examples discovery and installer removed
         switch ($command) {
             case 'help':
             case '--help':
@@ -592,9 +539,6 @@ Usage:
   ish route:clear [--file=PATH]
   ish make:routes <Module> [--api]
   ish make:routes --module=Name [--api]
-  ish examples:list
-  ish examples:install <ModuleName> [--force] [--path=Modules]
-  ish examples:install --all [--force] [--path=Modules]
   ish pack --env=production [--include-dev] [--target=webhost|container] [--out=./dist] [--dry-run]
 
 Options:
@@ -1426,60 +1370,7 @@ TPL;
                 exit(0);
             }
 
-            case 'examples:list': {
-                $examples = $discoverExamples();
-                if (empty($examples)) {
-                    echo "No example modules found in Core.\n";
-                    exit(0);
-                }
-                foreach ($examples as $ex) {
-                    $desc = $ex['description'] !== '' ? ' - ' . $ex['description'] : '';
-                    echo $ex['name'] . $desc . PHP_EOL;
-                }
-                exit(0);
-            }
-
-            case 'examples:install': {
-                $destRel = isset($options['path']) ? (string)$options['path'] : 'Modules';
-                $destRoot = $appRoot . DIRECTORY_SEPARATOR . trim($destRel, '\\/');
-                ensureDirectory($destRoot);
-
-                $examples = $discoverExamples();
-                if (isset($options['all'])) {
-                    $targets = $examples;
-                } else {
-                    $nameArg = $argv[2] ?? '';
-                    if ($nameArg === '') {
-                        throw new InvalidArgumentException('Usage: ish examples:install <ModuleName> [--force] [--path=Modules] or ish examples:install --all');
-                    }
-                    $studly = toStudlyCase($nameArg);
-                    $match = null;
-                    foreach ($examples as $ex) {
-                        if (toStudlyCase($ex['name']) === $studly || basename($ex['path']) === $studly) {
-                            $match = $ex; break;
-                        }
-                    }
-                    if ($match === null) {
-                        throw new RuntimeException('Example module not found: ' . $nameArg);
-                    }
-                    $targets = [$match];
-                }
-
-                $force = isset($options['force']);
-                foreach ($targets as $ex) {
-                    $moduleName = toStudlyCase($ex['name']);
-                    $destDir = $destRoot . DIRECTORY_SEPARATOR . $moduleName;
-                    if (is_dir($destDir)) {
-                        if (!$force) {
-                            throw new RuntimeException('Destination exists: ' . $destDir . ' (use --force to overwrite)');
-                        }
-                        $removeDirectoryRecursive($destDir);
-                    }
-                    copyDirectoryRecursive($ex['path'], $destDir);
-                    echo 'Installed example: ' . $moduleName . ' → ' . $destDir . PHP_EOL;
-                }
-                exit(0);
-            }
+            // Phase 16: examples commands removed
 
             case 'key:generate': {
                 $force = isset($options['force']) ? (bool)filter_var((string)$options['force'], FILTER_VALIDATE_BOOL) : false;

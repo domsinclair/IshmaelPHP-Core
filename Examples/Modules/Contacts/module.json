@@ -1,9 +1,0 @@
-{
-  "name": "Contacts",
-  "version": "0.1.0",
-  "enabled": true,
-  "description": "Example MVC CRUD module with views, CSRF, and pagination",
-  "routes": ["routes.php"],
-  "migrations": ["Database/Migrations"],
-  "seeders": ["Database/Seeders/ContactsSeeder.php"]
-}

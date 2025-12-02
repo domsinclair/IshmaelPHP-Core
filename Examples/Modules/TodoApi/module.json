@@ -1,9 +1,0 @@
-{
-  "name": "TodoApi",
-  "version": "0.1.0",
-  "enabled": true,
-  "description": "Example JSON API module with ETag, 304s, and throttling",
-  "routes": ["routes.php"],
-  "migrations": ["Database/Migrations"],
-  "seeders": ["Database/Seeders/TodoSeeder.php"]
-}
