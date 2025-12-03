@@ -101,7 +101,7 @@ Recommended additions:
 - Modules/<Name>/Controllers — controllers for your routes.
 - Modules/<Name>/Views — Tailwind-friendly views (if you expose UI).
 - Modules/<Name>/Config — configuration defaults (namespaced under your pack name).
-- Modules/<Name>/Migrations and `seeds/` — for database-backed features.
+- Modules/<Name>/Database/Migrations and `Database/Seeders` — for database-backed features.
 - tests/ — unit and integration tests.
 - README.md — install and usage instructions.
 
@@ -116,8 +116,9 @@ Modules/
     Controllers/
     Views/
     Config/
-    Migrations/
-    seeds/
+    Database/
+      Migrations/
+      Seeders/
 src/
   ServiceProvider.php   # optional hooks, installers, or CLI registration helpers
 tests/
@@ -218,8 +219,8 @@ Most non-trivial packs will need persistent data. IshmaelPHP supports putting da
 What to add to your pack:
 - Modules/<Name>/Models — your domain models or data mappers
 - Modules/<Name>/Services — application services that orchestrate business logic and repositories
-- Modules/<Name>/Migrations — PHP migration files to create/alter tables
-- Modules/<Name>/seeds — optional seeders for test/demo data
+- Modules/<Name>/Database/Migrations — PHP migration files to create/alter tables
+- Modules/<Name>/Database/Seeders — optional seeders for test/demo data
 
 Suggested layout:
 ```
@@ -230,10 +231,11 @@ Modules/
       PostRepository.php
     Services/
       PostService.php
-    Migrations/
-      2025_12_02_120000_create_posts_table.php
-    seeds/
-      PostSeeder.php
+    Database/
+      Migrations/
+        2025_12_02_120000_create_posts_table.php
+      Seeders/
+        PostSeeder.php
 ```
 
 Models and repositories:
@@ -311,7 +313,7 @@ ish make:migration create_posts_table --module=Blog
 ```
 ish make:migration Blog create_posts_table
 ```
-- Edit the generated file under `Modules/Blog/Migrations/` to define `up()` and `down()` operations using the Schema Manager.
+- Edit the generated file under `Modules/Blog/Database/Migrations/` to define `up()` and `down()` operations using the Schema Manager.
 
 Run migrations for your module:
 ```
@@ -322,7 +324,7 @@ ish status --module=Blog
 Seeding module data:
 ```
 ish make:seeder Blog PostSeeder
-ish seed --module=Blog --class=Modules\\Blog\\seeds\\PostSeeder
+ish seed --module=Blog --class=Modules\\Blog\\Database\\Seeders\\PostSeeder
 ```
 
 Transactions and safety:

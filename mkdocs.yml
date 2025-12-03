@@ -65,7 +65,6 @@ nav:
       - Versioning & Support Policy: guide/versioning-and-support-policy.md
       - CLI: guide/cli.md
       - "PhpStorm: CLI Integration & Aliases": guide/phpstorm-cli-integration.md
-      - Install Example Modules: guide/install-examples.md
       - Using Schema Manager Safely: guide/using-schema-manager-safely.md
       - Using the Minimal Model: guide/using-the-minimal-model.md
       - Writing and running migrations: guide/writing-and-running-migrations.md
@@ -104,6 +103,11 @@ nav:
   - Explanations:
       - Request & Response: concepts/request-response.md
       - Module Discovery: concepts/module-discovery.md
+  - Feature Packs:
+      - Overview: feature-packs/index.md
+      - Creating a Feature Pack: feature-packs/creating.md
+      - Testing Feature Packs: feature-packs/testing-feature-packs.md
+      - Using the src Folder in Feature Packs: feature-packs/src-folder-usage.md
   - Database:
       - Configuring the Database: database/configuring.md
       - Defining Tables and Models: database/models-and-tables.md
