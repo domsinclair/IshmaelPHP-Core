@@ -11,6 +11,18 @@ Highlights:
 - First-class logging (Monolog) including processors and per-request IDs for traceability.
 - Minimal surface area: prefer clarity over magic so you can understand and control the runtime.
 
+## Installation
+
+Ishmael is best installed via [Composer](https://getcomposer.org/):
+
+```bash
+composer require ishmael/framework
+```
+
+For a complete starting point, use the [Skeleton App](https://github.com/ishmael-php/skeleton) (coming soon).
+
+## Documentation
+
 To explore the framework in action, check out the guides under Documentation.
 
 The first phase of development is now complete providing what is hopefully a solid, fully tested foundation upon which it can be expanded.

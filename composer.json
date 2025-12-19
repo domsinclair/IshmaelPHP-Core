@@ -2,6 +2,19 @@
   "name": "ishmael/framework",
   "version": "0.7.0",
   "description": "Ishmael PHP Framework",
+  "license": "MIT",
+  "keywords": [
+    "framework",
+    "micro-framework",
+    "modular",
+    "psr-15",
+    "ishmael"
+  ],
+  "authors": [
+    {
+      "name": "IshmaelPHP Contributors"
+    }
+  ],
   "type": "library",
   "bin": [
     "bin/ish"

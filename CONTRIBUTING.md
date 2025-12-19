@@ -5,7 +5,7 @@ Thanks for your interest in contributing!
 ## Development quick start
 - PHP 8.2+ is required.
 - Install dependencies:
-  - Core: `cd IshmaelPHP-Core && composer install`
+  - `composer install`
 - Run code quality and tests:
   - Lint: `composer cs:check`
   - Static analysis: `composer analyse`
