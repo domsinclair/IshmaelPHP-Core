@@ -29,7 +29,8 @@ Examples:
 - Minimum supported PHP: 8.2.
 
 ## Release process (automated)
-We use Release Please to automate releases and CHANGELOG.md updates.
+We use Release Please to automate releases and CHANGELOG.md updates. For a detailed explanation of this process, see [Docs/Release-Please-Guide.md](../Docs/Release-Please-Guide.md).
+
 1. Land changes on `main` using Conventional Commits in PR titles.
 2. Release Please opens a release PR with a generated changelog.
 3. When the release PR is merged, a tag and GitHub Release are created (e.g., `v0.1.0`).
