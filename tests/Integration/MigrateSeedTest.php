@@ -39,11 +39,15 @@ final class MigrateSeedTest extends CliTestCase
 
         // 2) make:migration (create items table)
         $r2 = $this->runPhpScript($bin, ['make:migration', $this->moduleName, 'create_items_table'], $this->appRoot);
-        $this->assertSame(0, $r2['exit'], 'make:migration failed: ' . $r2['err']);
+        $this->assertSame(0, $r2['exit'], 'make:migration failed: ' . $r2['err'] . ' OUT: ' . $r2['out']);
 
         // Find migration file and replace contents with a simple table create
         $migrationsDir = $this->moduleDir . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations';
         $files = glob($migrationsDir . DIRECTORY_SEPARATOR . '*_CreateItemsTable.php') ?: [];
+        if (empty($files)) {
+             // Fallback for case-sensitive filesystems or different naming conventions in recent ish changes
+             $files = glob($migrationsDir . DIRECTORY_SEPARATOR . '*_create_items_table.php') ?: [];
+        }
         $this->assertNotEmpty($files, 'Expected migration file to be created');
         $migPath = $files[0];
         $className = 'CreateItemsTable' . substr(bin2hex(random_bytes(2)), 0, 4);

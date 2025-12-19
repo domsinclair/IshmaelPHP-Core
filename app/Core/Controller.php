@@ -100,22 +100,17 @@
 
                 // Resolve layout path:
                 // - Absolute paths (Windows drive-letter, Windows UNC, or Unix '/') are honored as-is.
-                // - Relative paths are resolved against the module's Views/ base.
+                // - Paths starting with './' or '../' are resolved relative to the VIEW file's directory.
+                // - Other relative paths are resolved against the module's Views/ base.
                 $layoutPath = $layoutFile;
-                // Normalize directory separators for portability
-                $layoutPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $layoutPath);
-                // Append .php if not present
-                if (substr($layoutPath, -4) !== '.php') {
-                    $layoutPath .= '.php';
-                }
 
                 $isAbsolute = static function (string $path): bool {
                     // Windows drive letter, e.g., C:\...
-                    if (preg_match('~^[a-zA-Z]:\\\\~', $path) === 1) {
+                    if (preg_match('~^[a-zA-Z]:[/\\\\]~', $path) === 1) {
                         return true;
                     }
                     // Windows UNC path, e.g., \\server\share\...
-                    if (preg_match('~^\\\\\\\\~', $path) === 1) {
+                    if (preg_match('~^[/\\\\]{2}~', $path) === 1) {
                         return true;
                     }
                     // Unix absolute
@@ -123,19 +118,44 @@
                 };
 
                 if (!$isAbsolute($layoutPath)) {
-                    $layoutPath = $basePath . ltrim($layoutPath, DIRECTORY_SEPARATOR);
+                    if (str_starts_with($layoutPath, './') || str_starts_with($layoutPath, '../') || str_starts_with($layoutPath, '.\\') || str_starts_with($layoutPath, '..\\')) {
+                        $layoutPath = dirname($viewPath) . DIRECTORY_SEPARATOR . $layoutPath;
+                    } else {
+                        $layoutPath = $basePath . ltrim($layoutPath, '/\\');
+                    }
                 }
 
+                // Append .php if not present
+                if (substr($layoutPath, -4) !== '.php') {
+                    $layoutPath .= '.php';
+                }
+
+                // Normalize directory separators for portability
+                $layoutPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $layoutPath);
+
                 // Try to resolve to a canonical path if the file exists, otherwise keep as constructed
-                $resolvedLayoutPath = realpath($layoutPath) ?: $layoutPath;
+                // On some Windows environments, realpath may fail with relative parent components if not absolute enough
+                $resolvedLayoutPath = realpath($layoutPath);
+
+                // If realpath failed, try manually resolving .. for the check
+                if (!$resolvedLayoutPath) {
+                    $resolvedLayoutPath = $layoutPath;
+                    // Resolve "any/path/../" patterns
+                    while (preg_match('#[^' . preg_quote(DIRECTORY_SEPARATOR, '#') . ']+' . preg_quote(DIRECTORY_SEPARATOR, '#') . '\.\.(' . preg_quote(DIRECTORY_SEPARATOR, '#') . '|$)#', $resolvedLayoutPath)) {
+                        $resolvedLayoutPath = preg_replace('#[^' . preg_quote(DIRECTORY_SEPARATOR, '#') . ']+' . preg_quote(DIRECTORY_SEPARATOR, '#') . '\.\.(' . preg_quote(DIRECTORY_SEPARATOR, '#') . '|$)#', '', $resolvedLayoutPath, 1);
+                    }
+                    // Clean up trailing slash if resolution emptied a segment
+                    $resolvedLayoutPath = rtrim($resolvedLayoutPath, DIRECTORY_SEPARATOR);
+                }
 
                 if (!file_exists($resolvedLayoutPath)) {
                     http_response_code(500);
-                    echo "Layout not found: {$layoutPath}";
+                    echo "Layout not found: {$layoutPath} (Resolved: {$resolvedLayoutPath})";
                     return;
                 }
 
                 // Include the layout in the same scope so it can access $sections and any view variables
+                // Use the resolved path for inclusion to ensure it's absolute and correct
                 include $resolvedLayoutPath;
                 return;
             }

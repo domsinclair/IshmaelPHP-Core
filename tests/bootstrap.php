@@ -15,6 +15,33 @@ require_once __DIR__ . '/../app/Helpers/helpers.php';
 // Composer autoloader (may include a vendor copy of helpers, but our functions are already defined)
 require __DIR__ . '/../vendor/autoload.php';
 
+// Also support running MCP package tests (tools/mcp) via the root phpunit.xml.dist
+// Try to load its Composer autoload first, then register a PSR-4 fallback
+// so IshmaelPHP\\McpServer classes resolve when invoking PHPUnit from project root.
+try {
+    $mcpAutoload = __DIR__ . '/../../tools/mcp/vendor/autoload.php';
+    if (is_file($mcpAutoload)) {
+        require_once $mcpAutoload;
+    }
+} catch (Throwable $e) {
+    // Non-fatal: continue with fallback autoloader.
+}
+
+if (!class_exists('IshmaelPHP\\McpServer\\Server\\RequestRouter')) {
+    spl_autoload_register(function (string $class): void {
+        $prefix = 'IshmaelPHP\\McpServer\\';
+        $baseDir = __DIR__ . '/../../tools/mcp/src/';
+        if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
+            return;
+        }
+        $relative = substr($class, strlen($prefix));
+        $file = $baseDir . str_replace('\\', DIRECTORY_SEPARATOR, $relative) . '.php';
+        if (is_file($file)) {
+            require $file;
+        }
+    });
+}
+
 // Ensure test utilities are loaded (not managed by Composer autoload)
 require_once __DIR__ . '/Database/AdapterTestUtil.php';
 // Ensure abstract base test is defined before concrete adapter tests are loaded
