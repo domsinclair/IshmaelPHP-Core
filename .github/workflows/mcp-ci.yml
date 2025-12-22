@@ -1,0 +1,58 @@
+name: MCP Server CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ "**" ]
+
+jobs:
+  build-test:
+    name: PHP ${{ matrix.php }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        php: [ '8.2', '8.3' ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: |
+          php -r "echo str_replace('\n','', (new class{function cache(){echo (function_exists('sys_get_temp_dir')?sys_get_temp_dir():'.').DIRECTORY_SEPARATOR.'composer-cache';}})->cache());"
+        shell: bash
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.stdout || steps.composer-cache.outputs.cache_dir || '~/.composer/cache' }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/tools/mcp/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: Install dependencies (tools/mcp)
+        working-directory: tools/mcp
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Lint (PHPCS)
+        working-directory: tools/mcp
+        run: composer run lint
+
+      - name: Static Analysis (PHPStan)
+        working-directory: tools/mcp
+        run: composer run analyse
+
+      - name: Tests (PHPUnit)
+        working-directory: tools/mcp
+        run: composer run test

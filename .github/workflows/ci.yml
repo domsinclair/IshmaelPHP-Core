@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  php-tests:
+    name: PHP ${{ matrix.php }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['8.2', '8.3']
+
+    defaults:
+      run:
+        working-directory: IshmaelPHP-Core
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: xdebug
+
+      - name: Validate composer.json
+        run: composer validate --strict
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: PHP CodeSniffer (cs:check)
+        run: composer cs:check
+
+      - name: PHPStan (analyse)
+        run: composer analyse
+
+      - name: PHPUnit (with coverage)
+        run: composer test:coverage
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.os }}-php${{ matrix.php }}
+          path: IshmaelPHP-Core/build/logs/clover.xml
+          if-no-files-found: ignore
+
+  php-integration:
+    name: Integration on ${{ matrix.os }} (PHP ${{ matrix.php }})
+    runs-on: ${{ matrix.os }}
+    needs: php-tests
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        php: ['8.4']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: none
+          extensions: sqlite, pdo_sqlite
+
+      - name: Install Core dev dependencies
+        working-directory: IshmaelPHP-Core
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Install SkeletonApp dependencies
+        working-directory: SkeletonApp
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Run CLI Integration tests
+        working-directory: IshmaelPHP-Core
+        run: |
+          vendor/bin/phpunit -c ../phpunit.xml.dist --filter "Tests\\Integration"

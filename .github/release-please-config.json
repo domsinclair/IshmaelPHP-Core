@@ -1,0 +1,35 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "simple",
+  "bump-minor-pre-major": true,
+  "bump-patch-for-minor-pre-major": true,
+  "packages": {
+    ".": {}
+  },
+  "changelog-path": "CHANGELOG.md",
+  "extra-files": [
+    {
+      "type": "json",
+      "path": "composer.json",
+      "jsonpath": "$.version",
+      "replace": true
+    },
+    {
+      "type": "php",
+      "path": "version.php",
+      "replace": true
+    }
+  ],
+  "changelog-types": [
+    { "type": "feat", "section": "Features" },
+    { "type": "fix", "section": "Bug Fixes" },
+    { "type": "perf", "section": "Performance" },
+    { "type": "refactor", "section": "Refactoring" },
+    { "type": "revert", "section": "Reverts" },
+    { "type": "docs", "section": "Documentation" },
+    { "type": "ci", "section": "Continuous Integration" },
+    { "type": "build", "section": "Build System" },
+    { "type": "test", "section": "Tests" },
+    { "type": "chore", "section": "Chores" }
+  ]
+}
