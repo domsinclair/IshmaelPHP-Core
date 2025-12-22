@@ -1,0 +1,18 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # 1. Protect sensitive files and directories from direct access
+    # Even though the rewrite rule below would map them to public/ (where they don't exist),
+    # explicit protection is safer if rewrite rules are modified or bypassed.
+    
+    # Block access to specific directories
+    RewriteRule ^(config|storage|vendor|Modules|Docs)/ - [F,L]
+    
+    # Block access to specific files (dotfiles, composer, etc.)
+    RewriteRule ^(\.env|\.env\.example|composer\.(json|lock)|LICENSE|README\.md|\.gitignore|\.git) - [F,L]
+
+    # 2. Redirect all other requests to the public/ directory
+    # This captures the remainder of the URL and passes it to the public folder.
+    # No hardcoded 'ish' folder name here.
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
