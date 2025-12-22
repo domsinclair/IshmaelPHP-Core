@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<ruleset name="Ishmael Coding Standards">
+  <description>Baseline coding standard for IshmaelPHP-Core (PSR-12 with some exclusions for tests).</description>
+
+  <file>app</file>
+  <file>tests</file>
+
+  <arg name="basepath" value="."/>
+  <arg name="colors"/>
+  <arg name="extensions" value="php"/>
+
+  <rule ref="PSR12"/>
+
+  <!-- Allow long lines and mixed caps in test method names -->
+  <rule ref="Generic.Files.LineLength">
+    <properties>
+      <property name="lineLimit" value="160"/>
+      <property name="absoluteLineLimit" value="0"/>
+    </properties>
+  </rule>
+
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>tests/fixtures/*</exclude-pattern>
+</ruleset>

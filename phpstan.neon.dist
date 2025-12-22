@@ -1,0 +1,23 @@
+includes:
+	- vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+	level: 7
+	paths:
+		- app
+		- tests
+	excludePaths:
+		- vendor
+		- tests/fixtures
+	bootstrapFiles:
+		- tests/bootstrap.php
+	reportUnmatchedIgnoredErrors: false
+	checkMissingCallableSignature: true
+	checkMissingIterableValueType: true
+	checkGenericClassInNonGenericObjectType: false
+	checkTooWideReturnType: true
+	checkUninitializedProperties: true
+	
+disabledRules:
+	# Allow simple dynamic properties in examples during v0.1
+	- PHPStan\\Rules\\Properties\\AccessPropertiesRule

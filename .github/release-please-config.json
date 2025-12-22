@@ -15,9 +15,10 @@
       "replace": true
     },
     {
-      "type": "php",
+      "type": "regex",
       "path": "version.php",
-      "replace": true
+      "replace": "return '$1';",
+      "search": "return '(\\d+\\.\\d+\\.\\d+)';"
     }
   ],
   "changelog-types": [
