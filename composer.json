@@ -1,6 +1,5 @@
 {
   "name": "ishmael/framework",
-  "version": "0.7.0",
   "description": "Ishmael PHP Framework",
   "license": "MIT",
   "keywords": [
@@ -17,7 +16,8 @@
   ],
   "type": "library",
   "bin": [
-    "bin/ish"
+    "bin/ish",
+    "tools/mcp/bin/ish-mcp"
   ],
   "autoload": {
     "psr-4": {

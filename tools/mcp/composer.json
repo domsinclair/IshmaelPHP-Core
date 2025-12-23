@@ -1,0 +1,32 @@
+{
+  "name": "ishmaelphp/ish-mcp-server",
+  "description": "MCP (Model Context Protocol) server for IshmaelPHP-Core (incubation)",
+  "type": "library",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.2",
+    "ext-json": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "IshmaelPHP\\McpServer\\": "src/"
+    }
+  },
+  "bin": [
+    "bin/ish-mcp"
+  ],
+  "require-dev": {
+    "phpstan/phpstan": "^1.11",
+    "squizlabs/php_codesniffer": "^3.10",
+    "phpunit/phpunit": "^11.3"
+  },
+  "scripts": {
+    "lint": "phpcs -q",
+    "fix": "phpcbf -q",
+    "analyse": "phpstan analyse -c phpstan.neon.dist",
+    "test": "phpunit -c phpunit.xml.dist",
+    "sync-docs": [
+      "@php scripts/sync-docs.php"
+    ]
+  }
+}

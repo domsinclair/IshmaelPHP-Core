@@ -9,16 +9,10 @@
   "changelog-path": "CHANGELOG.md",
   "extra-files": [
     {
-      "type": "json",
-      "path": "composer.json",
-      "jsonpath": "$.version",
-      "replace": true
-    },
-    {
-      "type": "regex",
+      "updater": "regex",
       "path": "version.php",
-      "replace": "return '$1';",
-      "search": "return '(\\d+\\.\\d+\\.\\d+)';"
+      "search": "return '(\\d+\\.\\d+\\.\\d+)';",
+      "replace": "return '$1';"
     }
   ],
   "changelog-types": [
