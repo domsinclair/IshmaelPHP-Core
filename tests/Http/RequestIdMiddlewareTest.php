@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Logger;
 use Ishmael\Core\Router;
@@ -18,13 +21,15 @@ final class RequestIdMiddlewareTest extends TestCase
         // Reset superglobals
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/rid';
-        // Clear headers emitted in previous tests if any
+// Clear headers emitted in previous tests if any
         if (function_exists('header_remove')) {
             @header_remove();
         }
         // Initialize logger to a temp file per test run
         $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_rid_tests';
-        if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0777, true);
+        }
         $this->logPath = $dir . DIRECTORY_SEPARATOR . 'rid.log';
         Logger::init([
             'default' => 'single',
@@ -40,34 +45,30 @@ final class RequestIdMiddlewareTest extends TestCase
     }
 
     private string $logPath;
-
     public function testIncomingHeaderPropagatesToResponseAndLogs(): void
     {
         $incoming = 'test-req-id-1234567890';
         $_SERVER['HTTP_X_REQUEST_ID'] = $incoming;
-
         $router = new Router();
         $mw = new RequestIdMiddleware();
-        $router->add(['GET'], 'rid', function($req, Response $res): Response {
+        $router->add(['GET'], 'rid', function ($req, Response $res): Response {
+
             // Produce a log entry
             Logger::info('hit', ['foo' => 'bar']);
             return Response::text('ok');
         }, [$mw]);
-
         ob_start();
         $router->dispatch('/rid');
         ob_end_clean();
-
-        // Assert header set on response
+    // Assert header set on response
         $headers = \Ishmael\Core\Http\Response::getLastHeaders();
         $this->assertArrayHasKey('X-Request-Id', $headers);
         $this->assertSame($incoming, $headers['X-Request-Id']);
-
-        // Assert log contains request_id
+    // Assert log contains request_id
         $this->assertFileExists($this->logPath);
         $lines = file($this->logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
         $this->assertNotEmpty($lines);
-        $last = json_decode($lines[count($lines)-1], true);
+        $last = json_decode($lines[count($lines) - 1], true);
         $this->assertIsArray($last);
         $this->assertSame('hit', $last['msg'] ?? null);
         $this->assertSame($incoming, $last['request_id'] ?? null);
@@ -76,24 +77,21 @@ final class RequestIdMiddlewareTest extends TestCase
     public function testGeneratesIdWhenMissing(): void
     {
         unset($_SERVER['HTTP_X_REQUEST_ID']);
-
         $router = new Router();
         $mw = new RequestIdMiddleware();
-        $router->add(['GET'], 'rid', function($req, Response $res): Response {
+        $router->add(['GET'], 'rid', function ($req, Response $res): Response {
+
             Logger::info('hit2');
             return Response::text('ok2');
         }, [$mw]);
-
         ob_start();
         $router->dispatch('/rid');
         ob_end_clean();
-
         $headers = \Ishmael\Core\Http\Response::getLastHeaders();
         $ridHeader = $headers['X-Request-Id'] ?? null;
         $this->assertIsString($ridHeader);
         $this->assertNotSame('', $ridHeader);
-
-        // Log should include generated request_id
+// Log should include generated request_id
         $this->assertFileExists($this->logPath);
         $lines = file($this->logPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
         $this->assertNotEmpty($lines);

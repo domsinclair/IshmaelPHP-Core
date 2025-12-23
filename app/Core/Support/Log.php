@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Support;
@@ -23,63 +24,90 @@ final class Log
     public static function emergency(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->emergency($message, $context); return; }
+        if ($logger) {
+            $logger->emergency($message, $context);
+            return;
+        }
         CoreLogger::log('emergency', $message, $context);
     }
 
     public static function alert(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->alert($message, $context); return; }
+        if ($logger) {
+            $logger->alert($message, $context);
+            return;
+        }
         CoreLogger::log('alert', $message, $context);
     }
 
     public static function critical(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->critical($message, $context); return; }
+        if ($logger) {
+            $logger->critical($message, $context);
+            return;
+        }
         CoreLogger::log('critical', $message, $context);
     }
 
     public static function error(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->error($message, $context); return; }
+        if ($logger) {
+            $logger->error($message, $context);
+            return;
+        }
         CoreLogger::error($message, $context);
     }
 
     public static function warning(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->warning($message, $context); return; }
+        if ($logger) {
+            $logger->warning($message, $context);
+            return;
+        }
         CoreLogger::log('warning', $message, $context);
     }
 
     public static function notice(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->notice($message, $context); return; }
+        if ($logger) {
+            $logger->notice($message, $context);
+            return;
+        }
         CoreLogger::log('notice', $message, $context);
     }
 
     public static function info(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->info($message, $context); return; }
+        if ($logger) {
+            $logger->info($message, $context);
+            return;
+        }
         CoreLogger::info($message, $context);
     }
 
     public static function debug(string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->debug($message, $context); return; }
+        if ($logger) {
+            $logger->debug($message, $context);
+            return;
+        }
         CoreLogger::log('debug', $message, $context);
     }
 
     public static function log(string $level, string $message, array $context = []): void
     {
         $logger = self::resolve();
-        if ($logger) { $logger->log($level, $message, $context); return; }
+        if ($logger) {
+            $logger->log($level, $message, $context);
+            return;
+        }
         CoreLogger::log($level, $message, $context);
     }
 

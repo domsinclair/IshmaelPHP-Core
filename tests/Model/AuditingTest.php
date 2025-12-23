@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Tests\Model;
@@ -17,7 +18,6 @@ use PHPUnit\Framework\TestCase;
 final class PostModel extends Model
 {
     protected static string $table = 'posts';
-
     public static function schema(): ?TableDefinition
     {
         $td = new TableDefinition('posts');
@@ -37,15 +37,13 @@ final class PostModel extends Model
 final class AuditingTest extends TestCase
 {
     private DatabaseAdapterInterface $adapter;
-
     protected function setUp(): void
     {
         DatabaseAdapterFactory::registerDefaults();
         $this->adapter = DatabaseAdapterFactory::create('sqlite');
         $this->adapter->connect(['database' => ':memory:']);
         Database::initAdapter($this->adapter);
-
-        // Create a simple table with auditing columns
+    // Create a simple table with auditing columns
         $this->adapter->execute('CREATE TABLE posts (
             id INTEGER PRIMARY KEY,
             title TEXT NOT NULL,
@@ -78,9 +76,10 @@ final class AuditingTest extends TestCase
         $id = PostModel::insert(['title' => 'A']);
         $first = $this->adapter->query('SELECT updated_at, updated_by FROM posts WHERE id = ?', [$id])->fetch();
         $this->assertIsArray($first);
-        // Change user and update
+// Change user and update
         AuthContext::setCurrentUserId(101);
-        usleep(1000); // ensure timestamp difference at least 1ms
+        usleep(1000);
+// ensure timestamp difference at least 1ms
         PostModel::update($id, ['title' => 'B']);
         $second = $this->adapter->query('SELECT updated_at, updated_by FROM posts WHERE id = ?', [$id])->fetch();
         $this->assertIsArray($second);

@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Http\Middleware\VerifyCsrfToken;
 use Ishmael\Core\Http\Response;
@@ -19,8 +22,7 @@ final class VerifyCsrfTokenTest extends TestCase
         unset($_SERVER['HTTP_X_CSRF_TOKEN'], $_SERVER['HTTP_X_XSRF_TOKEN']);
         $_POST = [];
         $_GET = [];
-
-        // Ensure a fresh in-memory session for each test
+// Ensure a fresh in-memory session for each test
         $store = new FileSessionStore(storage_path('sessions'));
         $manager = new SessionManager($store, null, 3600);
         app(['session' => $manager]);
@@ -31,18 +33,15 @@ final class VerifyCsrfTokenTest extends TestCase
         $router = new Router();
         Router::setActive($router);
         $router->setGlobalMiddleware([VerifyCsrfToken::class]);
+        $router->add(['GET'], '/ok', function ($req, Response $res): Response {
 
-        $router->add(['GET'], '/ok', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/ok';
-
         ob_start();
         $router->dispatch('/ok');
         $out = ob_get_clean();
-
         $this->assertSame('ok', $out);
         $this->assertSame(200, http_response_code());
     }
@@ -52,19 +51,16 @@ final class VerifyCsrfTokenTest extends TestCase
         $router = new Router();
         Router::setActive($router);
         $router->setGlobalMiddleware([VerifyCsrfToken::class]);
+        $router->add(['POST'], '/submit', function ($req, Response $res): Response {
 
-        $router->add(['POST'], '/submit', function($req, Response $res): Response {
             return Response::text('submitted');
         });
-
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/submit';
         $_SERVER['HTTP_ACCEPT'] = 'application/json';
-
         ob_start();
         $router->dispatch('/submit');
         $out = ob_get_clean();
-
         $this->assertSame(419, http_response_code());
         $this->assertJson($out);
         $decoded = json_decode($out, true);
@@ -76,21 +72,18 @@ final class VerifyCsrfTokenTest extends TestCase
         $router = new Router();
         Router::setActive($router);
         $router->setGlobalMiddleware([VerifyCsrfToken::class]);
+        $router->add(['POST'], '/submit', function ($req, Response $res): Response {
 
-        $router->add(['POST'], '/submit', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
-        // Generate a token using helper
+// Generate a token using helper
         $token = csrfToken();
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/submit';
         $_POST = ['_token' => $token];
-
         ob_start();
         $router->dispatch('/submit');
         $out = ob_get_clean();
-
         $this->assertSame('ok', $out);
         $this->assertSame(200, http_response_code());
     }
@@ -100,20 +93,17 @@ final class VerifyCsrfTokenTest extends TestCase
         $router = new Router();
         Router::setActive($router);
         $router->setGlobalMiddleware([VerifyCsrfToken::class]);
+        $router->add(['POST'], '/submit', function ($req, Response $res): Response {
 
-        $router->add(['POST'], '/submit', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
         $token = csrfToken();
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/submit';
         $_SERVER['HTTP_X_CSRF_TOKEN'] = $token;
-
         ob_start();
         $router->dispatch('/submit');
         $out = ob_get_clean();
-
         $this->assertSame('ok', $out);
         $this->assertSame(200, http_response_code());
     }
@@ -123,14 +113,12 @@ final class VerifyCsrfTokenTest extends TestCase
         $router = new Router();
         Router::setActive($router);
         $router->setGlobalMiddleware([VerifyCsrfToken::class]);
+        $router->add(['POST'], '/submit', function ($req, Response $res): Response {
 
-        $router->add(['POST'], '/submit', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
         $token = csrfToken();
-
-        // First submit
+// First submit
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/submit';
         $_POST = ['_token' => $token];
@@ -139,8 +127,7 @@ final class VerifyCsrfTokenTest extends TestCase
         $first = ob_get_clean();
         $this->assertSame('ok', $first);
         $this->assertSame(200, http_response_code());
-
-        // Second submit with same token
+// Second submit with same token
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/submit';
         $_POST = ['_token' => $token];
@@ -155,16 +142,14 @@ final class VerifyCsrfTokenTest extends TestCase
     {
         $router = new Router();
         Router::setActive($router);
-        // Provide middleware instance with override to skip /skip/*
+// Provide middleware instance with override to skip /skip/*
         $router->setGlobalMiddleware([new VerifyCsrfToken(['except_uris' => ['/skip/*']])]);
+        $router->add(['POST'], '/skip/item', function ($req, Response $res): Response {
 
-        $router->add(['POST'], '/skip/item', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/skip/item';
-
         ob_start();
         $router->dispatch('/skip/item');
         $out = ob_get_clean();
@@ -176,16 +161,14 @@ final class VerifyCsrfTokenTest extends TestCase
     {
         $router = new Router();
         Router::setActive($router);
-        // Allow GET (default) so no token required
+// Allow GET (default) so no token required
         $router->setGlobalMiddleware([VerifyCsrfToken::class]);
+        $router->add(['GET'], '/free', function ($req, Response $res): Response {
 
-        $router->add(['GET'], '/free', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/free';
-
         ob_start();
         $router->dispatch('/free');
         $out = ob_get_clean();

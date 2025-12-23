@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Auth;
@@ -15,16 +16,14 @@ interface UserProviderInterface
      * @return array<string,mixed>|null User record as an associative array or null when not found
      */
     public function retrieveById(mixed $id): ?array;
-
-    /**
+/**
      * Retrieve a user by provided credentials (e.g., username/email).
      *
      * @param array<string,mixed> $credentials Key/value credentials
      * @return array<string,mixed>|null
      */
     public function retrieveByCredentials(array $credentials): ?array;
-
-    /**
+/**
      * Validate a user's credentials using the configured hasher.
      *
      * @param array<string,mixed> $user User record

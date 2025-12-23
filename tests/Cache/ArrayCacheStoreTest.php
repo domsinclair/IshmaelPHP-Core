@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Cache\ArrayCacheStore;
 use PHPUnit\Framework\TestCase;

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -22,11 +23,10 @@ final class ConditionalRequests
 {
     /** @var callable(Request, Response): (?string)|null */
     private $etagResolver;
-    /** @var callable(Request, Response): (?DateTimeInterface)|null */
+/** @var callable(Request, Response): (?DateTimeInterface)|null */
     private $lastModifiedResolver;
     private bool $allowWeak;
-
-    /**
+/**
      * @param array{etagResolver?:callable|null, lastModifiedResolver?:callable|null, allowWeak?:bool} $options
      */
     public function __construct(array $options = [])
@@ -59,10 +59,8 @@ final class ConditionalRequests
 
         // Run downstream to obtain the tentative response
         $response = $next($req, $res);
-
-        // Determine validators: prefer existing headers, else resolvers, else defaults
+// Determine validators: prefer existing headers, else resolvers, else defaults
         $headers = $response->getHeaders();
-
         $etag = $headers['ETag'] ?? null;
         if ($etag === null) {
             if (is_callable($this->etagResolver)) {
@@ -74,7 +72,7 @@ final class ConditionalRequests
             }
         }
         if ($etag === null) {
-            // Default: derive from body (strong ETag)
+// Default: derive from body (strong ETag)
             $response = $response->withEtag(HttpValidators::makeEtag($response->getBody(), false));
             $etag = $response->getHeaders()['ETag'] ?? null;
         }
@@ -91,7 +89,6 @@ final class ConditionalRequests
         // Evaluate conditions
         $ifNoneMatch = $req->getHeader('If-None-Match');
         $ifModifiedSince = $req->getHeader('If-Modified-Since');
-
         $etagMatches = false;
         if ($ifNoneMatch !== null && $etag !== null) {
             $clientEtags = HttpValidators::parseIfNoneMatch($ifNoneMatch);
@@ -103,7 +100,7 @@ final class ConditionalRequests
             $clientDate = HttpValidators::parseHttpDate($ifModifiedSince);
             $serverDate = HttpValidators::parseHttpDate($lastMod);
             if ($clientDate && $serverDate) {
-                // Consider not modified when client's timestamp is equal to or after server's Last-Modified.
+        // Consider not modified when client's timestamp is equal to or after server's Last-Modified.
                 // This tolerates client clock being ahead; if the client is behind (even by 1s), treat as modified (200).
                 $modifiedSince = ($clientDate->getTimestamp() >= $serverDate->getTimestamp());
             }
@@ -111,14 +108,14 @@ final class ConditionalRequests
 
         $notModified = false;
         if ($ifNoneMatch !== null) {
-            // If-None-Match takes precedence if present
+        // If-None-Match takes precedence if present
             $notModified = $etagMatches;
         } elseif ($ifModifiedSince !== null) {
             $notModified = ($modifiedSince === true);
         }
 
         if ($notModified) {
-            // Build 304 response preserving caching headers
+// Build 304 response preserving caching headers
             $preserve = $this->preserveHeaders($response);
             $not = new Response('', 304, $preserve);
             if (method_exists($not, 'refreshLastHeadersSnapshot')) {

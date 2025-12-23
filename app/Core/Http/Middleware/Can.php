@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -24,7 +25,8 @@ final class Can
      */
     public static function for(string $ability, ?callable $resourceResolver = null): callable
     {
-        return function(Request $req, Response $res, callable $next) use ($ability, $resourceResolver): Response {
+        return function (Request $req, Response $res, callable $next) use ($ability, $resourceResolver): Response {
+
             /** @var Gate $gate */
             $gate = \app('gate');
             if (!$gate instanceof Gate) {
@@ -32,7 +34,7 @@ final class Can
                 \app(['gate' => $gate]);
             }
             $params = [];
-            // Router passes params as third arg to handlers, but not to middleware. We allow resolvers to pull from globals when needed.
+// Router passes params as third arg to handlers, but not to middleware. We allow resolvers to pull from globals when needed.
             if (is_callable($resourceResolver)) {
                 try {
                     $resource = $resourceResolver($req, $params);

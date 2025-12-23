@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Migrations;
@@ -16,8 +17,7 @@ use Psr\Log\LoggerInterface;
 final class Migrator
 {
     private MigrationRunner $runner;
-
-    /**
+/**
      * Construct a Migrator.
      *
      * @param DatabaseAdapterInterface $adapter Connected database adapter instance.

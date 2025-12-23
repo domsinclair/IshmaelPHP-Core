@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -17,7 +18,6 @@ final class MethodOverrideMiddleware
 {
     /** @var string[] */
     private array $allowed = ['GET','POST','PUT','PATCH','DELETE','OPTIONS','HEAD'];
-
     public function __invoke(Request $req, Response $res, callable $next): Response
     {
         $override = $req->getHeader('X-HTTP-Method-Override');

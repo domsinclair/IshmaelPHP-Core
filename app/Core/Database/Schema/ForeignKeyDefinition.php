@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Schema;
@@ -10,15 +11,9 @@ use JsonSerializable;
  */
 final class ForeignKeyDefinition implements JsonSerializable
 {
-    public function __construct(
-        public string $name,
-        public array $columns,
-        public string $referencesTable,
-        public array $referencesColumns = ['id'],
-        public ?string $onDelete = null,
-        public ?string $onUpdate = null,
-        public array $extras = [],
-    ) {}
+    public function __construct(public string $name, public array $columns, public string $referencesTable, public array $referencesColumns = ['id'], public ?string $onDelete = null, public ?string $onUpdate = null, public array $extras = [],)
+    {
+    }
 
     public function toArray(): array
     {

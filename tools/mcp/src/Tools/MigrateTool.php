@@ -76,8 +76,12 @@ final class MigrateTool implements Tool
 
         $willExecute = $confirm && !$dry;
         $messages = [];
-        if (!$confirm) { $messages[] = 'Confirmation not provided; no changes executed.'; }
-        if ($dry) { $messages[] = 'Dry run mode; no changes executed.'; }
+        if (!$confirm) {
+            $messages[] = 'Confirmation not provided; no changes executed.';
+        }
+        if ($dry) {
+            $messages[] = 'Dry run mode; no changes executed.';
+        }
 
         return [
             'planned' => [

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Security;
@@ -14,10 +15,9 @@ final class CsrfTokenManager
 {
     /** @var string Session key where the token is stored */
     public const SESSION_KEY_TOKEN = '_csrf.token';
-    /** @var string Session key where the last rotation timestamp is stored */
+/** @var string Session key where the last rotation timestamp is stored */
     public const SESSION_KEY_ROTATED_AT = '_csrf.rotated_at';
-
-    /**
+/**
      * Return the current CSRF token for this session, generating one if missing.
      */
     public function getToken(): string
@@ -79,7 +79,7 @@ final class CsrfTokenManager
     {
         $bytes = random_bytes(32);
         $b64 = base64_encode($bytes);
-        // URL-safe variant without padding
+// URL-safe variant without padding
         return rtrim(strtr($b64, '+/', '-_'), '=');
     }
 

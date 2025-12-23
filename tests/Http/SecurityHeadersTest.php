@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Http\Middleware\SecurityHeaders;
 use Ishmael\Core\Http\Response;
@@ -24,15 +27,13 @@ final class SecurityHeadersTest extends TestCase
         $router = new Router();
         Router::setActive($router);
         $router->setGlobalMiddleware([new SecurityHeaders()]);
+        $router->add(['GET'], 'sec', function ($req, Response $res): Response {
 
-        $router->add(['GET'], 'sec', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
         ob_start();
         $router->dispatch('/sec');
         ob_end_clean();
-
         $headers = Response::getLastHeaders();
         $this->assertArrayHasKey('X-Frame-Options', $headers);
         $this->assertArrayHasKey('X-Content-Type-Options', $headers);
@@ -52,15 +53,13 @@ final class SecurityHeadersTest extends TestCase
                 'permissions_policy' => 'geolocation=()'
             ]),
         ]);
+        $router->add(['GET'], 'sec2', function ($req, Response $res): Response {
 
-        $router->add(['GET'], 'sec2', function($req, Response $res): Response {
             return Response::text('ok');
         });
-
         ob_start();
         $router->dispatch('/sec2');
         ob_end_clean();
-
         $headers = Response::getLastHeaders();
         $this->assertSame('DENY', $headers['X-Frame-Options'] ?? null);
         $this->assertSame('geolocation=()', $headers['Permissions-Policy'] ?? null);

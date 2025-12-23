@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -29,7 +30,7 @@ final class Authenticate
         }
 
         $login = (string) (\config('auth.redirects.login') ?? '/login');
-        // Basic redirect response
+// Basic redirect response
         return new Response('', 302, ['Location' => $login]);
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -28,8 +29,7 @@ final class ErrorBoundaryMiddleware
             $accept = $this->negotiate($req->getHeader('Accept'));
             $debug = (bool) (config('app.debug') ?? false);
             $rid = $this->getCorrelationId();
-
-            // Log with context
+        // Log with context
             $ctx = [
                 'exception' => get_class($e),
                 'message' => $e->getMessage(),
@@ -40,7 +40,6 @@ final class ErrorBoundaryMiddleware
                 'request_id' => $rid,
             ];
             Logger::critical('Unhandled exception during request', $ctx);
-
             if ($accept === 'json') {
                 $payload = [
                     'error' => [
@@ -64,8 +63,8 @@ final class ErrorBoundaryMiddleware
                     . '<pre>' . htmlspecialchars((string)$e) . '</pre>';
             } else {
                 $body = '<h1>Internal Server Error</h1>'
-                    . '<p><strong>Correlation Id:</strong> ' . htmlspecialchars($rid) . '</p>'
-                    . '<p>Our team has been notified.</p>';
+                . '<p><strong>Correlation Id:</strong> ' . htmlspecialchars($rid) . '</p>'
+                . '<p>Our team has been notified.</p>';
             }
             return Response::html($body, 500, ['X-Correlation-Id' => $rid]);
         }
@@ -97,7 +96,8 @@ final class ErrorBoundaryMiddleware
         $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
         $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
         $hex = bin2hex($data);
-        return sprintf('%s-%s-%s-%s-%s',
+        return sprintf(
+            '%s-%s-%s-%s-%s',
             substr($hex, 0, 8),
             substr($hex, 8, 4),
             substr($hex, 12, 4),

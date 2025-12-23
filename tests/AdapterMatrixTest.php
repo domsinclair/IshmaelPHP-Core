@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterFactory;
 use Ishmael\Core\DatabaseAdapters\SQLiteAdapter;
@@ -22,7 +25,6 @@ final class AdapterMatrixTest extends TestCase
         }
         $adapter = new SQLiteAdapter();
         $adapter->connect(['database' => ':memory:']);
-
         $table = $this->tmpTableName();
         $def = new TableDefinition($table, [
             new ColumnDefinition('id', 'INTEGER', nullable: false, autoIncrement: true),
@@ -33,13 +35,11 @@ final class AdapterMatrixTest extends TestCase
         $adapter->createTable($def);
         $this->assertTrue($adapter->tableExists($table));
         $this->assertTrue($adapter->columnExists($table, 'name'));
-
-        // Insert and lastInsertId
+// Insert and lastInsertId
         $adapter->execute("INSERT INTO {$table} (name) VALUES (?)", ['a']);
         $id1 = $adapter->lastInsertId();
         $this->assertNotSame('', $id1);
-
-        // Add column
+// Add column
         $adapter->addColumn($table, new ColumnDefinition('age', 'INT', nullable: true));
         $this->assertTrue($adapter->columnExists($table, 'age'));
     }
@@ -57,17 +57,21 @@ final class AdapterMatrixTest extends TestCase
             }
             $config = ['host' => $host, 'database' => $db, 'username' => $user, 'password' => $pass];
         } else {
-            // DSN not supported by adapter directly; parse minimally mysql:host=...;dbname=...
+        // DSN not supported by adapter directly; parse minimally mysql:host=...;dbname=...
             $parts = [];
             foreach (explode(';', str_replace('mysql:', '', $dsn)) as $kv) {
-                if (!$kv) continue; $a = explode('=', $kv, 2); if (count($a) === 2) { $parts[$a[0]] = $a[1]; }
+                if (!$kv) {
+                    continue;
+                } $a = explode('=', $kv, 2);
+                if (count($a) === 2) {
+                        $parts[$a[0]] = $a[1];
+                }
             }
             $config = ['host' => $parts['host'] ?? '127.0.0.1', 'database' => $parts['dbname'] ?? '', 'username' => $_SERVER['ISH_TEST_MYSQL_USER'] ?? 'root', 'password' => $_SERVER['ISH_TEST_MYSQL_PASS'] ?? ''];
         }
 
         $adapter = new MySQLAdapter();
         $adapter->connect($config);
-
         $table = $this->tmpTableName();
         $def = new TableDefinition($table, [
             new ColumnDefinition('id', 'INT', nullable: false, autoIncrement: true),
@@ -75,14 +79,11 @@ final class AdapterMatrixTest extends TestCase
         ]);
         $adapter->createTable($def);
         $this->assertTrue($adapter->tableExists($table));
-
         $adapter->execute("INSERT INTO `{$table}` (`name`) VALUES (?)", ['a']);
         $id1 = $adapter->lastInsertId();
         $this->assertNotSame('', $id1);
-
         $adapter->addColumn($table, new ColumnDefinition('age', 'INT', nullable: true));
         $this->assertTrue($adapter->columnExists($table, 'age'));
-
         $adapter->dropTable($table);
     }
 
@@ -100,10 +101,15 @@ final class AdapterMatrixTest extends TestCase
             }
             $config = ['host' => $host, 'port' => $port, 'database' => $db, 'username' => $user, 'password' => $pass];
         } else {
-            // pgsql:host=...;port=...;dbname=...
+        // pgsql:host=...;port=...;dbname=...
             $parts = [];
             foreach (explode(';', str_replace('pgsql:', '', $dsn)) as $kv) {
-                if (!$kv) continue; $a = explode('=', $kv, 2); if (count($a) === 2) { $parts[$a[0]] = $a[1]; }
+                if (!$kv) {
+                    continue;
+                } $a = explode('=', $kv, 2);
+                if (count($a) === 2) {
+                        $parts[$a[0]] = $a[1];
+                }
             }
             $config = [
                 'host' => $parts['host'] ?? '127.0.0.1',
@@ -116,7 +122,6 @@ final class AdapterMatrixTest extends TestCase
 
         $adapter = new PostgresAdapter();
         $adapter->connect($config);
-
         $table = $this->tmpTableName();
         $def = new TableDefinition($table, [
             new ColumnDefinition('id', 'INT', nullable: false, autoIncrement: true),
@@ -126,20 +131,17 @@ final class AdapterMatrixTest extends TestCase
         ]);
         $adapter->createTable($def);
         $this->assertTrue($adapter->tableExists($table));
-
-        // Insert returning id
+// Insert returning id
         $adapter->execute('INSERT INTO ' . '"' . $table . '"' . ' ("name") VALUES ($1)', ['a']);
-        // Try both with and without sequence
+// Try both with and without sequence
         $id = $adapter->lastInsertId();
         if ($id === '') {
             $seq = $table . '_id_seq';
             $id = $adapter->lastInsertId($seq);
         }
         $this->assertNotSame('', $id);
-
         $adapter->addColumn($table, new ColumnDefinition('age', 'INT', nullable: true));
         $this->assertTrue($adapter->columnExists($table, 'age'));
-
         $adapter->dropTable($table);
     }
 }

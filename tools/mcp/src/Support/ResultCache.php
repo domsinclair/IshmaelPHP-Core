@@ -24,9 +24,13 @@ final class ResultCache
     public function get(string $method, string $key): ?array
     {
         $ttl = $this->settings->cacheTtls[$method] ?? 0;
-        if ($ttl <= 0) return null;
+        if ($ttl <= 0) {
+            return null;
+        }
         $e = $this->entries[$key] ?? null;
-        if ($e === null) return null;
+        if ($e === null) {
+            return null;
+        }
         if ($e['expires'] < time()) {
             unset($this->entries[$key]);
             return null;
@@ -44,7 +48,9 @@ final class ResultCache
     public function put(string $method, string $key, array $value): void
     {
         $ttl = $this->settings->cacheTtls[$method] ?? 0;
-        if ($ttl <= 0) return; // caching disabled for this method
+        if ($ttl <= 0) {
+            return; // caching disabled for this method
+        }
         $snapshot = $this->snapshot($this->settings->cacheWatchFiles[$method] ?? []);
         $this->entries[$key] = [
             'value' => $value,
@@ -72,9 +78,13 @@ final class ResultCache
     {
         $current = $this->snapshot($patterns);
         // naive compare
-        if (count($current) !== count($previous)) return true;
+        if (count($current) !== count($previous)) {
+            return true;
+        }
         foreach ($current as $file => $mtime) {
-            if (!isset($previous[$file]) || $previous[$file] !== $mtime) return true;
+            if (!isset($previous[$file]) || $previous[$file] !== $mtime) {
+                return true;
+            }
         }
         return false;
     }
@@ -86,7 +96,9 @@ final class ResultCache
         foreach ($patterns as $p) {
             $matches = glob($p, GLOB_NOSORT | GLOB_BRACE) ?: [];
             foreach ($matches as $m) {
-                if (is_string($m)) $out[] = $m;
+                if (is_string($m)) {
+                    $out[] = $m;
+                }
             }
         }
         return array_values(array_unique($out));

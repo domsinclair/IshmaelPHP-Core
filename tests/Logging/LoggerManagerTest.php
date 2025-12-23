@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Log\LoggerManager;
 use Psr\Log\LoggerInterface;
@@ -15,9 +18,10 @@ final class LoggerManagerTest extends TestCase
         }
         // Build a temp path for test isolation
         $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_test_logs';
-        if (!is_dir($tempDir)) { @mkdir($tempDir, 0777, true); }
+        if (!is_dir($tempDir)) {
+            @mkdir($tempDir, 0777, true);
+        }
         $logPath = $tempDir . DIRECTORY_SEPARATOR . 'test.log';
-
         $config = [
             'default' => 'single',
             'channels' => [
@@ -28,15 +32,11 @@ final class LoggerManagerTest extends TestCase
                 ],
             ],
         ];
-
         $manager = new LoggerManager($config);
         $logger = $manager->default();
-
         $this->assertInstanceOf(LoggerInterface::class, $logger);
-
-        // Attempt to log
+// Attempt to log
         $logger->info('Unit test line', ['k' => 'v']);
-
         $this->assertFileExists($logPath);
         $contents = file_get_contents($logPath);
         $this->assertIsString($contents);
@@ -59,7 +59,6 @@ final class LoggerManagerTest extends TestCase
                 ],
             ],
         ];
-
         $manager = new LoggerManager($config);
         $logger = $manager->default();
         app([
@@ -67,7 +66,6 @@ final class LoggerManagerTest extends TestCase
             LoggerInterface::class => $logger,
             'logger' => $logger,
         ]);
-
         $resolved = app('logger');
         $this->assertInstanceOf(LoggerInterface::class, $resolved);
     }

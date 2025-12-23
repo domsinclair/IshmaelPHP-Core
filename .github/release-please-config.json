@@ -9,10 +9,12 @@
   "changelog-path": "CHANGELOG.md",
   "extra-files": [
     {
-      "updater": "regex",
       "path": "version.php",
-      "search": "return '(\\d+\\.\\d+\\.\\d+)';",
-      "replace": "return '$1';"
+      "updater": {
+        "type": "regex",
+        "search": "return '(\\d+\\.\\d+\\.\\d+)';",
+        "replace": "return '$1';"
+      }
     }
   ],
   "changelog-types": [

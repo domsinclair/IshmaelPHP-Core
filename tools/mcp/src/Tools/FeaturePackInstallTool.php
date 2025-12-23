@@ -112,12 +112,18 @@ final class FeaturePackInstallTool implements Tool
         $confirm = (bool)($input['confirm'] ?? false);
         $dev = (bool)($input['dev'] ?? false);
         $flags = [];
-        if (isset($input['preferDist']) && $input['preferDist']) { $flags[] = '--prefer-dist'; }
-        if (isset($input['noScripts']) && $input['noScripts']) { $flags[] = '--no-scripts'; }
+        if (isset($input['preferDist']) && $input['preferDist']) {
+            $flags[] = '--prefer-dist';
+        }
+        if (isset($input['noScripts']) && $input['noScripts']) {
+            $flags[] = '--no-scripts';
+        }
 
         $packages = [];
         foreach ($input['packages'] as $p) {
-            if (is_string($p) && $p !== '') { $packages[] = $this->redactToken($p); }
+            if (is_string($p) && $p !== '') {
+                $packages[] = $this->redactToken($p);
+            }
         }
 
         // Read composer.json if available to compute simple deltas
@@ -133,7 +139,9 @@ final class FeaturePackInstallTool implements Tool
             if (is_file($composerPath)) {
                 $json = json_decode(file_get_contents($composerPath) ?: '{}', true) ?: [];
                 $current['require'] = isset($json['require']) && is_array($json['require']) ? $json['require'] : [];
-                $current['require-dev'] = isset($json['"require-dev"']) && is_array($json['"require-dev"']) ? $json['"require-dev"'] : ($json['require-dev'] ?? []);
+                $current['require-dev'] = isset($json['"require-dev"']) && is_array($json['"require-dev"'])
+                    ? $json['"require-dev"']
+                    : ($json['require-dev'] ?? []);
             }
             foreach ($packages as $full) {
                 // split vendor/name@constraint
@@ -165,8 +173,12 @@ final class FeaturePackInstallTool implements Tool
         }
 
         $messages = [];
-        if ($dry) { $messages[] = 'Dry run only; no changes executed.'; }
-        if ($confirm && !$dry) { $messages[] = 'Incubation build: Composer execution disabled.'; }
+        if ($dry) {
+            $messages[] = 'Dry run only; no changes executed.';
+        }
+        if ($confirm && !$dry) {
+            $messages[] = 'Incubation build: Composer execution disabled.';
+        }
 
         return [
             'planned' => [

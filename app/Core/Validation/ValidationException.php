@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Validation;
@@ -12,12 +13,11 @@ final class ValidationException extends RuntimeException
 {
     /** @var array<string, string[]> */
     private array $messages;
-    /** @var array<string, string[]> */
+/** @var array<string, string[]> */
     private array $codes;
-    /** @var array<string, mixed> */
+/** @var array<string, mixed> */
     private array $old;
-
-    /**
+/**
      * @param array<string,string[]> $messages Field => list of human messages
      * @param array<string,string[]> $codes Field => list of message keys (i18n-ready)
      * @param array<string,mixed> $old Snapshot of previous input

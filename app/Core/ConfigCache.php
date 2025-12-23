@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core;
@@ -23,7 +24,7 @@ final class ConfigCache
     public static function getDefaultDirs(): array
     {
         $dirs = [];
-        // Core config directory
+// Core config directory
         $coreDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config';
         if (is_dir($coreDir)) {
             $dirs[] = $coreDir;
@@ -52,7 +53,9 @@ final class ConfigCache
     {
         $files = [];
         foreach ($dirs as $dir) {
-            if (!is_dir($dir)) continue;
+            if (!is_dir($dir)) {
+                continue;
+            }
             foreach (glob(rtrim($dir, "\\/") . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
                 $files[] = realpath($file) ?: $file;
             }
@@ -92,7 +95,7 @@ final class ConfigCache
         foreach ($ordered as $dir) {
             foreach (glob(rtrim($dir, "\\/") . DIRECTORY_SEPARATOR . '*.php') ?: [] as $file) {
                 $name = basename($file, '.php');
-                // Load array from file, silencing errors if any
+        // Load array from file, silencing errors if any
                 $data = require $file;
                 if (is_array($data)) {
                     // Merge strategy: later directories override earlier (shallow merge)
@@ -138,7 +141,9 @@ final class ConfigCache
     public static function load(): ?array
     {
         $path = self::cachePath();
-        if (!is_file($path)) return null;
+        if (!is_file($path)) {
+            return null;
+        }
         $data = require $path;
         return is_array($data) ? $data : null;
     }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Authz;
@@ -11,10 +12,9 @@ use RuntimeException;
 final class AuthorizationException extends RuntimeException
 {
     private string $ability;
-    /** @var mixed */
+/** @var mixed */
     private $resource;
-
-    /**
+/**
      * @param string $ability Ability that was checked
      * @param mixed $resource Optional resource/context
      * @param string $message Optional custom message

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Migrations;
@@ -16,8 +17,7 @@ use Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface;
 abstract class BaseMigration
 {
     private DatabaseAdapterInterface $adapter;
-
-    /**
+/**
      * Framework-internal: inject the current adapter before execution.
      */
     public function setAdapter(DatabaseAdapterInterface $adapter): void
@@ -49,18 +49,20 @@ abstract class BaseMigration
                 if ($file !== '') {
                     $base = basename($file, '.php');
                     $parts = explode('_', $base, 2);
-                    $namePart = $parts[1] ?? $base; // e.g., CreateAlpha
+                    $namePart = $parts[1] ?? $base;
+        // e.g., CreateAlpha
                     if (str_starts_with($namePart, 'Create')) {
-                        $namePart = substr($namePart, 6); // strip 'Create'
+                        $namePart = substr($namePart, 6);
+// strip 'Create'
                     }
                     // Sanitize to a simple identifier (letters, numbers, underscore)
                     $table = preg_replace('/[^A-Za-z0-9_]/', '', $namePart) ?: $namePart;
                     if ($table !== '' && substr_count($sql, '%s') >= 1) {
-                        $sql = sprintf($sql, $table);
+                            $sql = sprintf($sql, $table);
                     }
                 }
             } catch (\Throwable $_) {
-                // If anything goes wrong, fall through and execute raw SQL (may error)
+            // If anything goes wrong, fall through and execute raw SQL (may error)
             }
         }
         $this->adapter->runSql($sql);
@@ -70,8 +72,7 @@ abstract class BaseMigration
      * Apply the migration.
      */
     abstract public function up(): void;
-
-    /**
+/**
      * Revert the migration.
      */
     abstract public function down(): void;

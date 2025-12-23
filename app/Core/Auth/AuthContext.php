@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Auth;
@@ -14,8 +15,7 @@ final class AuthContext
 {
     /** @var int|string|null */
     private static int|string|null $currentUserId = null;
-
-    /**
+/**
      * Set the current user id for the duration of the request/job.
      * Accepts int|string user identifiers.
      *

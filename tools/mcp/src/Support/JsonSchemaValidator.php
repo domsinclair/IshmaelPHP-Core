@@ -39,7 +39,10 @@ final class JsonSchemaValidator
         if (isset($schema['enum']) && is_array($schema['enum'])) {
             $found = false;
             foreach ($schema['enum'] as $v) {
-                if ($data === $v) { $found = true; break; }
+                if ($data === $v) {
+                    $found = true;
+                    break;
+                }
             }
             if (!$found) {
                 $errors[] = [ 'path' => $path, 'message' => 'Value not in enum' ];
@@ -122,13 +125,20 @@ final class JsonSchemaValidator
                 // callers often pass [] for an empty params object in RPC calls.
                 // Consider associative arrays OR empty array as an object.
                 return is_array($data) && (array_values($data) !== $data || $data === []);
-            case 'array': return is_array($data);
-            case 'string': return is_string($data);
-            case 'integer': return is_int($data);
-            case 'number': return is_int($data) || is_float($data);
-            case 'boolean': return is_bool($data);
-            case 'null': return $data === null;
-            default: return true; // unknown type: don't block
+            case 'array':
+                return is_array($data);
+            case 'string':
+                return is_string($data);
+            case 'integer':
+                return is_int($data);
+            case 'number':
+                return is_int($data) || is_float($data);
+            case 'boolean':
+                return is_bool($data);
+            case 'null':
+                return $data === null;
+            default:
+                return true; // unknown type: don't block
         }
     }
 }

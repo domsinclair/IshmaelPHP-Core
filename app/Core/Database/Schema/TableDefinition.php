@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Schema;
@@ -12,13 +13,9 @@ class TableDefinition implements JsonSerializable
      * @param IndexDefinition[] $indexes
      * @param ForeignKeyDefinition[] $foreignKeys
      */
-    public function __construct(
-        public string $name,
-        public array $columns = [],
-        public array $indexes = [],
-        public array $foreignKeys = [],
-        public array $extras = [],
-    ) {}
+    public function __construct(public string $name, public array $columns = [], public array $indexes = [], public array $foreignKeys = [], public array $extras = [],)
+    {
+    }
 
     public function addColumn(ColumnDefinition $col): self
     {

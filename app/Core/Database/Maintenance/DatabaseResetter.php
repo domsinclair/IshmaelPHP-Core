@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Maintenance;
@@ -24,24 +25,41 @@ final class DatabaseResetter
 {
     private DatabaseAdapterInterface $adapter;
     private LoggerInterface $logger;
-
     public function __construct(DatabaseAdapterInterface $adapter, ?LoggerInterface $logger = null)
     {
         $this->adapter = $adapter;
         if ($logger instanceof LoggerInterface) {
             $this->logger = $logger;
         } else {
-            // Lightweight null logger to avoid conditional checks
+        // Lightweight null logger to avoid conditional checks
             $this->logger = new class implements LoggerInterface {
-                public function emergency($message, array $context = []): void {}
-                public function alert($message, array $context = []): void {}
-                public function critical($message, array $context = []): void {}
-                public function error($message, array $context = []): void {}
-                public function warning($message, array $context = []): void {}
-                public function notice($message, array $context = []): void {}
-                public function info($message, array $context = []): void {}
-                public function debug($message, array $context = []): void {}
-                public function log($level, $message, array $context = []): void {}
+                public function emergency($message, array $context = []): void
+                {
+                }
+                public function alert($message, array $context = []): void
+                {
+                }
+                public function critical($message, array $context = []): void
+                {
+                }
+                public function error($message, array $context = []): void
+                {
+                }
+                public function warning($message, array $context = []): void
+                {
+                }
+                public function notice($message, array $context = []): void
+                {
+                }
+                public function info($message, array $context = []): void
+                {
+                }
+                public function debug($message, array $context = []): void
+                {
+                }
+                public function log($level, $message, array $context = []): void
+                {
+                }
             };
         }
     }
@@ -58,24 +76,29 @@ final class DatabaseResetter
         $this->logger->info('Database reset start', ['purge' => $purge, 'driver' => $driver]);
         switch ($driver) {
             case 'sqlite':
-                $this->resetSqlite($purge);
+                                                                                                                                                                                                                                                                                                                                                                                                                                             $this->resetSqlite($purge);
+
                 break;
             case 'mysql':
             case 'mariadb':
                 $this->resetMySql($purge);
+
                 break;
             case 'pgsql':
             case 'postgres':
             case 'postgresql':
                 $this->resetPostgres($purge);
+
                 break;
             default:
-                // Best-effort: attempt ANSI TRUNCATE if purge requested
+                        // Best-effort: attempt ANSI TRUNCATE if purge requested
+
                 if ($purge) {
                     foreach ($this->listAllTablesPortable() as $t) {
                         $this->adapter->runSql('TRUNCATE TABLE ' . $this->quoteIdent($t));
                     }
                 }
+
                 break;
         }
         $this->logger->info('Database reset complete', ['purge' => $purge, 'driver' => $driver]);
@@ -89,19 +112,25 @@ final class DatabaseResetter
     private function detectDriver(): string
     {
         try {
-            // Rely on a trivial query per engine to infer; if it errors, we fallback
+// Rely on a trivial query per engine to infer; if it errors, we fallback
             // Prefer environment hint via PHP's PDO::getAttribute if reachable
             $ref = new \ReflectionObject($this->adapter);
             if ($ref->hasMethod('query')) {
-                // Try engine-specific no-op to determine
+            // Try engine-specific no-op to determine
                 // Not robust to fetch PDO directly; keep safe and heuristic by class name
                 $cls = strtolower($ref->getName());
-                if (str_contains($cls, 'sqlite')) return 'sqlite';
-                if (str_contains($cls, 'mysql')) return 'mysql';
-                if (str_contains($cls, 'postgres')) return 'pgsql';
+                if (str_contains($cls, 'sqlite')) {
+                    return 'sqlite';
+                }
+                if (str_contains($cls, 'mysql')) {
+                    return 'mysql';
+                }
+                if (str_contains($cls, 'postgres')) {
+                    return 'pgsql';
+                }
             }
         } catch (\Throwable $_) {
-            // ignore
+        // ignore
         }
         return 'unknown';
     }
@@ -118,7 +147,7 @@ final class DatabaseResetter
         }
         // Reset AUTOINCREMENT counters in sqlite_sequence if present
         $this->adapter->runSql('PRAGMA foreign_keys = ON');
-        // Clear sqlite_sequence only after re-enabling FK checks is also fine; it is a meta table
+// Clear sqlite_sequence only after re-enabling FK checks is also fine; it is a meta table
         try {
             $names = $tables;
             if (!empty($names)) {
@@ -126,7 +155,7 @@ final class DatabaseResetter
                 $this->adapter->runSql('DELETE FROM sqlite_sequence WHERE name IN (' . $in . ')');
             }
         } catch (\Throwable $_) {
-            // If sqlite_sequence does not exist (no AUTOINCREMENT used), ignore
+        // If sqlite_sequence does not exist (no AUTOINCREMENT used), ignore
         }
     }
 
@@ -139,7 +168,7 @@ final class DatabaseResetter
                 $this->adapter->runSql('TRUNCATE TABLE ' . $this->quoteIdent($t));
             }
         } else {
-            // Reset AUTO_INCREMENT by ALTER TABLE ... AUTO_INCREMENT = 1
+        // Reset AUTO_INCREMENT by ALTER TABLE ... AUTO_INCREMENT = 1
             foreach ($tables as $t) {
                 $this->adapter->runSql('ALTER TABLE ' . $this->quoteIdent($t) . ' AUTO_INCREMENT = 1');
             }
@@ -153,11 +182,11 @@ final class DatabaseResetter
         if ($purge) {
             if (!empty($tables)) {
                 $list = implode(', ', array_map(fn($t) => $this->quoteIdent($t), $tables));
-                // Truncate all tables with cascade and restart identities
+        // Truncate all tables with cascade and restart identities
                 $this->adapter->runSql('TRUNCATE TABLE ' . $list . ' RESTART IDENTITY CASCADE');
             }
         } else {
-            // Reset sequences to 1 (or min value) without truncating data
+        // Reset sequences to 1 (or min value) without truncating data
             $seqs = $this->listPostgresSequences();
             foreach ($seqs as $seq) {
                 $this->adapter->runSql('ALTER SEQUENCE ' . $this->quoteIdent($seq) . ' RESTART WITH 1');
@@ -182,7 +211,7 @@ final class DatabaseResetter
     private function listMySqlTables(): array
     {
         $rows = $this->adapter->query("SHOW FULL TABLES WHERE Table_type = 'BASE TABLE'")->all();
-        // The column name varies (first column is the table name)
+// The column name varies (first column is the table name)
         $tables = [];
         foreach ($rows as $row) {
             $tables[] = (string)array_values($row)[0];
@@ -211,7 +240,7 @@ final class DatabaseResetter
             $rows = $this->adapter->query("SELECT schemaname, sequencename FROM pg_sequences WHERE schemaname = 'public'")->all();
             return array_values(array_map(fn($r) => ($r['schemaname'] ? ($r['schemaname'] . '.') : '') . (string)$r['sequencename'], $rows));
         } catch (\Throwable $e) {
-            // Fallback using information_schema
+        // Fallback using information_schema
             $rows = $this->adapter->query("SELECT sequence_schema, sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'")->all();
             return array_values(array_map(fn($r) => ($r['sequence_schema'] ? ($r['sequence_schema'] . '.') : '') . (string)$r['sequence_name'], $rows));
         }
@@ -235,7 +264,7 @@ final class DatabaseResetter
     {
         // Minimal quoting that works across adapters used here
         if (str_contains($name, '.')) {
-            // schema.name -> "schema"."name"
+// schema.name -> "schema"."name"
             return '"' . implode('"."', array_map(fn($p) => str_replace('"', '""', $p), explode('.', $name))) . '"';
         }
         return '"' . str_replace('"', '""', $name) . '"';

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
@@ -16,15 +17,15 @@ final class DailyRotatingFileChannel implements LoggerInterface
 {
     use BaseLoggerTrait;
 
+
     private string $basePath;
     private int $days;
     private FormatterInterface $formatter;
     private bool $retentionApplied = false;
-    /** @var resource|null File handle for the current day file */
+/** @var resource|null File handle for the current day file */
     private $handle = null;
     private ?string $currentFile = null;
-
-    /**
+/**
      * @param string $basePath Base path used to build the dated filename.
      * @param int $days Number of days to retain old files (min 1).
      * @param string $minLevel Minimum level name for records to be written.
@@ -41,6 +42,7 @@ final class DailyRotatingFileChannel implements LoggerInterface
             @mkdir($dir, 0777, true);
         }
         register_shutdown_function(function () {
+
             $this->closeHandle();
         });
     }
@@ -51,21 +53,45 @@ final class DailyRotatingFileChannel implements LoggerInterface
     }
 
     /** @inheritDoc */
-    public function emergency($message, array $context = []): void { $this->log(LogLevel::EMERGENCY, $message, $context); }
+    public function emergency($message, array $context = []): void
+    {
+        $this->log(LogLevel::EMERGENCY, $message, $context);
+    }
     /** @inheritDoc */
-    public function alert($message, array $context = []): void     { $this->log(LogLevel::ALERT, $message, $context); }
+    public function alert($message, array $context = []): void
+    {
+        $this->log(LogLevel::ALERT, $message, $context);
+    }
     /** @inheritDoc */
-    public function critical($message, array $context = []): void  { $this->log(LogLevel::CRITICAL, $message, $context); }
+    public function critical($message, array $context = []): void
+    {
+        $this->log(LogLevel::CRITICAL, $message, $context);
+    }
     /** @inheritDoc */
-    public function error($message, array $context = []): void     { $this->log(LogLevel::ERROR, $message, $context); }
+    public function error($message, array $context = []): void
+    {
+        $this->log(LogLevel::ERROR, $message, $context);
+    }
     /** @inheritDoc */
-    public function warning($message, array $context = []): void   { $this->log(LogLevel::WARNING, $message, $context); }
+    public function warning($message, array $context = []): void
+    {
+        $this->log(LogLevel::WARNING, $message, $context);
+    }
     /** @inheritDoc */
-    public function notice($message, array $context = []): void    { $this->log(LogLevel::NOTICE, $message, $context); }
+    public function notice($message, array $context = []): void
+    {
+        $this->log(LogLevel::NOTICE, $message, $context);
+    }
     /** @inheritDoc */
-    public function info($message, array $context = []): void      { $this->log(LogLevel::INFO, $message, $context); }
+    public function info($message, array $context = []): void
+    {
+        $this->log(LogLevel::INFO, $message, $context);
+    }
     /** @inheritDoc */
-    public function debug($message, array $context = []): void     { $this->log(LogLevel::DEBUG, $message, $context); }
+    public function debug($message, array $context = []): void
+    {
+        $this->log(LogLevel::DEBUG, $message, $context);
+    }
 
     /**
      * Write a record to the current day's file and apply retention once per run.
@@ -99,7 +125,8 @@ final class DailyRotatingFileChannel implements LoggerInterface
         $date = date('Y-m-d');
         if ($dotPos !== false) {
             $name = substr($filename, 0, $dotPos);
-            $ext = substr($filename, $dotPos); // includes dot
+            $ext = substr($filename, $dotPos);
+        // includes dot
             $new = $name . '-' . $date . $ext;
         } else {
             $new = $filename . '-' . $date;
@@ -161,9 +188,11 @@ final class DailyRotatingFileChannel implements LoggerInterface
         }
         try {
             while (($file = readdir($dh)) !== false) {
-                if (!is_string($file)) { continue; }
+                if (!is_string($file)) {
+                    continue;
+                }
                 if (str_starts_with($file, $patternStart) && str_ends_with($file, $suffix)) {
-                    // extract date segment YYYY-MM-DD
+            // extract date segment YYYY-MM-DD
                     $datePart = substr($file, strlen($patternStart), 10);
                     if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePart) === 1) {
                         $ts = strtotime($datePart . ' 00:00:00');

@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Router;
 use Ishmael\Core\Http\Response;
@@ -19,7 +22,9 @@ final class ErrorBoundaryMiddlewareTest extends TestCase
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/oops';
         $_SERVER['HTTP_ACCEPT'] = 'application/json';
-        if (function_exists('header_remove')) { @header_remove(); }
+        if (function_exists('header_remove')) {
+            @header_remove();
+        }
     }
 
     public function testTransformsExceptionToJson500WithCorrelationId(): void
@@ -27,21 +32,18 @@ final class ErrorBoundaryMiddlewareTest extends TestCase
         $router = new Router();
         $mw1 = new RequestIdMiddleware();
         $mw2 = new ErrorBoundaryMiddleware();
+        $router->add(['GET'], 'oops', function () {
 
-        $router->add(['GET'], 'oops', function() {
             throw new RuntimeException('Boom');
         }, [$mw1, $mw2]);
-
         ob_start();
         $router->dispatch('/oops');
         $out = ob_get_clean();
-
         $headers = Response::getLastHeaders();
         $this->assertArrayHasKey('Content-Type', $headers);
         $this->assertStringContainsString('application/json', $headers['Content-Type']);
         $this->assertArrayHasKey('X-Correlation-Id', $headers);
         $this->assertNotSame('', $headers['X-Correlation-Id']);
-
         $this->assertIsString($out);
         $decoded = json_decode($out, true);
         $this->assertIsArray($decoded);
@@ -56,21 +58,18 @@ final class ErrorBoundaryMiddlewareTest extends TestCase
         $router = new Router();
         $mw1 = new RequestIdMiddleware();
         $mw2 = new ErrorBoundaryMiddleware();
+        $router->add(['GET'], 'oops2', function () {
 
-        $router->add(['GET'], 'oops2', function() {
             throw new RuntimeException('Bada');
         }, [$mw1, $mw2]);
-
         ob_start();
         $router->dispatch('/oops2');
         $out = ob_get_clean();
-
         $headers = Response::getLastHeaders();
         $this->assertArrayHasKey('Content-Type', $headers);
         $this->assertStringContainsString('text/html', $headers['Content-Type']);
         $this->assertArrayHasKey('X-Correlation-Id', $headers);
         $this->assertNotSame('', $headers['X-Correlation-Id']);
-
         $this->assertIsString($out);
         $this->assertStringContainsString('Internal Server Error', $out);
     }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Schema;
@@ -16,14 +17,13 @@ final class Blueprint
      * @var string
      */
     private string $table;
-    /** @var ColumnDefinition[] */
+/** @var ColumnDefinition[] */
     private array $columns = [];
-    /** @var IndexDefinition[] */
+/** @var IndexDefinition[] */
     private array $indexes = [];
-    /** @var ForeignKeyDefinition[] */
+/** @var ForeignKeyDefinition[] */
     private array $foreignKeys = [];
-
-    /**
+/**
      * @param string $table Table name this blueprint targets.
      */
     public function __construct(string $table)
@@ -38,7 +38,7 @@ final class Blueprint
     public function id(): self
     {
         $this->columns[] = new ColumnDefinition('id', 'INTEGER', nullable: false, autoIncrement: true);
-        // Primary key is implied for INTEGER AUTOINCREMENT on SQLite. For other engines
+// Primary key is implied for INTEGER AUTOINCREMENT on SQLite. For other engines
         // an index could be emitted by adapter when it sees autoIncrement.
         return $this;
     }
@@ -159,14 +159,7 @@ final class Blueprint
         $localCols = is_array($columns) ? $columns : [$columns];
         $refCols = is_array($referencesColumns) ? $referencesColumns : [$referencesColumns];
         $constraintName = $name ?? ('fk_' . $this->table . '_' . implode('_', $localCols) . '__' . $referencesTable . '_' . implode('_', $refCols));
-        $this->foreignKeys[] = new ForeignKeyDefinition(
-            name: $constraintName,
-            columns: $localCols,
-            referencesTable: $referencesTable,
-            referencesColumns: $refCols,
-            onDelete: $onDelete,
-            onUpdate: $onUpdate,
-        );
+        $this->foreignKeys[] = new ForeignKeyDefinition(name: $constraintName, columns: $localCols, referencesTable: $referencesTable, referencesColumns: $refCols, onDelete: $onDelete, onUpdate: $onUpdate,);
         return $this;
     }
 

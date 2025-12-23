@@ -32,12 +32,18 @@ final class LocalTemplateScanner
         }
         $dirs = @scandir($this->templatesRoot) ?: [];
         foreach ($dirs as $dir) {
-            if ($dir === '.' || $dir === '..') { continue; }
+            if ($dir === '.' || $dir === '..') {
+                continue;
+            }
             $full = $this->templatesRoot . DIRECTORY_SEPARATOR . $dir;
-            if (!is_dir($full)) { continue; }
+            if (!is_dir($full)) {
+                continue;
+            }
 
             $pack = $this->readPackMetadata($full, $dir);
-            if (!$this->matchesFilters($pack, $filters)) { continue; }
+            if (!$this->matchesFilters($pack, $filters)) {
+                continue;
+            }
             $items[] = $pack;
         }
 
@@ -53,7 +59,9 @@ final class LocalTemplateScanner
         $readme = $dir . DIRECTORY_SEPARATOR . 'README.md';
         if (is_file($readme)) {
             $first = trim((string)preg_split("~\r?\n~", (string)file_get_contents($readme), 2)[0]);
-            if ($first !== '') { $description = ltrim($first, "# \t"); }
+            if ($first !== '') {
+                $description = ltrim($first, "# \t");
+            }
         }
 
         $composerPath = $dir . DIRECTORY_SEPARATOR . 'composer.json';
@@ -67,10 +75,18 @@ final class LocalTemplateScanner
             if (is_array($data)) {
                 $requires = isset($data['require']) && is_array($data['require']) ? array_keys($data['require']) : [];
                 $keywords = isset($data['keywords']) && is_array($data['keywords']) ? array_values($data['keywords']) : [];
-                if (isset($data['version']) && is_string($data['version'])) { $version = $data['version']; }
-                if (isset($data['name']) && is_string($data['name'])) { $packageName = $data['name']; }
-                if (isset($data['minimum-stability']) && is_string($data['minimum-stability'])) { $stability = $data['minimum-stability']; }
-                if ($description === null && isset($data['description']) && is_string($data['description'])) { $description = $data['description']; }
+                if (isset($data['version']) && is_string($data['version'])) {
+                    $version = $data['version'];
+                }
+                if (isset($data['name']) && is_string($data['name'])) {
+                    $packageName = $data['name'];
+                }
+                if (isset($data['minimum-stability']) && is_string($data['minimum-stability'])) {
+                    $stability = $data['minimum-stability'];
+                }
+                if ($description === null && isset($data['description']) && is_string($data['description'])) {
+                    $description = $data['description'];
+                }
             }
         }
 
@@ -97,17 +113,23 @@ final class LocalTemplateScanner
         $query = isset($filters['query']) && is_string($filters['query']) ? strtolower($filters['query']) : null;
         if ($query !== null && $query !== '') {
             $hay = strtolower(($pack['name'] ?? '') . ' ' . ($pack['description'] ?? ''));
-            if (strpos($hay, $query) === false) { return false; }
+            if (strpos($hay, $query) === false) {
+                return false;
+            }
         }
         $vendorPrefix = isset($filters['vendorPrefix']) && is_string($filters['vendorPrefix']) ? strtolower($filters['vendorPrefix']) : null;
         if ($vendorPrefix !== null && $vendorPrefix !== '') {
             $pkg = strtolower((string)($pack['package'] ?? ''));
-            if ($pkg === '' || strpos($pkg, $vendorPrefix) !== 0) { return false; }
+            if ($pkg === '' || strpos($pkg, $vendorPrefix) !== 0) {
+                return false;
+            }
         }
         $includePrerelease = (bool)($filters['includePrerelease'] ?? false);
         if (!$includePrerelease) {
             $stab = strtolower((string)($pack['stability'] ?? 'stable'));
-            if ($stab !== 'stable') { return false; }
+            if ($stab !== 'stable') {
+                return false;
+            }
         }
         return true;
     }

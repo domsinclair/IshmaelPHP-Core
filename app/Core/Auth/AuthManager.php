@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Auth;
@@ -13,14 +14,12 @@ use Ishmael\Core\Session\SessionManager;
 final class AuthManager
 {
     public const SESSION_KEY = '_auth.user_id';
-
     private UserProviderInterface $provider;
     private ?SessionManager $session;
-
     public function __construct(?UserProviderInterface $provider = null, ?SessionManager $session = null)
     {
         $this->provider = $provider ?? (\app('user_provider') instanceof UserProviderInterface ? \app('user_provider') : new DatabaseUserProvider());
-        /** @var SessionManager|null $sess */
+    /** @var SessionManager|null $sess */
         $sess = $session ?? (\app('session'));
         $this->session = $sess;
     }
@@ -34,7 +33,7 @@ final class AuthManager
     {
         $current = \app('session');
         if ($current instanceof SessionManager) {
-            // Cache the resolved session for minor perf without risking staleness
+        // Cache the resolved session for minor perf without risking staleness
             $this->session = $current;
             return $current;
         }
@@ -63,10 +62,10 @@ final class AuthManager
             throw new \RuntimeException('Auth requires an active session. Ensure StartSessionMiddleware is enabled.');
         }
         $id = $this->extractUserId($user);
-        // Session fixation defense: rotate id on privilege change
+// Session fixation defense: rotate id on privilege change
         $sess->regenerateId();
         $sess->put(self::SESSION_KEY, $id);
-        // Signal remember-me cookie set if requested; middleware will emit cookie
+// Signal remember-me cookie set if requested; middleware will emit cookie
         if ($remember) {
             $_SERVER['ISH_AUTH_REMEMBER_SET'] = $this->createRememberToken((string)$id);
         }
@@ -87,7 +86,9 @@ final class AuthManager
     public function check(): bool
     {
         $sess = $this->resolveSession();
-        if ($sess === null) { return false; }
+        if ($sess === null) {
+            return false;
+        }
         return $sess->has(self::SESSION_KEY);
     }
 
@@ -101,7 +102,9 @@ final class AuthManager
     public function id(): string|int|null
     {
         $sess = $this->resolveSession();
-        if ($sess === null) { return null; }
+        if ($sess === null) {
+            return null;
+        }
         /** @var string|int|null $id */
         $id = $sess->get(self::SESSION_KEY);
         return $id;
@@ -111,7 +114,9 @@ final class AuthManager
     public function user(): ?array
     {
         $id = $this->id();
-        if ($id === null) { return null; }
+        if ($id === null) {
+            return null;
+        }
         return $this->provider->retrieveById($id);
     }
 
@@ -121,21 +126,31 @@ final class AuthManager
     public function validateRememberToken(string $token): ?string
     {
         $parts = explode('.', $token);
-        if (count($parts) !== 2) { return null; }
+        if (count($parts) !== 2) {
+            return null;
+        }
         [$p64, $m64] = $parts;
         $payloadJson = base64_decode(strtr($p64, '-_', '+/'), true);
         $mac = base64_decode(strtr($m64, '-_', '+/'), true);
-        if ($payloadJson === false || $mac === false) { return null; }
+        if ($payloadJson === false || $mac === false) {
+            return null;
+        }
         $calc = hash_hmac('sha256', $payloadJson, $this->appKey(), true);
-        if (!hash_equals($mac, $calc)) { return null; }
+        if (!hash_equals($mac, $calc)) {
+            return null;
+        }
         $payload = json_decode($payloadJson, true);
-        if (!is_array($payload)) { return null; }
+        if (!is_array($payload)) {
+            return null;
+        }
         $uid = isset($payload['uid']) ? (string)$payload['uid'] : null;
         $iat = isset($payload['iat']) ? (int)$payload['iat'] : 0;
         $cfg = (array) (\config('auth.remember_me') ?? []);
         $ttlMin = (int) ($cfg['ttl'] ?? 43200);
         $exp = $iat + max(60, $ttlMin * 60);
-        if (time() > $exp) { return null; }
+        if (time() > $exp) {
+            return null;
+        }
         if (($cfg['bind_user_agent'] ?? true) === true) {
             $ua = (string)($_SERVER['HTTP_USER_AGENT'] ?? '');
             $uah = sha1($ua);
@@ -190,7 +205,7 @@ final class AuthManager
     private function appKey(): string
     {
         $raw = '';
-        // Prefer superglobal/getenv so tests using putenv() are respected without touching .env cache
+// Prefer superglobal/getenv so tests using putenv() are respected without touching .env cache
         if (isset($_SERVER['APP_KEY']) && is_string($_SERVER['APP_KEY']) && $_SERVER['APP_KEY'] !== '') {
             $raw = (string) $_SERVER['APP_KEY'];
         } elseif (($g = getenv('APP_KEY')) !== false && $g !== '') {
@@ -206,7 +221,9 @@ final class AuthManager
         if (str_starts_with($key, 'base64:')) {
             $b64 = (string) substr($key, 7);
             $bin = base64_decode($b64, true);
-            if ($bin !== false) { return $bin; }
+            if ($bin !== false) {
+                return $bin;
+            }
         }
         return $key;
     }

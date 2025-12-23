@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Auth;
@@ -11,7 +12,6 @@ final class PhpPasswordHasher implements HasherInterface
 {
     /** @var array<string,mixed> */
     private array $options;
-
     public function __construct()
     {
         /** @var array<string,mixed> $cfg */
@@ -55,25 +55,28 @@ final class PhpPasswordHasher implements HasherInterface
         $algoName = strtolower((string)$this->options['algo']);
         switch ($algoName) {
             case 'argon2id':
-                $algo = PASSWORD_ARGON2ID;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              $algo = PASSWORD_ARGON2ID;
                 $opts = [
                     'memory_cost' => (int)$this->options['memory_cost'],
                     'time_cost' => (int)$this->options['time_cost'],
                     'threads' => (int)$this->options['threads'],
                 ];
+
                 break;
             case 'argon2i':
-                $algo = PASSWORD_ARGON2I;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          $algo = PASSWORD_ARGON2I;
                 $opts = [
-                    'memory_cost' => (int)$this->options['memory_cost'],
-                    'time_cost' => (int)$this->options['time_cost'],
-                    'threads' => (int)$this->options['threads'],
+                'memory_cost' => (int)$this->options['memory_cost'],
+                'time_cost' => (int)$this->options['time_cost'],
+                'threads' => (int)$this->options['threads'],
                 ];
+
                 break;
             case 'bcrypt':
             default:
                 $algo = PASSWORD_BCRYPT;
                 $opts = ['cost' => (int)$this->options['cost']];
+
                 break;
         }
         return [$algo, $opts];

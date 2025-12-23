@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Auth;
@@ -17,8 +18,7 @@ interface HasherInterface
      * @return string The encoded hash
      */
     public function hash(string $plain): string;
-
-    /**
+/**
      * Verify a plaintext password against a stored hash.
      *
      * @param string $plain The plaintext password
@@ -26,8 +26,7 @@ interface HasherInterface
      * @return bool True if the password matches the hash
      */
     public function verify(string $plain, string $hash): bool;
-
-    /**
+/**
      * Whether a stored hash should be rehashed based on current configuration.
      *
      * @param string $hash The stored hash

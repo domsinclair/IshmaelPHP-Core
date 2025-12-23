@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Ishmael\Core\ModuleManager;
@@ -9,12 +10,11 @@ use PHPUnit\Framework\TestCase;
 final class ControllerRenderPathTest extends TestCase
 {
     private string $fixturesBase;
-
     protected function setUp(): void
     {
         parent::setUp();
         $this->fixturesBase = realpath(__DIR__ . DIRECTORY_SEPARATOR . 'fixtures') ?: (__DIR__ . DIRECTORY_SEPARATOR . 'fixtures');
-        // Point ModuleManager to our fixtures module
+    // Point ModuleManager to our fixtures module
         $fooPath = $this->fixturesBase . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . 'Foo';
         ModuleManager::$modules['Foo'] = [
             'name' => 'Foo',
@@ -37,13 +37,11 @@ final class ControllerRenderPathTest extends TestCase
             eval('namespace Modules\\Foo\\Controllers; class RenderDemoController extends \\Ishmael\\Core\\Controller { public function showNoLayout(array $vars = []): void { $this->render("child_no_layout", $vars); } }');
         }
         $ctrl = new Modules\Foo\Controllers\RenderDemoController();
-
         ob_start();
         $ctrl->showNoLayout(['who' => 'Tester']);
         $out = (string)ob_get_clean();
-
         $this->assertStringContainsString('<p>Hello Tester</p>', $out);
-        // Ensure layout elements are not present
+// Ensure layout elements are not present
         $this->assertStringNotContainsString('Header', $out);
         $this->assertStringNotContainsString('Footer', $out);
     }
@@ -54,12 +52,10 @@ final class ControllerRenderPathTest extends TestCase
             eval('namespace Modules\\Foo\\Controllers; class RenderDemoController2 extends \\Ishmael\\Core\\Controller { public function showWithLayout(array $vars = []): void { $this->render("child_with_layout", $vars); } }');
         }
         $ctrl = new Modules\Foo\Controllers\RenderDemoController2();
-
         ob_start();
         $ctrl->showWithLayout(['who' => 'Alice']);
         $out = (string)ob_get_clean();
-
-        // Should include layout chrome and yielded content
+// Should include layout chrome and yielded content
         $this->assertStringContainsString('<header>Header</header>', $out);
         $this->assertStringContainsString('<footer>Footer</footer>', $out);
         $this->assertStringContainsString('<p>Hi Alice</p>', $out);
@@ -72,11 +68,9 @@ final class ControllerRenderPathTest extends TestCase
         }
         // Ensure the subdir exists and file is present in fixtures
         $ctrl = new Modules\Foo\Controllers\RenderDemoController3();
-
         ob_start();
         $ctrl->show(['who' => 'Bob']);
         $out = (string)ob_get_clean();
-
         $this->assertStringContainsString('<header>Header</header>', $out);
         $this->assertStringContainsString('<footer>Footer</footer>', $out);
         $this->assertStringContainsString('<p>Hi Bob</p>', $out);
@@ -88,11 +82,9 @@ final class ControllerRenderPathTest extends TestCase
             eval('namespace Modules\\Foo\\Controllers; class RenderDemoController4 extends \\Ishmael\\Core\\Controller { public function show(array $vars = []): void { $this->render("child_with_absolute_layout", $vars); } }');
         }
         $ctrl = new Modules\Foo\Controllers\RenderDemoController4();
-
         ob_start();
         $ctrl->show(['who' => 'Cara']);
         $out = (string)ob_get_clean();
-
         $this->assertStringContainsString('<header>Header</header>', $out);
         $this->assertStringContainsString('<footer>Footer</footer>', $out);
         $this->assertStringContainsString('<p>Hi Cara</p>', $out);
@@ -104,14 +96,12 @@ final class ControllerRenderPathTest extends TestCase
             eval('namespace Modules\\Foo\\Controllers; class RenderDemoController5 extends \\Ishmael\\Core\\Controller { public function show(array $vars = []): void { $this->render("child_auto_content", $vars); } }');
         }
         $ctrl = new Modules\Foo\Controllers\RenderDemoController5();
-
         ob_start();
         $ctrl->show(['who' => 'Dora']);
         $out = (string)ob_get_clean();
-
         $this->assertStringContainsString('<header>Header</header>', $out);
         $this->assertStringContainsString('<footer>Footer</footer>', $out);
-        // The child output should be yielded as 'content' automatically
+// The child output should be yielded as 'content' automatically
         $this->assertStringContainsString('<p>Hi Dora</p>', $out);
     }
 
@@ -133,11 +123,9 @@ final class ControllerRenderPathTest extends TestCase
             eval('namespace Modules\\Foo\\Controllers; class RenderDemoController6 extends \\Ishmael\\Core\\Controller { public function show(): void { $this->data["appName"] = "DemoApp"; $this->render("child_with_data_layout", []); } }');
         }
         $ctrl = new Modules\Foo\Controllers\RenderDemoController6();
-
         ob_start();
         $ctrl->show();
         $out = (string)ob_get_clean();
-
         $this->assertStringContainsString('DemoApp', $out, 'Expected $data[appName] to be visible in layout output');
         $this->assertStringContainsString('<p>Body</p>', $out);
     }

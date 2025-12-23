@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -23,15 +24,14 @@ final class StartSessionMiddleware
         $config = (array) config('session', []);
         $driver = (string) ($config['driver'] ?? 'file');
         $lifetimeMin = (int) ($config['lifetime'] ?? 120);
-        $ttl = max(60, $lifetimeMin * 60); // minimum 60s
+        $ttl = max(60, $lifetimeMin * 60);
+// minimum 60s
         $cookieName = (string) ($config['cookie'] ?? 'ish_session');
-
         $store = $this->resolveStore($driver, $config, $cookieName);
-
-        // Determine session id from cookie (file/db drivers) or generate new
+// Determine session id from cookie (file/db drivers) or generate new
         $sid = $_COOKIE[$cookieName] ?? null;
         if ($driver === 'cookie') {
-            // id not used; store carries payload inside cookie
+        // id not used; store carries payload inside cookie
             $sid = $sid && is_string($sid) ? $sid : null;
         } else {
             if (!is_string($sid) || $sid === '') {
@@ -40,21 +40,16 @@ final class StartSessionMiddleware
         }
 
         $manager = new SessionManager($store, is_string($sid) ? $sid : null, $ttl);
-        // Flash lifecycle: promote next->now
+// Flash lifecycle: promote next->now
         $manager->advanceFlash();
-
-        // Expose via service locator helpers
+// Expose via service locator helpers
         app(['session' => $manager]);
-
-        // Call downstream
+// Call downstream
         $response = $next($req, $res);
-
-        // Persist lazily if dirty
+// Persist lazily if dirty
         $manager->persistIfDirty();
-
-        // Set cookie headers as needed
+// Set cookie headers as needed
         $this->applyCookie($response, $driver, $manager, $cookieName, $config, $ttl);
-
         return $response;
     }
 
@@ -75,9 +70,8 @@ final class StartSessionMiddleware
         $httpOnly = (bool) ($config['http_only'] ?? true);
         $sameSite = (string) ($config['same_site'] ?? 'Lax');
         $expires = $ttl > 0 ? (time() + $ttl) : 0;
-
         if ($driver === 'cookie') {
-            // Read encoded cookie value from the store handoff
+        // Read encoded cookie value from the store handoff
             $value = $_SERVER['ISH_SESSION_COOKIE_VALUE'] ?? null;
             $delete = ($_SERVER['ISH_SESSION_COOKIE_DELETE'] ?? null) === '1';
             if ($delete) {
@@ -88,7 +82,7 @@ final class StartSessionMiddleware
                 $this->setCookieHeader($response, $cookieName, $value, $expires, $path, $domain, $secure, $httpOnly, $sameSite);
             }
         } else {
-            // Set/refresh id cookie
+        // Set/refresh id cookie
             $sid = $manager->getId();
             $this->setCookieHeader($response, $cookieName, $sid, $expires, $path, $domain, $secure, $httpOnly, $sameSite);
         }
@@ -107,14 +101,20 @@ final class StartSessionMiddleware
         if ($domain !== '') {
             $parts[] = 'Domain=' . $domain;
         }
-        if ($secure) { $parts[] = 'Secure'; }
-        if ($httpOnly) { $parts[] = 'HttpOnly'; }
-        if ($sameSite) { $parts[] = 'SameSite=' . $sameSite; }
+        if ($secure) {
+            $parts[] = 'Secure';
+        }
+        if ($httpOnly) {
+            $parts[] = 'HttpOnly';
+        }
+        if ($sameSite) {
+            $parts[] = 'SameSite=' . $sameSite;
+        }
 
         $header = 'Set-Cookie: ' . implode('; ', $parts);
-        // Response does not emit headers directly; store for testing/consumers
+// Response does not emit headers directly; store for testing/consumers
         $response->header('Set-Cookie', implode('; ', $parts));
-        // Also set native header when running under SAPI
+// Also set native header when running under SAPI
         if (!headers_sent()) {
             header($header, false);
         }

@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Database;
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterFactory;
@@ -54,13 +57,11 @@ final class DatabaseTest extends TestCase
                 ],
             ],
         ];
-
         Database::init($config);
         $pdo = Database::conn();
-
         $this->assertInstanceOf(PDO::class, $pdo);
         $this->assertSame('sqlite', $pdo->getAttribute(PDO::ATTR_DRIVER_NAME));
-        // default fetch mode set by adapter
+// default fetch mode set by adapter
         $this->assertSame(PDO::FETCH_ASSOC, $pdo->getAttribute(PDO::ATTR_DEFAULT_FETCH_MODE));
     }
 }

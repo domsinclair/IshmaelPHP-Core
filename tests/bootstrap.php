@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 // Force base_path() to resolve to the IshmaelPHP-Core root during tests to avoid vendor/helper shadowing
 if (!defined('ISH_APP_BASE')) {
@@ -8,13 +11,10 @@ if (!defined('ISH_APP_BASE')) {
 
 // Mark testing environment for framework conditionals if any
 $_SERVER['ISH_TESTING'] = $_SERVER['ISH_TESTING'] ?? '1';
-
 // Load global helper functions (base_path, env, config, etc.) first so test helpers take precedence
 require_once __DIR__ . '/../app/Helpers/helpers.php';
-
 // Composer autoloader (may include a vendor copy of helpers, but our functions are already defined)
 require __DIR__ . '/../vendor/autoload.php';
-
 // Also support running MCP package tests (tools/mcp) via the root phpunit.xml.dist
 // Try to load its Composer autoload first, then register a PSR-4 fallback
 // so IshmaelPHP\\McpServer classes resolve when invoking PHPUnit from project root.
@@ -24,11 +24,12 @@ try {
         require_once $mcpAutoload;
     }
 } catch (Throwable $e) {
-    // Non-fatal: continue with fallback autoloader.
+// Non-fatal: continue with fallback autoloader.
 }
 
 if (!class_exists('IshmaelPHP\\McpServer\\Server\\RequestRouter')) {
     spl_autoload_register(function (string $class): void {
+
         $prefix = 'IshmaelPHP\\McpServer\\';
         $baseDir = __DIR__ . '/../../tools/mcp/src/';
         if (strncmp($class, $prefix, strlen($prefix)) !== 0) {
@@ -48,9 +49,7 @@ require_once __DIR__ . '/Database/AdapterTestUtil.php';
 require_once __DIR__ . '/Database/AdapterConformanceTest.php';
 // Ensure Integration base test case is available for namespaced tests
 require_once __DIR__ . '/Integration/CliTestCase.php';
-
 use Ishmael\Core\Logger;
-
 // Initialize Logger to avoid uninitialized static property access during tests
 $logDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs_tests';
 if (!is_dir($logDir)) {
@@ -58,7 +57,6 @@ if (!is_dir($logDir)) {
 }
 $logPath = $logDir . DIRECTORY_SEPARATOR . 'app.test.log';
 Logger::init(['path' => $logPath]);
-
 // Ensure a clean Database static state at suite start to avoid cross-test leakage
 if (class_exists(\Ishmael\Core\Database::class)) {
     try {
@@ -71,6 +69,6 @@ if (class_exists(\Ishmael\Core\Database::class)) {
             }
         }
     } catch (Throwable $e) {
-        // non-fatal in tests
+    // non-fatal in tests
     }
 }

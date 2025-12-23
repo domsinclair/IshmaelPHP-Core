@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database;
@@ -11,8 +12,7 @@ use PDOStatement;
 class Result
 {
     private PDOStatement $stmt;
-
-    /**
+/**
      * @param PDOStatement $stmt Underlying PDO statement to delegate to.
      */
     public function __construct(PDOStatement $stmt)

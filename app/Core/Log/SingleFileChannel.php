@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
@@ -17,13 +18,14 @@ final class SingleFileChannel implements LoggerInterface
 {
     use BaseLoggerTrait;
 
-    /** Absolute path to the log file */
+/** Absolute path to the log file */
+
+
     private string $path;
     private FormatterInterface $formatter;
-    /** @var resource|null File handle for the log file */
+/** @var resource|null File handle for the log file */
     private $handle = null;
-
-    /**
+/**
      * @param string $path Absolute path to the destination log file.
      * @param string $minLevel Minimum level name for records to be written.
      * @param FormatterInterface|null $formatter Formatter converting records to lines.
@@ -39,6 +41,7 @@ final class SingleFileChannel implements LoggerInterface
         }
         // Ensure handle closed at end of request
         register_shutdown_function(function () {
+
             $this->closeHandle();
         });
     }
@@ -49,21 +52,45 @@ final class SingleFileChannel implements LoggerInterface
     }
 
     /** @inheritDoc */
-    public function emergency($message, array $context = []): void { $this->log(LogLevel::EMERGENCY, $message, $context); }
+    public function emergency($message, array $context = []): void
+    {
+        $this->log(LogLevel::EMERGENCY, $message, $context);
+    }
     /** @inheritDoc */
-    public function alert($message, array $context = []): void     { $this->log(LogLevel::ALERT, $message, $context); }
+    public function alert($message, array $context = []): void
+    {
+        $this->log(LogLevel::ALERT, $message, $context);
+    }
     /** @inheritDoc */
-    public function critical($message, array $context = []): void  { $this->log(LogLevel::CRITICAL, $message, $context); }
+    public function critical($message, array $context = []): void
+    {
+        $this->log(LogLevel::CRITICAL, $message, $context);
+    }
     /** @inheritDoc */
-    public function error($message, array $context = []): void     { $this->log(LogLevel::ERROR, $message, $context); }
+    public function error($message, array $context = []): void
+    {
+        $this->log(LogLevel::ERROR, $message, $context);
+    }
     /** @inheritDoc */
-    public function warning($message, array $context = []): void   { $this->log(LogLevel::WARNING, $message, $context); }
+    public function warning($message, array $context = []): void
+    {
+        $this->log(LogLevel::WARNING, $message, $context);
+    }
     /** @inheritDoc */
-    public function notice($message, array $context = []): void    { $this->log(LogLevel::NOTICE, $message, $context); }
+    public function notice($message, array $context = []): void
+    {
+        $this->log(LogLevel::NOTICE, $message, $context);
+    }
     /** @inheritDoc */
-    public function info($message, array $context = []): void      { $this->log(LogLevel::INFO, $message, $context); }
+    public function info($message, array $context = []): void
+    {
+        $this->log(LogLevel::INFO, $message, $context);
+    }
     /** @inheritDoc */
-    public function debug($message, array $context = []): void     { $this->log(LogLevel::DEBUG, $message, $context); }
+    public function debug($message, array $context = []): void
+    {
+        $this->log(LogLevel::DEBUG, $message, $context);
+    }
 
     /**
      * Write a record if it meets the configured threshold.

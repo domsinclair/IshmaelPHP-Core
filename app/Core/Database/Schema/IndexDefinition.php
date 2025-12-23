@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Schema;
@@ -13,7 +14,8 @@ class IndexDefinition implements JsonSerializable
         public string $type = 'index', // index|unique|primary|fulltext|spatial
         public ?string $where = null,
         public array $extras = [],
-    ) {}
+    ) {
+    }
 
     public function toArray(): array
     {

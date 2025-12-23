@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\ModuleManager;
 use PHPUnit\Framework\TestCase;
@@ -29,27 +32,21 @@ final class ModuleManagerTest extends TestCase
         $baseDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_modules_' . uniqid();
         $fooDir = $baseDir . DIRECTORY_SEPARATOR . 'Foo';
         $barDir = $baseDir . DIRECTORY_SEPARATOR . 'Bar';
-
         @mkdir($fooDir, 0777, true);
         @mkdir($barDir, 0777, true);
-
-        // Create routes.php in Foo only
+// Create routes.php in Foo only
         $routes = "<?php\nreturn [\n    '/hello' => 'HelloController@index',\n];\n";
         file_put_contents($fooDir . DIRECTORY_SEPARATOR . 'routes.php', $routes);
-
         ModuleManager::discover($baseDir);
-
         $foo = ModuleManager::get('Foo');
         $bar = ModuleManager::get('Bar');
-
         $this->assertIsArray($foo);
         $this->assertIsArray($bar);
         $this->assertSame('Foo', $foo['name']);
         $this->assertIsArray($foo['routes']);
         $this->assertSame(['/hello' => 'HelloController@index'], $foo['routes']);
         $this->assertSame([], $bar['routes']);
-
-        // cleanup
+// cleanup
         @unlink($fooDir . DIRECTORY_SEPARATOR . 'routes.php');
         @rmdir($fooDir);
         @rmdir($barDir);
@@ -70,13 +67,11 @@ final class ModuleManagerTest extends TestCase
         $this->assertTrue(ModuleManager::shouldLoad('shared', 'production', false));
         $this->assertFalse(ModuleManager::shouldLoad('development', 'production', false));
         $this->assertTrue(ModuleManager::shouldLoad('development', 'production', true));
-
-        // development app env
+// development app env
         $this->assertTrue(ModuleManager::shouldLoad('production', 'development', false));
         $this->assertTrue(ModuleManager::shouldLoad('shared', 'development', false));
         $this->assertTrue(ModuleManager::shouldLoad('development', 'development', false));
-
-        // testing app env
+// testing app env
         $this->assertTrue(ModuleManager::shouldLoad('production', 'testing', false));
         $this->assertTrue(ModuleManager::shouldLoad('shared', 'testing', false));
         $this->assertTrue(ModuleManager::shouldLoad('development', 'testing', false));
@@ -88,12 +83,10 @@ final class ModuleManagerTest extends TestCase
         $devDir = $baseDir . DIRECTORY_SEPARATOR . 'DevOnly';
         $sharedDir = $baseDir . DIRECTORY_SEPARATOR . 'SharedOne';
         $prodDir = $baseDir . DIRECTORY_SEPARATOR . 'ProdOnly';
-
         @mkdir($devDir, 0777, true);
         @mkdir($sharedDir, 0777, true);
         @mkdir($prodDir, 0777, true);
-
-        // Create module.php manifests for each
+// Create module.php manifests for each
         $devManifest = <<<'PHP'
 <?php
 return [
@@ -121,29 +114,25 @@ PHP;
         file_put_contents($devDir . DIRECTORY_SEPARATOR . 'module.php', $devManifest);
         file_put_contents($sharedDir . DIRECTORY_SEPARATOR . 'module.php', $sharedManifest);
         file_put_contents($prodDir . DIRECTORY_SEPARATOR . 'module.php', $prodManifest);
-
-        // Production without override should include shared and production only
+// Production without override should include shared and production only
         $this->resetModules();
         ModuleManager::discover($baseDir, ['appEnv' => 'production', 'allowDevModules' => false]);
         $this->assertNotNull(ModuleManager::get('SharedOne'));
         $this->assertNotNull(ModuleManager::get('ProdOnly'));
         $this->assertNull(ModuleManager::get('DevOnly'));
-
-        // Production with override should include dev as well
+// Production with override should include dev as well
         $this->resetModules();
         ModuleManager::discover($baseDir, ['appEnv' => 'production', 'allowDevModules' => true]);
         $this->assertNotNull(ModuleManager::get('SharedOne'));
         $this->assertNotNull(ModuleManager::get('ProdOnly'));
         $this->assertNotNull(ModuleManager::get('DevOnly'));
-
-        // Development env should include all by default
+// Development env should include all by default
         $this->resetModules();
         ModuleManager::discover($baseDir, ['appEnv' => 'development']);
         $this->assertNotNull(ModuleManager::get('SharedOne'));
         $this->assertNotNull(ModuleManager::get('ProdOnly'));
         $this->assertNotNull(ModuleManager::get('DevOnly'));
-
-        // cleanup
+// cleanup
         @unlink($devDir . DIRECTORY_SEPARATOR . 'module.php');
         @unlink($sharedDir . DIRECTORY_SEPARATOR . 'module.php');
         @unlink($prodDir . DIRECTORY_SEPARATOR . 'module.php');

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Database;
@@ -12,13 +13,11 @@ use PHPUnit\Framework\TestCase;
 abstract class AdapterConformanceTest extends TestCase
 {
     abstract protected function adapter(): DatabaseAdapterInterface;
-
     public function testConnectAndBasicQuerying(): void
     {
         $adapter = $this->adapter();
         $this->assertTrue($adapter->isConnected());
-
-        // basic DDL/DML
+    // basic DDL/DML
         $adapter->runSql('CREATE TABLE IF NOT EXISTS tmp_conformance (id INTEGER PRIMARY KEY, name TEXT)');
         $affected = $adapter->execute('INSERT INTO tmp_conformance (name) VALUES (:n)', [':n' => 'Ada']);
         $this->assertSame(1, $affected);
@@ -50,7 +49,6 @@ abstract class AdapterConformanceTest extends TestCase
         ], [
             new IndexDefinition('idx_tmp_decl_name', ['name'], 'index'),
         ]);
-
         if ($adapter->tableExists('tmp_decl')) {
             $adapter->dropTable('tmp_decl');
         }

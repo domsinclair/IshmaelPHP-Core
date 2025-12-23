@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Seeders;
@@ -21,8 +22,7 @@ interface SeederInterface
      * @return void
      */
     public function run(DatabaseAdapterInterface $adapter, LoggerInterface $logger): void;
-
-    /**
+/**
      * Optional list of seeder classes that this seeder depends on.
      * Returned values should be fully-qualified class names or short class names
      * present within the same discovery set. Runner performs a topological sort.

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
@@ -15,12 +16,11 @@ final class StderrChannel implements LoggerInterface
 {
     use BaseLoggerTrait;
 
+
     private FormatterInterface $formatter;
-
-    /** @var resource|null Stream handle to php://stderr */
+/** @var resource|null Stream handle to php://stderr */
     private $stream = null;
-
-    /**
+/**
      * Create a STDERR logging channel.
      *
      * @param string $minLevel Minimum level name at or above which messages are written.
@@ -33,21 +33,45 @@ final class StderrChannel implements LoggerInterface
     }
 
     /** @inheritDoc */
-    public function emergency($message, array $context = []): void { $this->log(LogLevel::EMERGENCY, $message, $context); }
+    public function emergency($message, array $context = []): void
+    {
+        $this->log(LogLevel::EMERGENCY, $message, $context);
+    }
     /** @inheritDoc */
-    public function alert($message, array $context = []): void     { $this->log(LogLevel::ALERT, $message, $context); }
+    public function alert($message, array $context = []): void
+    {
+        $this->log(LogLevel::ALERT, $message, $context);
+    }
     /** @inheritDoc */
-    public function critical($message, array $context = []): void  { $this->log(LogLevel::CRITICAL, $message, $context); }
+    public function critical($message, array $context = []): void
+    {
+        $this->log(LogLevel::CRITICAL, $message, $context);
+    }
     /** @inheritDoc */
-    public function error($message, array $context = []): void     { $this->log(LogLevel::ERROR, $message, $context); }
+    public function error($message, array $context = []): void
+    {
+        $this->log(LogLevel::ERROR, $message, $context);
+    }
     /** @inheritDoc */
-    public function warning($message, array $context = []): void   { $this->log(LogLevel::WARNING, $message, $context); }
+    public function warning($message, array $context = []): void
+    {
+        $this->log(LogLevel::WARNING, $message, $context);
+    }
     /** @inheritDoc */
-    public function notice($message, array $context = []): void    { $this->log(LogLevel::NOTICE, $message, $context); }
+    public function notice($message, array $context = []): void
+    {
+        $this->log(LogLevel::NOTICE, $message, $context);
+    }
     /** @inheritDoc */
-    public function info($message, array $context = []): void      { $this->log(LogLevel::INFO, $message, $context); }
+    public function info($message, array $context = []): void
+    {
+        $this->log(LogLevel::INFO, $message, $context);
+    }
     /** @inheritDoc */
-    public function debug($message, array $context = []): void     { $this->log(LogLevel::DEBUG, $message, $context); }
+    public function debug($message, array $context = []): void
+    {
+        $this->log(LogLevel::DEBUG, $message, $context);
+    }
 
     /**
      * Write a log record to STDERR if above the configured threshold.

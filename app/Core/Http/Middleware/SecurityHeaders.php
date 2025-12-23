@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -26,11 +27,9 @@ final class SecurityHeaders
 {
     /** @var array<string,mixed> */
     private array $config;
-
-    /** @var bool */
+/** @var bool */
     private bool $disabled = false;
-
-    /**
+/**
      * @param array<string,mixed> $overrides Optional overrides for this instance only.
      */
     public function __construct(array $overrides = [])
@@ -59,10 +58,8 @@ final class SecurityHeaders
 
         // Execute downstream first so we set headers on the final response
         $response = $next($req, $res);
-
-        // Apply configured headers
+// Apply configured headers
         $this->applyHeaders($req, $response);
-
         return $response;
     }
 
@@ -74,7 +71,8 @@ final class SecurityHeaders
      */
     public static function with(array $overrides): callable
     {
-        return function(Request $req, Response $res, callable $next) use ($overrides): Response {
+        return function (Request $req, Response $res, callable $next) use ($overrides): Response {
+
             $mw = new self($overrides);
             return $mw($req, $res, $next);
         };
@@ -128,16 +126,21 @@ final class SecurityHeaders
         $hstsCfg = (array)($this->config['hsts'] ?? []);
         $hstsEnabled = (bool)($hstsCfg['enabled'] ?? false);
         if ($hstsEnabled) {
-            // Only set on HTTPS unless force is true
+        // Only set on HTTPS unless force is true
             $onlyHttps = (bool)($hstsCfg['only_https'] ?? true);
             $isHttps = $this->isHttps($req);
             if (!$onlyHttps || $isHttps) {
-                $maxAge = (int)($hstsCfg['max_age'] ?? 15552000); // 180 days
+                $maxAge = (int)($hstsCfg['max_age'] ?? 15552000);
+        // 180 days
                 $include = (bool)($hstsCfg['include_subdomains'] ?? false);
                 $preload = (bool)($hstsCfg['preload'] ?? false);
                 $parts = ['max-age=' . max(0, $maxAge)];
-                if ($include) { $parts[] = 'includeSubDomains'; }
-                if ($preload) { $parts[] = 'preload'; }
+                if ($include) {
+                    $parts[] = 'includeSubDomains';
+                }
+                if ($preload) {
+                    $parts[] = 'preload';
+                }
                 $this->setHeader($response, 'Strict-Transport-Security', implode('; ', $parts));
             }
         }
@@ -146,10 +149,14 @@ final class SecurityHeaders
     private function isHttps(Request $req): bool
     {
         $proto = strtolower((string)($req->getHeader('X-Forwarded-Proto') ?? ''));
-        if ($proto === 'https') { return true; }
+        if ($proto === 'https') {
+            return true;
+        }
         $server = $_SERVER;
-        if ((isset($server['HTTPS']) && ($server['HTTPS'] === 'on' || $server['HTTPS'] === '1'))
-            || (isset($server['SERVER_PORT']) && (string)$server['SERVER_PORT'] === '443')) {
+        if (
+            (isset($server['HTTPS']) && ($server['HTTPS'] === 'on' || $server['HTTPS'] === '1'))
+            || (isset($server['SERVER_PORT']) && (string)$server['SERVER_PORT'] === '443')
+        ) {
             return true;
         }
         return false;

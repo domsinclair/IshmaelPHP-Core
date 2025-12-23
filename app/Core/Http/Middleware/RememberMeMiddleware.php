@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -31,8 +32,7 @@ final class RememberMeMiddleware
 
         /** @var AuthManager $auth */
         $auth = \app('auth');
-
-        // Restore from remember-me if enabled and not already authenticated
+// Restore from remember-me if enabled and not already authenticated
         $cfg = (array) (\config('auth.remember_me') ?? []);
         $enabled = (bool) ($cfg['enabled'] ?? true);
         $cookieName = (string) ($cfg['cookie'] ?? 'ish_remember');
@@ -52,10 +52,8 @@ final class RememberMeMiddleware
 
         // Proceed
         $response = $next($req, $res);
-
-        // Apply cookie changes signaled by AuthManager
+// Apply cookie changes signaled by AuthManager
         $this->applyRememberCookie($response, $cfg);
-
         return $response;
     }
 
@@ -65,7 +63,9 @@ final class RememberMeMiddleware
     private function applyRememberCookie(Response $response, array $cfg): void
     {
         $enabled = (bool) ($cfg['enabled'] ?? true);
-        if (!$enabled) { return; }
+        if (!$enabled) {
+            return;
+        }
 
         $cookieName = (string) ($cfg['cookie'] ?? 'ish_remember');
         $path = (string) ($cfg['path'] ?? '/');
@@ -75,7 +75,6 @@ final class RememberMeMiddleware
         $sameSite = (string) ($cfg['same_site'] ?? 'Lax');
         $ttlMin = (int) ($cfg['ttl'] ?? 43200);
         $expires = time() + max(60, $ttlMin * 60);
-
         $set = $_SERVER['ISH_AUTH_REMEMBER_SET'] ?? null;
         $clear = ($_SERVER['ISH_AUTH_REMEMBER_CLEAR'] ?? null) === '1';
         if ($set !== null || $clear) {
@@ -85,7 +84,7 @@ final class RememberMeMiddleware
                 $value = '';
             }
             $headerValue = $this->buildCookie($cookieName, $value, $expires, $path, $domain, $secure, $httpOnly, $sameSite);
-            // Emit via native header for runtime
+        // Emit via native header for runtime
             if (!headers_sent()) {
                 header('Set-Cookie: ' . $headerValue, false);
             }
@@ -102,10 +101,18 @@ final class RememberMeMiddleware
             $parts[] = 'Max-Age=' . max(0, $expires - time());
         }
         $parts[] = 'Path=' . ($path ?: '/');
-        if ($domain !== '') { $parts[] = 'Domain=' . $domain; }
-        if ($secure) { $parts[] = 'Secure'; }
-        if ($httpOnly) { $parts[] = 'HttpOnly'; }
-        if ($sameSite) { $parts[] = 'SameSite=' . $sameSite; }
+        if ($domain !== '') {
+            $parts[] = 'Domain=' . $domain;
+        }
+        if ($secure) {
+            $parts[] = 'Secure';
+        }
+        if ($httpOnly) {
+            $parts[] = 'HttpOnly';
+        }
+        if ($sameSite) {
+            $parts[] = 'SameSite=' . $sameSite;
+        }
         return implode('; ', $parts);
     }
 }

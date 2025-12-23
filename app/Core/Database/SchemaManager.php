@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database;
@@ -24,8 +25,7 @@ final class SchemaManager
 {
     private DatabaseAdapterInterface $adapter;
     private LoggerInterface $logger;
-
-    /**
+/**
      * Build correlation context (request/process ID) when available.
      * @return array<string,mixed>
      */
@@ -33,7 +33,11 @@ final class SchemaManager
     {
         $rid = null;
         if (function_exists('app')) {
-            try { $rid = app('request_id'); } catch (\Throwable $_) { $rid = null; }
+            try {
+                $rid = app('request_id');
+            } catch (\Throwable $_) {
+                $rid = null;
+            }
         }
         if (!is_string($rid) || $rid === '') {
             $pid = function_exists('getmypid') ? @getmypid() : null;
@@ -77,16 +81,17 @@ final class SchemaManager
         }
 
         $this->logger->info('Starting module schema apply', ['module' => $moduleName] + $this->correlationContext());
-        // Normalize to a flat list of TableDefinition
+// Normalize to a flat list of TableDefinition
         $tables = [];
         foreach ($defs as $k => $v) {
             if ($v instanceof TableDefinition) {
                 $tables[] = $v;
             } elseif (is_array($v) && isset($v['name'])) {
-                // allow associative arrays: convert to TableDefinition
+    // allow associative arrays: convert to TableDefinition
                 $tables[] = $this->arrayToTableDefinition($v);
             } elseif ($k instanceof TableDefinition) {
-                $tables[] = $k; // unlikely, but be permissive
+                $tables[] = $k;
+    // unlikely, but be permissive
             }
         }
         try {
@@ -108,10 +113,9 @@ final class SchemaManager
     public function diff(string $table, TableDefinition $desired): SchemaDiff
     {
         $diff = new SchemaDiff($table);
-
         if (!$this->adapter->tableExists($table)) {
             $diff->createTable = true;
-            // When creating a table, we can include all columns and indexes as safe ops.
+        // When creating a table, we can include all columns and indexes as safe ops.
             $diff->addColumns = $desired->columns;
             $diff->addIndexes = $desired->indexes;
             $this->logger->debug('Table does not exist; planning CREATE TABLE', ['table' => $table]);
@@ -123,7 +127,7 @@ final class SchemaManager
         try {
             $current = $this->adapter->getTableDefinition($table);
         } catch (\Throwable $e) {
-            // Some adapters may not support full introspection yet; continue conservatively.
+        // Some adapters may not support full introspection yet; continue conservatively.
             $this->logger->debug('Adapter lacks full introspection; proceeding conservatively (additions only)', [
                 'table' => $table,
                 'adapter' => get_class($this->adapter),
@@ -141,20 +145,22 @@ final class SchemaManager
         }
 
         foreach ($desired->columns as $col) {
-            if (!$col instanceof ColumnDefinition) continue;
+            if (!$col instanceof ColumnDefinition) {
+                continue;
+            }
             $nameKey = strtolower($col->name);
-
-            // If adapter can only tell column existence, prefer that
+// If adapter can only tell column existence, prefer that
             $exists = $this->adapter->columnExists($table, $col->name);
             if (!$exists) {
-                $diff->addColumns[] = $col; // safe addition
+                $diff->addColumns[] = $col;
+            // safe addition
                 continue;
             }
 
             // Column exists; if we have current definition, detect unsafe changes
             if (isset($existingCols[$nameKey])) {
                 $curr = $existingCols[$nameKey];
-                // Unsafe: type change
+// Unsafe: type change
                 if (strtoupper($curr->type) !== strtoupper($col->type)) {
                     $diff->addUnsafe("Column '{$col->name}': type change from {$curr->type} to {$col->type} requires explicit migration.");
                 }
@@ -169,7 +175,7 @@ final class SchemaManager
                     $diff->addUnsafe("Column '{$col->name}': default change requires explicit migration.");
                 }
             } else {
-                // Column exists (per adapter) but not present in introspection list — stay conservative
+            // Column exists (per adapter) but not present in introspection list — stay conservative
                 $this->logger->debug('Column exists but missing from introspection list; skipping unsafe checks', [
                     'table' => $table,
                     'column' => $col->name,
@@ -187,16 +193,19 @@ final class SchemaManager
             }
         }
         foreach ($desired->indexes as $idx) {
-            if (!$idx instanceof IndexDefinition) continue;
+            if (!$idx instanceof IndexDefinition) {
+                continue;
+            }
             $key = strtolower($idx->name);
             if (!isset($existingIdx[$key])) {
-                $diff->addIndexes[] = $idx; // consider safe to create
+                $diff->addIndexes[] = $idx;
+            // consider safe to create
             } else {
-                // If present but different columns/type, require migration
+            // If present but different columns/type, require migration
                 $curr = $existingIdx[$key];
                 if ($curr instanceof IndexDefinition) {
                     if ($curr->type !== $idx->type || $curr->columns !== $idx->columns) {
-                        $diff->addUnsafe("Index '{$idx->name}': change detected; write an explicit migration to modify indexes.");
+                            $diff->addUnsafe("Index '{$idx->name}': change detected; write an explicit migration to modify indexes.");
                     }
                 }
             }
@@ -223,19 +232,18 @@ final class SchemaManager
             }
 
             foreach ($defs as $def) {
-                if (!$def instanceof TableDefinition) { continue; }
+                if (!$def instanceof TableDefinition) {
+                        continue;
+                }
                 $table = $def->name;
                 $diff = $this->diff($table, $def);
-
                 if (!$diff->isSafe()) {
                     $this->logger->warning('Unsafe schema changes detected. Aborting.', [
                         'table' => $table,
                         'unsafe' => $diff->unsafeChanges,
                     ] + $this->correlationContext());
-                    throw new \RuntimeException(
-                        "Unsafe schema changes for table '{$table}'. Write an explicit migration. Issues: "
-                        . implode(' | ', $diff->unsafeChanges)
-                    );
+                    throw new \RuntimeException("Unsafe schema changes for table '{$table}'. Write an explicit migration. Issues: "
+                                . implode(' | ', $diff->unsafeChanges));
                 }
 
                 if ($diff->createTable) {
@@ -243,7 +251,7 @@ final class SchemaManager
                     $this->adapter->createTable($def);
                 }
                 foreach ($diff->addColumns as $col) {
-                    // Double-check at apply-time to avoid race/duplication (especially for primary keys)
+        // Double-check at apply-time to avoid race/duplication (especially for primary keys)
                     if ($this->adapter->columnExists($table, $col->name)) {
                         $this->logger->debug('Column already exists at apply-time; skipping', ['table' => $table, 'column' => $col->name]);
                         continue;
@@ -280,43 +288,27 @@ final class SchemaManager
         }
         $columns = [];
         foreach ((array)($arr['columns'] ?? []) as $c) {
-            if ($c instanceof ColumnDefinition) { $columns[] = $c; continue; }
-            $columns[] = new ColumnDefinition(
-                name: (string)($c['name'] ?? ''),
-                type: (string)($c['type'] ?? 'TEXT'),
-                nullable: (bool)($c['nullable'] ?? false),
-                default: $c['default'] ?? null,
-                length: isset($c['length']) ? (int)$c['length'] : null,
-                precision: isset($c['precision']) ? (int)$c['precision'] : null,
-                scale: isset($c['scale']) ? (int)$c['scale'] : null,
-                unsigned: (bool)($c['unsigned'] ?? false),
-                autoIncrement: (bool)($c['autoIncrement'] ?? false),
-                extras: (array)($c['extras'] ?? []),
-            );
+            if ($c instanceof ColumnDefinition) {
+                        $columns[] = $c;
+                        continue;
+            }
+            $columns[] = new ColumnDefinition(name: (string)($c['name'] ?? ''), type: (string)($c['type'] ?? 'TEXT'), nullable: (bool)($c['nullable'] ?? false), default: $c['default'] ?? null, length: isset($c['length']) ? (int)$c['length'] : null, precision: isset($c['precision']) ? (int)$c['precision'] : null, scale: isset($c['scale']) ? (int)$c['scale'] : null, unsigned: (bool)($c['unsigned'] ?? false), autoIncrement: (bool)($c['autoIncrement'] ?? false), extras: (array)($c['extras'] ?? []),);
         }
         $indexes = [];
         foreach ((array)($arr['indexes'] ?? []) as $i) {
-            if ($i instanceof IndexDefinition) { $indexes[] = $i; continue; }
-            $indexes[] = new IndexDefinition(
-                name: (string)($i['name'] ?? ''),
-                columns: (array)($i['columns'] ?? []),
-                type: (string)($i['type'] ?? 'index'),
-                where: isset($i['where']) ? (string)$i['where'] : null,
-                extras: (array)($i['extras'] ?? []),
-            );
+            if ($i instanceof IndexDefinition) {
+                    $indexes[] = $i;
+                    continue;
+            }
+            $indexes[] = new IndexDefinition(name: (string)($i['name'] ?? ''), columns: (array)($i['columns'] ?? []), type: (string)($i['type'] ?? 'index'), where: isset($i['where']) ? (string)$i['where'] : null, extras: (array)($i['extras'] ?? []),);
         }
         $foreignKeys = [];
         foreach ((array)($arr['foreignKeys'] ?? []) as $f) {
-            if ($f instanceof ForeignKeyDefinition) { $foreignKeys[] = $f; continue; }
-            $foreignKeys[] = new ForeignKeyDefinition(
-                name: (string)($f['name'] ?? ''),
-                columns: (array)($f['columns'] ?? []),
-                referencesTable: (string)($f['referencesTable'] ?? ''),
-                referencesColumns: (array)($f['referencesColumns'] ?? ['id']),
-                onDelete: isset($f['onDelete']) ? (string)$f['onDelete'] : null,
-                onUpdate: isset($f['onUpdate']) ? (string)$f['onUpdate'] : null,
-                extras: (array)($f['extras'] ?? []),
-            );
+            if ($f instanceof ForeignKeyDefinition) {
+                    $foreignKeys[] = $f;
+                    continue;
+            }
+            $foreignKeys[] = new ForeignKeyDefinition(name: (string)($f['name'] ?? ''), columns: (array)($f['columns'] ?? []), referencesTable: (string)($f['referencesTable'] ?? ''), referencesColumns: (array)($f['referencesColumns'] ?? ['id']), onDelete: isset($f['onDelete']) ? (string)$f['onDelete'] : null, onUpdate: isset($f['onUpdate']) ? (string)$f['onUpdate'] : null, extras: (array)($f['extras'] ?? []),);
         }
         return new TableDefinition($name, $columns, $indexes, $foreignKeys, (array)($arr['extras'] ?? []));
     }
@@ -337,12 +329,12 @@ final class SchemaManager
                 if (function_exists('app')) {
                     $svc = app(\Psr\Log\LoggerInterface::class);
                     if ($svc instanceof LoggerInterface) {
-                        return $svc;
+                            return $svc;
                     }
                 }
             }
         } catch (\Throwable $e) {
-            // ignore and fallback to null channel
+        // ignore and fallback to null channel
         }
         // Last resort: no-op channel
         return new \Ishmael\Core\Log\NullChannel();
@@ -362,26 +354,34 @@ final class SchemaManager
     {
         $defs = [];
         foreach ($modelClasses as $class) {
-            if (!is_string($class) || !class_exists($class)) { continue; }
-            if (!method_exists($class, 'schema')) { continue; }
+            if (!is_string($class) || !class_exists($class)) {
+                        continue;
+            }
+            if (!method_exists($class, 'schema')) {
+                continue;
+            }
             /** @var TableDefinition|null $td */
             $td = $class::schema();
-            if (!$td instanceof TableDefinition) { continue; }
+            if (!$td instanceof TableDefinition) {
+                continue;
+            }
             // Ensure name matches declared table if present
             $tableName = '';
-            // Prefer schema-declared name
+// Prefer schema-declared name
             $tableName = $td->name ?: $tableName;
-            // If model exposes a static $table (may be protected), read via reflection
+// If model exposes a static $table (may be protected), read via reflection
             if (property_exists($class, 'table')) {
                 try {
                     $ref = new \ReflectionProperty($class, 'table');
                     if ($ref->isStatic()) {
                         $ref->setAccessible(true);
                         $val = (string)$ref->getValue();
-                        if ($val !== '') { $tableName = $val; }
+                        if ($val !== '') {
+                            $tableName = $val;
+                        }
                     }
                 } catch (\ReflectionException $e) {
-                    // ignore; fall back to any prior value
+                // ignore; fall back to any prior value
                 }
             }
             if ($tableName !== '') {
@@ -395,8 +395,8 @@ final class SchemaManager
                     $hasDeletedAt = false;
                     foreach ($td->columns as $c) {
                         if ($c instanceof ColumnDefinition && strtolower($c->name) === 'deleted_at') {
-                            $hasDeletedAt = true;
-                            break;
+                                    $hasDeletedAt = true;
+                                    break;
                         }
                         if (is_array($c) && strtolower((string)($c['name'] ?? '')) === 'deleted_at') {
                             $hasDeletedAt = true;
@@ -404,17 +404,12 @@ final class SchemaManager
                         }
                     }
                     if (!$hasDeletedAt) {
-                        $td->columns[] = new ColumnDefinition(
-                            name: 'deleted_at',
-                            type: 'DATETIME',
-                            nullable: true,
-                            default: null,
-                        );
-                        // Optionally, an index could be added in future; keep minimal for now.
+                        $td->columns[] = new ColumnDefinition(name: 'deleted_at', type: 'DATETIME', nullable: true, default: null,);
+                // Optionally, an index could be added in future; keep minimal for now.
                     }
                 }
             } catch (\Throwable) {
-                // Be conservative: schema building should not fail due to soft delete inspection
+            // Be conservative: schema building should not fail due to soft delete inspection
             }
 
             // If the model is auditable, ensure created_at/updated_at and optional created_by/updated_by exist.
@@ -424,7 +419,7 @@ final class SchemaManager
                     $ref = new \ReflectionClass($class);
                     $attrs = $ref->getAttributes(\Ishmael\Core\Attributes\Auditable::class);
                     if ($attrs !== []) {
-                        /** @var \Ishmael\Core\Attributes\Auditable $inst */
+        /** @var \Ishmael\Core\Attributes\Auditable $inst */
                         $inst = $attrs[0]->newInstance();
                         $audit = [
                             'timestamps' => (bool)$inst->timestamps,
@@ -446,17 +441,24 @@ final class SchemaManager
                                 'updatedByColumn' => (string)($cfg['updatedByColumn'] ?? 'updated_by'),
                             ];
                         }
-                    } catch (\Throwable) { /* ignore */ }
+                    } catch (\Throwable) {
+                    /* ignore */
+                    }
                 }
 
                 if (is_array($audit)) {
                     if (!empty($audit['timestamps'])) {
-                        $hasCreated = false; $hasUpdated = false;
+                        $hasCreated = false;
+                            $hasUpdated = false;
                         foreach ($td->columns as $c) {
                             $name = $c instanceof ColumnDefinition ? $c->name : (string)($c['name'] ?? '');
                             $lname = strtolower($name);
-                            if ($lname === 'created_at') { $hasCreated = true; }
-                            if ($lname === 'updated_at') { $hasUpdated = true; }
+                            if ($lname === 'created_at') {
+                                $hasCreated = true;
+                            }
+                            if ($lname === 'updated_at') {
+                                $hasUpdated = true;
+                            }
                         }
                         if (!$hasCreated) {
                             $td->columns[] = new ColumnDefinition(name: 'created_at', type: 'DATETIME', nullable: false);
@@ -468,12 +470,17 @@ final class SchemaManager
                     if (!empty($audit['userAttribution'])) {
                         $cb = (string)$audit['createdByColumn'];
                         $ub = (string)$audit['updatedByColumn'];
-                        $hasCb = false; $hasUb = false;
+                        $hasCb = false;
+                        $hasUb = false;
                         foreach ($td->columns as $c) {
                             $name = $c instanceof ColumnDefinition ? $c->name : (string)($c['name'] ?? '');
                             $lname = strtolower($name);
-                            if ($lname === strtolower($cb)) { $hasCb = true; }
-                            if ($lname === strtolower($ub)) { $hasUb = true; }
+                            if ($lname === strtolower($cb)) {
+                                $hasCb = true;
+                            }
+                            if ($lname === strtolower($ub)) {
+                                $hasUb = true;
+                            }
                         }
                         if (!$hasCb) {
                             $td->columns[] = new ColumnDefinition(name: $cb, type: 'INTEGER', nullable: true);
@@ -484,7 +491,7 @@ final class SchemaManager
                     }
                 }
             } catch (\Throwable) {
-                // Do not fail schema collection due to audit reflection/config
+            // Do not fail schema collection due to audit reflection/config
             }
             $defs[] = $td;
         }

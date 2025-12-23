@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Cache;
@@ -10,7 +11,6 @@ final class DatabaseCacheStore implements CacheStore
 {
     private PDO $pdo;
     private string $table;
-
     public function __construct(PDO $pdo, string $table = 'cache')
     {
         $this->pdo = $pdo;
@@ -36,7 +36,9 @@ final class DatabaseCacheStore implements CacheStore
         $stmt = $this->pdo->prepare("SELECT value, expires_at FROM {$this->table} WHERE namespace = :ns AND key = :k LIMIT 1");
         $stmt->execute([':ns' => $namespace, ':k' => $key]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row) return $default;
+        if (!$row) {
+            return $default;
+        }
         $expires = $row['expires_at'] !== null ? (int)$row['expires_at'] : null;
         if ($expires !== null && $expires < time()) {
             $this->delete($key, $namespace);
@@ -62,7 +64,9 @@ final class DatabaseCacheStore implements CacheStore
         $stmt = $this->pdo->prepare("SELECT expires_at FROM {$this->table} WHERE namespace = :ns AND key = :k LIMIT 1");
         $stmt->execute([':ns' => $namespace, ':k' => $key]);
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if (!$row) return false;
+        if (!$row) {
+            return false;
+        }
         $expires = $row['expires_at'] !== null ? (int)$row['expires_at'] : null;
         if ($expires !== null && $expires < time()) {
             $this->delete($key, $namespace);
@@ -102,7 +106,9 @@ final class DatabaseCacheStore implements CacheStore
     public function remember(string $key, callable $callback, ?int $ttlSeconds = null, string $namespace = 'default', array $tags = []): mixed
     {
         $existing = $this->get($key, null, $namespace);
-        if ($existing !== null) return $existing;
+        if ($existing !== null) {
+            return $existing;
+        }
         $value = $callback();
         $this->set($key, $value, $ttlSeconds, $namespace, $tags);
         return $value;
@@ -127,7 +133,9 @@ final class DatabaseCacheStore implements CacheStore
     private function unserializeValue(string $payload): mixed
     {
         $raw = base64_decode($payload, true);
-        if ($raw === false) return null;
+        if ($raw === false) {
+            return null;
+        }
         return unserialize($raw, ['allowed_classes' => true]);
     }
 }

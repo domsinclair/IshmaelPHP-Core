@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Cache;
@@ -7,7 +8,6 @@ final class FileCacheStore implements CacheStore
 {
     private string $baseDir;
     private string $prefix;
-
     public function __construct(string $baseDir, string $prefix = '')
     {
         $this->baseDir = rtrim(str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $baseDir), "\\/");
@@ -26,7 +26,7 @@ final class FileCacheStore implements CacheStore
         }
         $entry = @json_decode($raw, true);
         if (!is_array($entry)) {
-            // Corrupted; remove
+        // Corrupted; remove
             @unlink($path);
             return $default;
         }
@@ -51,7 +51,7 @@ final class FileCacheStore implements CacheStore
             'tags' => array_values(array_unique($tags)),
             'value' => $this->serializeValue($value),
         ], JSON_UNESCAPED_SLASHES);
-        // Atomic write via temp file rename
+// Atomic write via temp file rename
         $tmp = $path . '.tmp.' . bin2hex(random_bytes(4));
         @file_put_contents($tmp, $payload);
         @rename($tmp, $path);
@@ -60,11 +60,17 @@ final class FileCacheStore implements CacheStore
     public function has(string $key, string $namespace = 'default'): bool
     {
         $path = $this->pathFor($namespace, $key);
-        if (!is_file($path)) return false;
+        if (!is_file($path)) {
+            return false;
+        }
         $raw = @file_get_contents($path);
-        if ($raw === false) return false;
+        if ($raw === false) {
+            return false;
+        }
         $entry = @json_decode($raw, true);
-        if (!is_array($entry)) return false;
+        if (!is_array($entry)) {
+            return false;
+        }
         $expiresAt = $entry['expiresAt'] ?? null;
         if ($expiresAt !== null && $expiresAt < time()) {
             @unlink($path);
@@ -84,7 +90,9 @@ final class FileCacheStore implements CacheStore
     public function clearNamespace(string $namespace): void
     {
         $dir = $this->dirFor($namespace);
-        if (!is_dir($dir)) return;
+        if (!is_dir($dir)) {
+            return;
+        }
         foreach (glob($dir . DIRECTORY_SEPARATOR . '*.cache.json') ?: [] as $file) {
             @unlink($file);
         }
@@ -95,12 +103,19 @@ final class FileCacheStore implements CacheStore
         $namespaces = $namespace ? [$namespace] : $this->allNamespaces();
         foreach ($namespaces as $ns) {
             $dir = $this->dirFor($ns);
-            if (!is_dir($dir)) continue;
+            if (!is_dir($dir)) {
+                continue;
+            }
             foreach (glob($dir . DIRECTORY_SEPARATOR . '*.cache.json') ?: [] as $file) {
                 $raw = @file_get_contents($file);
-                if ($raw === false) continue;
+                if ($raw === false) {
+                    continue;
+                }
                 $entry = @json_decode($raw, true);
-                if (!is_array($entry)) { @unlink($file); continue; }
+                if (!is_array($entry)) {
+                    @unlink($file);
+                    continue;
+                }
                 $tags = $entry['tags'] ?? [];
                 if (is_array($tags) && in_array($tag, $tags, true)) {
                     @unlink($file);
@@ -112,7 +127,9 @@ final class FileCacheStore implements CacheStore
     public function remember(string $key, callable $callback, ?int $ttlSeconds = null, string $namespace = 'default', array $tags = []): mixed
     {
         $existing = $this->get($key, null, $namespace);
-        if ($existing !== null) return $existing;
+        if ($existing !== null) {
+            return $existing;
+        }
         $value = $callback();
         $this->set($key, $value, $ttlSeconds, $namespace, $tags);
         return $value;
@@ -124,10 +141,15 @@ final class FileCacheStore implements CacheStore
         $now = time();
         foreach ($namespaces as $ns) {
             $dir = $this->dirFor($ns);
-            if (!is_dir($dir)) continue;
+            if (!is_dir($dir)) {
+                continue;
+            }
             foreach (glob($dir . DIRECTORY_SEPARATOR . '*.cache.json') ?: [] as $file) {
                 $raw = @file_get_contents($file);
-                if ($raw === false) { @unlink($file); continue; }
+                if ($raw === false) {
+                    @unlink($file);
+                    continue;
+                }
                 $entry = @json_decode($raw, true);
                 $expiresAt = is_array($entry) ? ($entry['expiresAt'] ?? null) : null;
                 if ($expiresAt !== null && $expiresAt < $now) {
@@ -144,9 +166,13 @@ final class FileCacheStore implements CacheStore
 
     private function unserializeValue(?string $payload): mixed
     {
-        if ($payload === null) return null;
+        if ($payload === null) {
+            return null;
+        }
         $raw = base64_decode($payload, true);
-        if ($raw === false) return null;
+        if ($raw === false) {
+            return null;
+        }
         return unserialize($raw, ['allowed_classes' => true]);
     }
 
@@ -185,7 +211,9 @@ final class FileCacheStore implements CacheStore
     private function allNamespaces(): array
     {
         $ret = [];
-        if (!is_dir($this->baseDir)) return $ret;
+        if (!is_dir($this->baseDir)) {
+            return $ret;
+        }
         foreach (glob($this->baseDir . DIRECTORY_SEPARATOR . '*', GLOB_ONLYDIR) ?: [] as $dir) {
             $ret[] = basename($dir);
         }

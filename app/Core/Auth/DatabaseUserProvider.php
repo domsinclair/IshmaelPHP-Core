@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Auth;
@@ -14,8 +15,7 @@ final class DatabaseUserProvider implements UserProviderInterface
     /** @var array<string,string> */
     private array $config;
     private HasherInterface $hasher;
-
-    /**
+/**
      * @param array<string,mixed>|null $providerConfig Optional provider config (uses config('auth.providers.users') by default)
      */
     public function __construct(?array $providerConfig = null, ?HasherInterface $hasher = null)

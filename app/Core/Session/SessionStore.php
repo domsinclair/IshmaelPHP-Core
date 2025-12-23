@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Session;
@@ -17,8 +18,7 @@ interface SessionStore
      * @return array<string,mixed> Decoded session payload
      */
     public function load(string $id): array;
-
-    /**
+/**
      * Persist the session data at the current id and update expiry if applicable.
      *
      * @param string $id Session identifier
@@ -26,15 +26,13 @@ interface SessionStore
      * @param int $ttlSeconds Time to live in seconds
      */
     public function persist(string $id, array $data, int $ttlSeconds): void;
-
-    /**
+/**
      * Destroy/remove a session by id.
      *
      * @param string $id Session identifier
      */
     public function destroy(string $id): void;
-
-    /**
+/**
      * Generate a new cryptographically secure random session identifier.
      */
     public function generateId(): string;

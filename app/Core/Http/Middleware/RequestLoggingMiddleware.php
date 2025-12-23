@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -22,14 +23,11 @@ final class RequestLoggingMiddleware
         $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
         $uri = $_SERVER['REQUEST_URI'] ?? '/';
         $start = microtime(true);
-
         Log::info('HTTP request start', [
             'method' => $method,
             'uri' => $uri,
         ]);
-
         $response = $next($req, $res);
-
         $durationMs = (int) round((microtime(true) - $start) * 1000);
         Log::info('HTTP request finish', [
             'method' => $method,
@@ -37,7 +35,6 @@ final class RequestLoggingMiddleware
             'status' => $response->getStatusCode(),
             'duration_ms' => $durationMs,
         ]);
-
         return $response;
     }
 }

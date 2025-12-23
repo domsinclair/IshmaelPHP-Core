@@ -17,8 +17,10 @@ final class CuratedIndexScanner
         if ($indexPath !== null) {
             $this->indexPath = $indexPath;
         } else {
-            // Default packaged location: tools/mcp/resources/feature-packs/index.json (relative to src/)
-            $this->indexPath = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'feature-packs' . DIRECTORY_SEPARATOR . 'index.json';
+            // Default packaged location: tools/mcp/resources/feature-packs/index.json
+            $base = dirname(__DIR__, 2);
+            $this->indexPath = $base . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR
+                . 'feature-packs' . DIRECTORY_SEPARATOR . 'index.json';
         }
     }
 
@@ -37,9 +39,13 @@ final class CuratedIndexScanner
         }
         $items = [];
         foreach ($raw['packs'] as $pack) {
-            if (!is_array($pack)) { continue; }
+            if (!is_array($pack)) {
+                continue;
+            }
             $pack['source'] = $pack['source'] ?? 'curated-index';
-            if (!$this->matchesFilters($pack, $filters)) { continue; }
+            if (!$this->matchesFilters($pack, $filters)) {
+                continue;
+            }
             $items[] = $pack;
         }
         return $items;
@@ -54,17 +60,23 @@ final class CuratedIndexScanner
         $query = isset($filters['query']) && is_string($filters['query']) ? strtolower($filters['query']) : null;
         if ($query !== null && $query !== '') {
             $hay = strtolower(($pack['name'] ?? '') . ' ' . ($pack['description'] ?? ''));
-            if (strpos($hay, $query) === false) { return false; }
+            if (strpos($hay, $query) === false) {
+                return false;
+            }
         }
         $vendorPrefix = isset($filters['vendorPrefix']) && is_string($filters['vendorPrefix']) ? strtolower($filters['vendorPrefix']) : null;
         if ($vendorPrefix !== null && $vendorPrefix !== '') {
             $pkg = strtolower((string)($pack['package'] ?? ''));
-            if ($pkg === '' || strpos($pkg, $vendorPrefix) !== 0) { return false; }
+            if ($pkg === '' || strpos($pkg, $vendorPrefix) !== 0) {
+                return false;
+            }
         }
         $includePrerelease = (bool)($filters['includePrerelease'] ?? false);
         if (!$includePrerelease) {
             $stab = strtolower((string)($pack['stability'] ?? 'stable'));
-            if ($stab !== 'stable') { return false; }
+            if ($stab !== 'stable') {
+                return false;
+            }
         }
         return true;
     }

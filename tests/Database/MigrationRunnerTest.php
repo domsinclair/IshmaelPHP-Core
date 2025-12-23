@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Database;
@@ -11,15 +12,13 @@ final class MigrationRunnerTest extends TestCase
 {
     private DatabaseAdapterInterface $adapter;
     private string $moduleDir;
-
     protected function setUp(): void
     {
         $this->adapter = AdapterTestUtil::sqliteAdapter();
-        // Create a temporary module under base_path('Modules/TestMod')
+    // Create a temporary module under base_path('Modules/TestMod')
         $this->moduleDir = \base_path('Modules' . DIRECTORY_SEPARATOR . 'TestMod');
         @mkdir($this->moduleDir . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations', 0777, true);
-
-        // Write two simple migrations that create two tables, with proper timestamps
+    // Write two simple migrations that create two tables, with proper timestamps
         $migs = $this->moduleDir . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations' . DIRECTORY_SEPARATOR;
         file_put_contents($migs . '20000101000000_CreateAlpha.php', $this->migrationCreateTable('Alpha'));
         file_put_contents($migs . '20000101000100_CreateBeta.php', $this->migrationCreateTable('Beta'));
@@ -31,18 +30,33 @@ final class MigrationRunnerTest extends TestCase
         if (is_dir($this->moduleDir)) {
             $this->rrmdir($this->moduleDir);
         }
-        try { $this->adapter->runSql('DROP TABLE IF EXISTS Alpha'); } catch (\Throwable $_) {}
-        try { $this->adapter->runSql('DROP TABLE IF EXISTS Beta'); } catch (\Throwable $_) {}
-        try { $this->adapter->runSql('DROP TABLE IF EXISTS ishmael_migrations'); } catch (\Throwable $_) {}
+        try {
+            $this->adapter->runSql('DROP TABLE IF EXISTS Alpha');
+        } catch (\Throwable $_) {
+        }
+        try {
+            $this->adapter->runSql('DROP TABLE IF EXISTS Beta');
+        } catch (\Throwable $_) {
+        }
+        try {
+            $this->adapter->runSql('DROP TABLE IF EXISTS ishmael_migrations');
+        } catch (\Throwable $_) {
+        }
     }
 
     private function rrmdir(string $dir): void
     {
         $items = @scandir($dir) ?: [];
         foreach ($items as $i) {
-            if ($i === '.' || $i === '..') continue;
+            if ($i === '.' || $i === '..') {
+                continue;
+            }
             $path = $dir . DIRECTORY_SEPARATOR . $i;
-            if (is_dir($path)) { $this->rrmdir($path); } else { @unlink($path); }
+            if (is_dir($path)) {
+                $this->rrmdir($path);
+            } else {
+                @unlink($path);
+            }
         }
         @rmdir($dir);
     }
@@ -65,23 +79,19 @@ PHP;
         // Fill in table names inside the anonymous classes
         $this->patchMigration('Alpha');
         $this->patchMigration('Beta');
-
         $runner = new MigrationRunner($this->adapter, null);
-        // First run applies both
+// First run applies both
         $runner->migrate(null, 0, false);
         $this->assertTrue($this->tableExists('Alpha'));
         $this->assertTrue($this->tableExists('Beta'));
-
-        // Second run should be idempotent (no errors, no duplicates)
+// Second run should be idempotent (no errors, no duplicates)
         $runner->migrate(null, 0, false);
         $this->assertTrue($this->tableExists('Alpha'));
         $this->assertTrue($this->tableExists('Beta'));
-
-        // Roll back the last batch across all modules (both tables) by two steps
+// Roll back the last batch across all modules (both tables) by two steps
         $runner->rollback('TestMod', 1);
         $this->assertTrue($this->tableExists('Alpha'));
         $this->assertFalse($this->tableExists('Beta'));
-
         $runner->rollback('TestMod', 1);
         $this->assertFalse($this->tableExists('Alpha'));
     }

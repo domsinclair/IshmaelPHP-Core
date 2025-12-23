@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core;
@@ -53,14 +54,15 @@ final class RouteCache
     private static function isCacheableCallable(mixed $value): bool
     {
         if (is_string($value)) {
-            // Class string or function name (function names discouraged but cacheable)
+// Class string or function name (function names discouraged but cacheable)
             return true;
         }
         if (is_array($value) && count($value) === 2 && is_string($value[0]) && is_string($value[1])) {
-            // Static callable like [ClassName::class, 'method']
+// Static callable like [ClassName::class, 'method']
             return true;
         }
-        return false; // closures, objects, bound callables are not cacheable
+        return false;
+// closures, objects, bound callables are not cacheable
     }
 
     /**
@@ -73,7 +75,7 @@ final class RouteCache
     {
         $warnings = [];
         foreach ($routes as $i => $r) {
-            // Middleware entries
+        // Middleware entries
             foreach (($r['middleware'] ?? []) as $mwIndex => $mw) {
                 if (!self::isCacheableCallable($mw)) {
                     $pattern = '/' . trim((string)($r['pattern'] ?? ''), '/');
@@ -84,7 +86,7 @@ final class RouteCache
             // Handler (if non-string handler is supported by router)
             if (array_key_exists('handler', $r)) {
                 $h = $r['handler'];
-                // Allow array handlers (controller/action strings), but not closures/objects
+// Allow array handlers (controller/action strings), but not closures/objects
                 $isArrayHandler = is_array($h);
                 $isCacheable = $isArrayHandler ? true : self::isCacheableCallable($h);
                 if (!$isCacheable) {
@@ -109,8 +111,7 @@ final class RouteCache
     public static function compile(Router $router, string $modulesPath, bool $force = false): array
     {
         $routes = $router->exportCompiledMap();
-
-        // Validate and optionally sanitize
+// Validate and optionally sanitize
         $check = self::validateForCache($routes);
         if (!empty($check['warnings']) && !$force) {
             $message = "Cannot cache routes due to non-serializable middleware/handlers:\n - "
@@ -120,16 +121,13 @@ final class RouteCache
         }
 
         if ($force && !empty($check['warnings'])) {
-            // Strip invalid middleware entries and (if any) disallow non-cacheable handlers by setting to string sentinel
+// Strip invalid middleware entries and (if any) disallow non-cacheable handlers by setting to string sentinel
             foreach ($routes as &$r) {
                 if (isset($r['middleware']) && is_array($r['middleware'])) {
-                    $r['middleware'] = array_values(array_filter(
-                        $r['middleware'],
-                        [self::class, 'isCacheableCallable']
-                    ));
+                    $r['middleware'] = array_values(array_filter($r['middleware'], [self::class, 'isCacheableCallable']));
                 }
                 if (isset($r['handler']) && !is_string($r['handler']) && !is_array($r['handler'])) {
-                    // Replace with a sentinel that will fail loudly at runtime if ever reached
+// Replace with a sentinel that will fail loudly at runtime if ever reached
                     $r['handler'] = '__ISH_NON_CACHEABLE_HANDLER_REMOVED__';
                 }
             }
@@ -181,7 +179,7 @@ final class RouteCache
             return null;
         }
         try {
-            /** @var array $data */
+/** @var array $data */
             $data = require $file;
             if (!is_array($data) || !isset($data['routes'], $data['meta'])) {
                 return null;
@@ -218,5 +216,5 @@ final class RouteCache
         $current = self::computeSourceHash($modulesPath);
         $cachedHash = (string)($compiled['meta']['hash'] ?? '');
         return $cachedHash !== '' && $cachedHash === $current['hash'];
-        }
+    }
 }

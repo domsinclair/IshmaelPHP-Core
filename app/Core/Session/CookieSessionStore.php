@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Session;
@@ -11,8 +12,7 @@ final class CookieSessionStore implements SessionStore
 {
     private string $cookieName;
     private string $appKey;
-
-    /**
+/**
      * @param string $cookieName Name of the cookie that holds the session.
      * @param string $appKey Secret application key (32 bytes recommended). May be base64-encoded.
      */
@@ -48,7 +48,7 @@ final class CookieSessionStore implements SessionStore
             'data' => $data,
         ];
         $packed = $this->encode($payload);
-        // Actual Set-Cookie header is handled by middleware based on config for flags.
+// Actual Set-Cookie header is handled by middleware based on config for flags.
         // Here we only return the value via a superglobal handoff; middleware will read it.
         $_SERVER['ISH_SESSION_COOKIE_VALUE'] = $packed;
     }

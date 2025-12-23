@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Cache;
@@ -7,7 +8,6 @@ final class ArrayCacheStore implements CacheStore
 {
     /** @var array<string, array<string, array{value:mixed, expiresAt:int|null, tags:string[]}>> */
     private array $data = [];
-
     public function get(string $key, mixed $default = null, string $namespace = 'default'): mixed
     {
         $ns = $this->data[$namespace] ?? null;
@@ -97,7 +97,9 @@ final class ArrayCacheStore implements CacheStore
         $namespaces = $namespace ? [$namespace] : array_keys($this->data);
         $now = time();
         foreach ($namespaces as $ns) {
-            if (!isset($this->data[$ns])) continue;
+            if (!isset($this->data[$ns])) {
+                continue;
+            }
             foreach ($this->data[$ns] as $key => $entry) {
                 if ($entry['expiresAt'] !== null && $entry['expiresAt'] < $now) {
                     unset($this->data[$ns][$key]);

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
@@ -12,8 +13,7 @@ final class JsonLinesFormatter implements FormatterInterface
 {
     /** @var int JSON encoding flags applied to json_encode */
     private int $jsonFlags;
-
-    /**
+/**
      * @param int $jsonFlags json_encode flags (defaults to UNESCAPED_SLASHES | UNESCAPED_UNICODE)
      */
     public function __construct(int $jsonFlags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)

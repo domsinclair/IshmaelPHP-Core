@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Integration;
@@ -13,11 +14,10 @@ abstract class CliTestCase extends TestCase
 {
     /** Absolute path to repo root */
     protected string $repoRoot;
-    /** Absolute path to SkeletonApp */
+/** Absolute path to SkeletonApp */
     protected string $appRoot;
-    /** Absolute path to Core */
+/** Absolute path to Core */
     protected string $coreRoot;
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,7 +54,11 @@ abstract class CliTestCase extends TestCase
         }
         $out = stream_get_contents($pipes[1]);
         $err = stream_get_contents($pipes[2]);
-        foreach ($pipes as $p) { if (\is_resource($p)) { fclose($p); } }
+        foreach ($pipes as $p) {
+            if (\is_resource($p)) {
+                fclose($p);
+            }
+        }
         $exit = proc_close($proc);
         return ['exit' => (int)$exit, 'out' => (string)$out, 'err' => (string)$err];
     }
@@ -80,10 +84,14 @@ abstract class CliTestCase extends TestCase
         $cfg = require $this->appRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
         $driver = $cfg['default'] ?? 'sqlite';
         $db = $cfg['connections'][$driver] ?? ($cfg['connections']['sqlite'] ?? null);
-        if (!\is_array($db)) return null;
+        if (!\is_array($db)) {
+            return null;
+        }
         if (($db['driver'] ?? '') === 'sqlite') {
             $path = (string)($db['database'] ?? '');
-            if ($path === ':memory:' || $path === '') return null;
+            if ($path === ':memory:' || $path === '') {
+                return null;
+            }
             // Normalize relative paths from app root
             if (!preg_match('~^([a-zA-Z]:\\\\|/)~', $path)) {
                 $path = $this->appRoot . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);

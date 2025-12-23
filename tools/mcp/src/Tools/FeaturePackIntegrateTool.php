@@ -119,7 +119,11 @@ final class FeaturePackIntegrateTool implements Tool
         $confirm = (bool)($input['confirm'] ?? false);
         $opts = $this->normalizeOptions($input['options'] ?? []);
         $packs = [];
-        foreach ($input['packs'] as $p) { if (is_string($p) && $p !== '') { $packs[] = $p; } }
+        foreach ($input['packs'] as $p) {
+            if (is_string($p) && $p !== '') {
+                $packs[] = $p;
+            }
+        }
 
         $operations = [];
         $conflicts = [];
@@ -136,7 +140,14 @@ final class FeaturePackIntegrateTool implements Tool
                 if ($opts['mergeConfig']) {
                     $configPath = $root . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . $safeName . '.php';
                     $exists = is_file($configPath);
-                    $operations[] = $this->op($exists ? 'merge' : 'write', $configPath, $exists, !$exists, $exists ? null : "<?php\nreturn [\n    // {$pack} config stub\n];\n", 'Create/merge config');
+                    $operations[] = $this->op(
+                        $exists ? 'merge' : 'write',
+                        $configPath,
+                        $exists,
+                        !$exists,
+                        $exists ? null : "<?php\nreturn [\n    // {$pack} config stub\n];\n",
+                        'Create/merge config'
+                    );
                 }
                 if ($opts['publishAssets']) {
                     $assetsPath = $root . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . $safeName;
@@ -146,14 +157,25 @@ final class FeaturePackIntegrateTool implements Tool
                 if ($opts['addRoutes']) {
                     $routesFile = $root . DIRECTORY_SEPARATOR . 'routes' . DIRECTORY_SEPARATOR . $safeName . '.php';
                     $exists = is_file($routesFile);
-                    $operations[] = $this->op($exists ? 'append' : 'write', $routesFile, $exists, true, $exists ? "// routes for {$pack}\n" : "<?php\nuse Ishmael\\Routing\\Router;\n// routes for {$pack}\n", 'Import routes');
+                    $operations[] = $this->op(
+                        $exists ? 'append' : 'write',
+                        $routesFile,
+                        $exists,
+                        true,
+                        $exists ? "// routes for {$pack}\n" : "<?php\nuse Ishmael\\Routing\\Router;\n// routes for {$pack}\n",
+                        'Import routes'
+                    );
                 }
             }
         }
 
         $messages = [];
-        if ($dry) { $messages[] = 'Dry run only; no changes executed.'; }
-        if ($confirm && !$dry) { $messages[] = 'Incubation build: file writes disabled.'; }
+        if ($dry) {
+            $messages[] = 'Dry run only; no changes executed.';
+        }
+        if ($confirm && !$dry) {
+            $messages[] = 'Incubation build: file writes disabled.';
+        }
 
         return [
             'planned' => [ 'packs' => $packs, 'options' => $opts ],
@@ -172,9 +194,13 @@ final class FeaturePackIntegrateTool implements Tool
             'publishAssets' => true,
             'addRoutes' => true,
         ];
-        if (!is_array($opt)) { return $defaults; }
+        if (!is_array($opt)) {
+            return $defaults;
+        }
         foreach ($defaults as $k => $v) {
-            if (!array_key_exists($k, $opt) || !is_bool($opt[$k])) { $opt[$k] = $v; }
+            if (!array_key_exists($k, $opt) || !is_bool($opt[$k])) {
+                $opt[$k] = $v;
+            }
         }
         return $opt;
     }
@@ -194,7 +220,9 @@ final class FeaturePackIntegrateTool implements Tool
     private function fileContains(string $path, string $needle): bool
     {
         $contents = @file_get_contents($path);
-        if ($contents === false) { return false; }
+        if ($contents === false) {
+            return false;
+        }
         return strpos($contents, $needle) !== false;
     }
 }

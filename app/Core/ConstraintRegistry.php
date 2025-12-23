@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core;
@@ -25,8 +26,7 @@ final class ConstraintRegistry
      * @var array<string, array{pattern:string, converter:callable|null}>
      */
     private static array $constraints = [];
-
-    /**
+/**
      * Register or override a named constraint.
      *
      * @param string $name Constraint name used in route patterns (e.g., "int")
@@ -88,34 +88,40 @@ final class ConstraintRegistry
         $pct = '(?:%[0-9A-Fa-f]{2})';
         $alpha = '(?:[A-Za-z]|' . $pct . ')';
         $alnum = '(?:[A-Za-z0-9]|' . $pct . ')';
-
-        // int → integer cast
+// int → integer cast
         self::add('int', '\\d+', static function (string $v): int {
+
             return (int)$v;
         });
-        // numeric → float cast (accept 123, 123.45)
+// numeric → float cast (accept 123, 123.45)
         self::add('numeric', '\\d+(?:\\.\\d+)?', static function (string $v): float {
+
             return (float)$v;
         });
-        // bool → common truthy/falsey tokens
+// bool → common truthy/falsey tokens
         self::add('bool', '(?i:true|false|1|0|yes|no|on|off)', static function (string $v): bool {
+
             $vl = strtolower($v);
             return in_array($vl, ['1','true','yes','on'], true);
         });
-        // slug → letters, digits, dashes, percent-encoded bytes; decode to return
+// slug → letters, digits, dashes, percent-encoded bytes; decode to return
         self::add('slug', '(?:' . $alnum . '|-)+', static function (string $v): string {
+
             return rawurldecode($v);
         });
-        // alpha → letters only (with percent-encoded support), decode
+// alpha → letters only (with percent-encoded support), decode
         self::add('alpha', $alpha . '+', static function (string $v): string {
+
             return rawurldecode($v);
         });
-        // alnum → letters/digits (with percent-encoded support), decode
+// alnum → letters/digits (with percent-encoded support), decode
         self::add('alnum', $alnum . '+', static function (string $v): string {
+
             return rawurldecode($v);
         });
-        // uuid → canonical 8-4-4-4-12 (case-insensitive), normalize to lowercase
+// uuid → canonical 8-4-4-4-12 (case-insensitive), normalize to lowercase
         self::add('uuid', '[0-9A-Fa-f]{8}-(?:[0-9A-Fa-f]{4}-){3}[0-9A-Fa-f]{12}', static function (string $v): string {
+
             return strtolower($v);
         });
     }

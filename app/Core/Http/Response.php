@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http;
@@ -9,13 +10,12 @@ namespace Ishmael\Core\Http;
 class Response
 {
     private int $statusCode = 200;
-    /** @var array<string,string> */
+/** @var array<string,string> */
     private array $headers = [];
     private string $body = '';
-    /** @var array<string,string> */
+/** @var array<string,string> */
     private static array $lastHeaders = [];
-
-    /** @param array<string,string> $headers */
+/** @param array<string,string> $headers */
     public function __construct(string $body = '', int $statusCode = 200, array $headers = [])
     {
         $this->body = $body;
@@ -112,7 +112,7 @@ class Response
         $isWeak = str_starts_with($etag, 'W/');
         $value = $etag;
         if (!$isWeak) {
-            // Ensure quoted
+        // Ensure quoted
             if (!str_starts_with($etag, '"') && !str_ends_with($etag, '"') && !(preg_match('/^\".*\"$/', $etag) === 1)) {
                 $value = '"' . trim($etag, '"') . '"';
             }

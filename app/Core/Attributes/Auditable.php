@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Attributes;
@@ -20,11 +21,7 @@ class Auditable
      * @param string $createdByColumn Column name for creator reference (default 'created_by').
      * @param string $updatedByColumn Column name for updater reference (default 'updated_by').
      */
-    public function __construct(
-        public bool $timestamps = true,
-        public bool $userAttribution = false,
-        public string $createdByColumn = 'created_by',
-        public string $updatedByColumn = 'updated_by',
-    ) {
+    public function __construct(public bool $timestamps = true, public bool $userAttribution = false, public string $createdByColumn = 'created_by', public string $updatedByColumn = 'updated_by',)
+    {
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -21,8 +22,7 @@ final class VerifyCsrfToken
 {
     /** @var array<string,mixed> */
     private array $config;
-
-    /**
+/**
      * @param array<string,mixed> $override Optional configuration override for testing or per-route tuning.
      */
     public function __construct(array $override = [])
@@ -44,7 +44,7 @@ final class VerifyCsrfToken
         // Route-level override flags (set by Router before pipeline execution)
         $routeBypass = (bool)($_SERVER['ISH_ROUTE_CSRF_BYPASS'] ?? false);
         $routeForce = (bool)($_SERVER['ISH_ROUTE_CSRF_FORCE'] ?? false);
-        // Router-level overrides
+// Router-level overrides
         $enabledOverride = $_SERVER['ISH_CSRF_ENABLED'] ?? null;
         if ($enabledOverride !== null) {
             $this->config['enabled'] = filter_var((string)$enabledOverride, FILTER_VALIDATE_BOOLEAN);
@@ -56,8 +56,7 @@ final class VerifyCsrfToken
 
         $method = strtoupper($req->getMethod());
         $path = $req->getPath();
-
-        // Method exemptions
+// Method exemptions
         $exceptOverride = $_SERVER['ISH_CSRF_EXCEPT_METHODS'] ?? null;
         if (is_string($exceptOverride) && $exceptOverride !== '') {
             $this->config['except_methods'] = array_map('trim', explode(',', $exceptOverride));
@@ -82,8 +81,7 @@ final class VerifyCsrfToken
 
         $fieldName = (string)($this->config['field_name'] ?? '_token');
         $headers = (array)($this->config['header_names'] ?? ['X-CSRF-Token', 'X-XSRF-Token']);
-
-        // Sources: headers, body field, query
+// Sources: headers, body field, query
         $presented = null;
         foreach ($headers as $h) {
             $val = $req->getHeader((string)$h);
@@ -135,12 +133,10 @@ final class VerifyCsrfToken
         $status = (int)($failure['status'] ?? 419);
         $message = (string)($failure['message'] ?? 'CSRF token mismatch.');
         $code = (string)($failure['code'] ?? 'csrf_mismatch');
-
         $accept = (string)($req->getHeader('Accept') ?? '');
         $isJsonPreferred = str_contains(strtolower($accept), 'application/json')
             || strtolower((string)$req->getHeader('X-Requested-With')) === 'xmlhttprequest'
             || str_contains(strtolower((string)$req->getHeader('Content-Type')), 'application/json');
-
         if ($isJsonPreferred) {
             return Response::json(['error' => $message, 'code' => $code], $status);
         }

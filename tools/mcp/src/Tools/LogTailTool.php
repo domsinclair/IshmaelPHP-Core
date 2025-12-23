@@ -85,10 +85,17 @@ final class LogTailTool implements Tool
                     $logDir . DIRECTORY_SEPARATOR . 'app.log',
                 ];
                 foreach (glob($logDir . DIRECTORY_SEPARATOR . '*.log') ?: [] as $g) {
-                    if (!in_array($g, $candidates, true)) { $candidates[] = $g; }
+                    if (!in_array($g, $candidates, true)) {
+                        $candidates[] = $g;
+                    }
                 }
                 $logFile = null;
-                foreach ($candidates as $f) { if (is_file($f)) { $logFile = $f; break; } }
+                foreach ($candidates as $f) {
+                    if (is_file($f)) {
+                        $logFile = $f;
+                        break;
+                    }
+                }
                 if ($logFile !== null) {
                     $lines = $this->tailFile($logFile, $max);
                     foreach ($lines as $line) {
@@ -113,7 +120,10 @@ final class LogTailTool implements Tool
     private function parseLogLine(string $line): array
     {
         // Very tolerant parser for Monolog line like: [2025-01-01T12:00:00] channel.LEVEL: message {context}
-        $timestamp = null; $channel = null; $level = null; $message = trim($line);
+        $timestamp = null;
+        $channel = null;
+        $level = null;
+        $message = trim($line);
         if (preg_match('/^\[(.*?)\]\s+([^.]+)\.([A-Z]+):\s+(.*)$/', $line, $m) === 1) {
             $timestamp = $m[1];
             $channel = $m[2];

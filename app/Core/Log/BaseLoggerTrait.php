@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
@@ -22,9 +23,7 @@ trait BaseLoggerTrait
         LogLevel::INFO      => 6,
         LogLevel::DEBUG     => 7,
     ];
-
     private string $minLevel = LogLevel::DEBUG;
-
     public function setMinLevel(string $level): void
     {
         $level = strtolower($level);
@@ -64,6 +63,7 @@ trait BaseLoggerTrait
         $sensitive = ['password','pwd','token','secret','api_key','apikey','authorization','auth','access_token','refresh_token'];
         $lowerKeys = array_fill_keys($sensitive, true);
         $walker = function ($value) use (&$walker, $lowerKeys) {
+
             if (is_array($value)) {
                 $out = [];
                 foreach ($value as $k => $v) {
@@ -90,7 +90,8 @@ trait BaseLoggerTrait
     {
         $msg = $this->interpolate($message, $context);
         $ctx = $this->redactContext($context);
-        $ts = (new DateTimeImmutable())->format('c'); // ISO8601 with timezone
+        $ts = (new DateTimeImmutable())->format('c');
+// ISO8601 with timezone
         $app = function_exists('env') ? (string)env('APP_NAME', 'Ishmael') : 'Ishmael';
         $envName = function_exists('env') ? (string)env('APP_ENV', 'development') : 'development';
         $requestId = $ctx['request_id'] ?? null;

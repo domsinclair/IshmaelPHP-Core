@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Session;
@@ -11,12 +12,11 @@ final class SessionManager
 {
     private SessionStore $store;
     private string $id;
-    /** @var array<string,mixed> */
+/** @var array<string,mixed> */
     private array $data;
     private bool $dirty = false;
     private int $ttlSeconds;
-
-    /**
+/**
      * @param SessionStore $store Concrete persistence backend
      * @param string|null $id Existing id to use or null to generate
      * @param int $ttlSeconds Session TTL in seconds
@@ -40,7 +40,8 @@ final class SessionManager
     {
         $this->data['_flash']['now'] = $this->data['_flash']['next'] ?? [];
         $this->data['_flash']['next'] = [];
-        $this->dirty = true; // flash lifecycle change must be persisted
+        $this->dirty = true;
+// flash lifecycle change must be persisted
     }
 
     public function getId(): string
@@ -110,7 +111,7 @@ final class SessionManager
     {
         $old = $this->id;
         $this->id = $this->store->generateId();
-        // Persist under new id and destroy old
+// Persist under new id and destroy old
         $this->store->persist($this->id, $this->data, $this->ttlSeconds);
         $this->store->destroy($old);
     }

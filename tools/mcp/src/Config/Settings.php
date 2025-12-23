@@ -32,7 +32,9 @@ final class Settings
     private static function envBool(string $key, bool $default): bool
     {
         $val = getenv($key);
-        if ($val === false) return $default;
+        if ($val === false) {
+            return $default;
+        }
         $v = strtolower(trim((string)$val));
         return in_array($v, ['1','true','yes','on'], true);
     }
@@ -40,7 +42,9 @@ final class Settings
     private static function envInt(string $key, int $default): int
     {
         $val = getenv($key);
-        if ($val === false || !is_numeric($val)) return $default;
+        if ($val === false || !is_numeric($val)) {
+            return $default;
+        }
         return max(0, (int)$val);
     }
 
@@ -52,7 +56,9 @@ final class Settings
     {
         $rates = [];
         foreach ($_ENV as $k => $v) {
-            if (!is_string($k)) continue;
+            if (!is_string($k)) {
+                continue;
+            }
             if (preg_match('/^MCP_RATE_(.+)_PER_MIN$/', $k, $m) === 1) {
                 $method = strtolower(str_replace('_', ':', $m[1]));
                 $rates[$method] = is_numeric($v) ? (int)$v : 0;
@@ -60,7 +66,9 @@ final class Settings
         }
         // Also support getenv() sources
         foreach (getenv() ?: [] as $k => $v) {
-            if (!is_string($k)) continue;
+            if (!is_string($k)) {
+                continue;
+            }
             if (preg_match('/^MCP_RATE_(.+)_PER_MIN$/', (string)$k, $m) === 1) {
                 $method = strtolower(str_replace('_', ':', $m[1]));
                 if (!isset($rates[$method])) {

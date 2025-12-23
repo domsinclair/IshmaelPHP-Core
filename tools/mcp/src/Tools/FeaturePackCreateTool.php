@@ -134,7 +134,9 @@ final class FeaturePackCreateTool implements Tool
                 $rel = substr($item->getPathname(), strlen($sourceTemplate) + 1);
                 $dest = $targetPath . DIRECTORY_SEPARATOR . $rel;
                 $exists = file_exists($dest);
-                if ($exists) { $conflicts[] = $dest; }
+                if ($exists) {
+                    $conflicts[] = $dest;
+                }
                 $preview = '';
                 if ($item->isFile()) {
                     $content = (string)@file_get_contents($item->getPathname());
@@ -168,7 +170,9 @@ final class FeaturePackCreateTool implements Tool
             foreach ($files as $rel => $content) {
                 $dest = $targetPath . DIRECTORY_SEPARATOR . $rel;
                 $exists = file_exists($dest);
-                if ($exists) { $conflicts[] = $dest; }
+                if ($exists) {
+                    $conflicts[] = $dest;
+                }
                 $planFiles[] = [
                     'path' => $dest,
                     'action' => $exists ? 'skip' : 'write',
@@ -209,14 +213,20 @@ final class FeaturePackCreateTool implements Tool
             $path = $step['path'];
             $sandbox->assertWithinRoot($path);
             if ($step['action'] === 'mkdir') {
-                if (!is_dir($path)) { @mkdir($path, 0777, true); }
+                if (!is_dir($path)) {
+                    @mkdir($path, 0777, true);
+                }
             }
         }
         foreach ($plan as $step) {
             $path = $step['path'];
-            if ($step['action'] !== 'write') { continue; }
+            if ($step['action'] !== 'write') {
+                continue;
+            }
             $dir = dirname($path);
-            if (!is_dir($dir)) { @mkdir($dir, 0777, true); }
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0777, true);
+            }
             $content = '';
             if ($step['fromTemplate'] !== null && is_file($step['fromTemplate'])) {
                 $content = (string)@file_get_contents($step['fromTemplate']);
@@ -253,7 +263,9 @@ final class FeaturePackCreateTool implements Tool
     private function preview(string $content): string
     {
         $max = 100000; // large to avoid truncation; ensures writes match previews for generated content
-        if (strlen($content) <= $max) { return $content; }
+        if (strlen($content) <= $max) {
+            return $content;
+        }
         return substr($content, 0, $max) . "\n...";
     }
 }

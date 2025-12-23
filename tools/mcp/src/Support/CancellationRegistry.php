@@ -18,7 +18,9 @@ final class CancellationRegistry
     /** @param string|int|null $id */
     public function register($id): void
     {
-        if ($id === null) return;
+        if ($id === null) {
+            return;
+        }
         $this->inFlight[$id] = true;
         unset($this->cancelled[$id]);
     }
@@ -26,14 +28,18 @@ final class CancellationRegistry
     /** @param string|int|null $id */
     public function complete($id): void
     {
-        if ($id === null) return;
+        if ($id === null) {
+            return;
+        }
         unset($this->inFlight[$id], $this->cancelled[$id]);
     }
 
     /** @param string|int|null $id */
     public function cancel($id): bool
     {
-        if ($id === null) return false;
+        if ($id === null) {
+            return false;
+        }
         if (!isset($this->inFlight[$id])) {
             // allow marking even if not currently tracked
             $this->cancelled[$id] = true;
@@ -46,7 +52,9 @@ final class CancellationRegistry
     /** @param string|int|null $id */
     public function isCancelled($id): bool
     {
-        if ($id === null) return false;
+        if ($id === null) {
+            return false;
+        }
         return isset($this->cancelled[$id]) && $this->cancelled[$id] === true;
     }
 }

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Seeders;
@@ -29,8 +30,7 @@ final class SeederRunner
 {
     private DatabaseAdapterInterface $adapter;
     private LoggerInterface $logger;
-
-    /**
+/**
      * Build correlation context (request/process ID) when available.
      * @return array<string,mixed>
      */
@@ -38,7 +38,11 @@ final class SeederRunner
     {
         $rid = null;
         if (function_exists('app')) {
-            try { $rid = app('request_id'); } catch (\Throwable $_) { $rid = null; }
+            try {
+                $rid = app('request_id');
+            } catch (\Throwable $_) {
+                $rid = null;
+            }
         }
         if (!is_string($rid) || $rid === '') {
             $pid = function_exists('getmypid') ? @getmypid() : null;
@@ -97,7 +101,6 @@ final class SeederRunner
             'env' => $envName,
             'forced' => $force,
         ] + $this->correlationContext());
-
         $total = 0;
         foreach ($modules as $mod) {
             $plan = $this->buildExecutionPlan($mod, $class);
@@ -105,9 +108,13 @@ final class SeederRunner
                 $this->logger->info('No seeders to run', ['module' => $mod] + $this->correlationContext());
                 continue;
             }
-            $this->logger->info('Seeder plan', ['module' => $mod, 'count' => count($plan), 'seeders' => array_map(fn($c) => $c['name'], $plan)] + $this->correlationContext());
+            $this->logger->info('Seeder plan', [
+                'module' => $mod,
+                'count' => count($plan),
+                'seeders' => array_map(fn($c) => $c['name'], $plan)
+            ] + $this->correlationContext());
             foreach ($plan as $entry) {
-                /** @var SeederInterface $instance */
+    /** @var SeederInterface $instance */
                 $instance = $entry['instance'];
                 $ctx = ['module' => $mod, 'seeder' => $entry['name']] + $this->correlationContext();
                 $this->logger->info('Running seeder', $ctx);
@@ -140,9 +147,13 @@ final class SeederRunner
         $roots = [base_path('Modules'), base_path('SkeletonApp/Modules')];
         $mods = [];
         foreach ($roots as $root) {
-            if (!is_dir($root)) { continue; }
+            if (!is_dir($root)) {
+                        continue;
+            }
             foreach (scandir($root) ?: [] as $entry) {
-                if ($entry === '.' || $entry === '..') { continue; }
+                if ($entry === '.' || $entry === '..') {
+                        continue;
+                }
                 if (is_dir($root . DIRECTORY_SEPARATOR . $entry)) {
                     $mods[$entry] = true;
                 }
@@ -162,10 +173,13 @@ final class SeederRunner
     private function buildExecutionPlan(string $module, ?string $class): array
     {
         $seeders = $this->discoverSeeders($module);
-        if (empty($seeders)) { return []; }
+        if (empty($seeders)) {
+            return [];
+        }
 
         // Normalize names and dependencies
-        $nameMap = []; // short name => FQCN
+        $nameMap = [];
+// short name => FQCN
         foreach ($seeders as $fqcn => $obj) {
             $pos = strrpos($fqcn, '\\');
             $short = ($pos !== false) ? substr($fqcn, $pos + 1) : $fqcn;
@@ -176,10 +190,12 @@ final class SeederRunner
         $targets = array_keys($seeders);
         if ($class !== null) {
             $want = isset($seeders[$class]) ? $class : ($nameMap[$class] ?? null);
-            if (!$want) { return []; }
+            if (!$want) {
+                return [];
+            }
             $targets = $this->collectWithDependencies($want, $seeders);
         } else {
-            // If DatabaseSeeder exists, use it as the root to collect with deps; otherwise run all
+        // If DatabaseSeeder exists, use it as the root to collect with deps; otherwise run all
             $dbSeeder = $nameMap['DatabaseSeeder'] ?? null;
             if ($dbSeeder) {
                 $targets = $this->collectWithDependencies($dbSeeder, $seeders);
@@ -209,11 +225,15 @@ final class SeederRunner
         ];
         $declaredBefore = get_declared_classes();
         foreach ($dirs as $dir) {
-            if (!is_dir($dir)) { continue; }
+            if (!is_dir($dir)) {
+                        continue;
+            }
             $files = scandir($dir) ?: [];
             sort($files, SORT_STRING);
             foreach ($files as $f) {
-                if ($f === '.' || $f === '..') { continue; }
+                if ($f === '.' || $f === '..') {
+                        continue;
+                }
                 if (str_ends_with($f, '.php')) {
                     require_once $dir . DIRECTORY_SEPARATOR . $f;
                 }
@@ -221,8 +241,7 @@ final class SeederRunner
         }
         $declaredAfter = get_declared_classes();
         $diff = array_values(array_diff($declaredAfter, $declaredBefore));
-
-        // Normalize module directories for robust Windows/Unix path comparison
+// Normalize module directories for robust Windows/Unix path comparison
         $normDirs = [];
         foreach ($dirs as $d) {
             $rp = realpath($d) ?: $d;
@@ -231,27 +250,32 @@ final class SeederRunner
         }
 
         $out = [];
-        // Consider all declared classes so repeated runs (require_once no-ops) still discover seeders
+// Consider all declared classes so repeated runs (require_once no-ops) still discover seeders
         foreach ($declaredAfter as $class) {
             try {
                 $ref = new \ReflectionClass($class);
             } catch (\Throwable $_) {
-                continue; // skip bogus
+                continue;
+            // skip bogus
             }
             // Verify class file is inside one of the module seeder directories
             $file = $ref->getFileName() ?: '';
             $filePath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string)$file);
             $isInModule = false;
             foreach ($normDirs as $nd) {
-                if ($filePath !== '' && str_starts_with($filePath, $nd)) { $isInModule = true; break; }
+                if ($filePath !== '' && str_starts_with($filePath, $nd)) {
+                            $isInModule = true;
+                            break;
+                }
             }
-            if (!$isInModule || $ref->isAbstract()) { continue; }
+            if (!$isInModule || $ref->isAbstract()) {
+                continue;
+            }
 
             $implements = class_implements($class) ?: [];
             $implementsInterface = is_subclass_of($class, SeederInterface::class) || in_array(SeederInterface::class, $implements, true);
-
             if ($implementsInterface) {
-                // Standard: implements SeederInterface
+            // Standard: implements SeederInterface
                 /** @var SeederInterface $obj */
                 $obj = $ref->newInstanceWithoutConstructor();
                 $out[$class] = $obj;
@@ -263,14 +287,18 @@ final class SeederRunner
                 $m = $ref->getMethod('run');
                 if ($m->isPublic()) {
                     $paramCount = $m->getNumberOfRequiredParameters();
-                    // Support 0-arg or 2-arg (adapter, logger) methods
+                // Support 0-arg or 2-arg (adapter, logger) methods
                     if ($paramCount === 0 || $paramCount === 2) {
                         $instance = $ref->newInstanceWithoutConstructor();
-                        // Wrap in anonymous adapter implementing SeederInterface
-                        $adapterWrapper = new class($instance, $paramCount) implements SeederInterface {
+// Wrap in anonymous adapter implementing SeederInterface
+                        $adapterWrapper = new class ($instance, $paramCount) implements SeederInterface {
                             private object $inner;
                             private int $arity;
-                            public function __construct(object $inner, int $arity) { $this->inner = $inner; $this->arity = $arity; }
+                            public function __construct(object $inner, int $arity)
+                            {
+                                $this->inner = $inner;
+                                $this->arity = $arity;
+                            }
                             public function run(\Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface $adapter, \Psr\Log\LoggerInterface $logger): void
                             {
                                 if ($this->arity === 2) {
@@ -279,7 +307,10 @@ final class SeederRunner
                                     $this->inner->run();
                                 }
                             }
-                            public function dependsOn(): array { return []; }
+                            public function dependsOn(): array
+                            {
+                                return [];
+                            }
                         };
                         $out[$class] = $adapterWrapper;
                     }
@@ -303,11 +334,16 @@ final class SeederRunner
         $stack = [$root];
         while ($stack) {
             $curr = array_pop($stack);
-            if (isset($seen[$curr]) || !isset($seeders[$curr])) { continue; }
+            if (isset($seen[$curr]) || !isset($seeders[$curr])) {
+                continue;
+            }
             $seen[$curr] = true;
             $deps = $this->normalizeDeps($seeders, $curr, array_keys($seeders));
-            foreach (array_reverse($deps) as $d) { // reverse to maintain a bit of declaration order
-                if (!isset($seen[$d])) { $stack[] = $d; }
+            foreach (array_reverse($deps) as $d) {
+// reverse to maintain a bit of declaration order
+                if (!isset($seen[$d])) {
+                    $stack[] = $d;
+                }
             }
         }
         $keys = array_keys($seen);
@@ -327,31 +363,43 @@ final class SeederRunner
         $inTarget = array_fill_keys($targets, true);
         $depsMap = [];
         foreach ($targets as $fqcn) {
-            $depsMap[$fqcn] = array_values(array_filter(
-                $this->normalizeDeps($seeders, $fqcn, $targets),
-                fn($d) => isset($inTarget[$d])
-            ));
+            $depsMap[$fqcn] = array_values(array_filter($this->normalizeDeps($seeders, $fqcn, $targets), fn($d) => isset($inTarget[$d])));
         }
         $result = [];
         $tempMark = [];
         $permMark = [];
-        $visit = function(string $n) use (&$visit, &$result, &$tempMark, &$permMark, $depsMap): void {
-            if (isset($permMark[$n])) { return; }
-            if (isset($tempMark[$n])) { throw new \RuntimeException('Cyclic seeder dependency detected at ' . $n); }
+        $visit = function (string $n) use (&$visit, &$result, &$tempMark, &$permMark, $depsMap): void {
+
+            if (isset($permMark[$n])) {
+                return;
+            }
+            if (isset($tempMark[$n])) {
+                throw new \RuntimeException('Cyclic seeder dependency detected at ' . $n);
+            }
             $tempMark[$n] = true;
             $deps = $depsMap[$n] ?? [];
             sort($deps, SORT_STRING);
-            foreach ($deps as $m) { $visit($m); }
-            $permMark[$n] = true; unset($tempMark[$n]);
+            foreach ($deps as $m) {
+                $visit($m);
+            }
+            $permMark[$n] = true;
+            unset($tempMark[$n]);
             $result[] = $n;
         };
         $nodes = $targets;
         sort($nodes, SORT_STRING);
-        foreach ($nodes as $n) { $visit($n); }
+        foreach ($nodes as $n) {
+            $visit($n);
+        }
         // dedupe while preserving order
         $seen = [];
         $ordered = [];
-        foreach ($result as $n) { if (!isset($seen[$n])) { $seen[$n] = true; $ordered[] = $n; } }
+        foreach ($result as $n) {
+            if (!isset($seen[$n])) {
+                $seen[$n] = true;
+                $ordered[] = $n;
+            }
+        }
         return $ordered;
     }
 
@@ -378,19 +426,22 @@ final class SeederRunner
         }
 
         $declared = [];
-        try { $declared = $seeders[$fqcn]->dependsOn(); } catch (\Throwable $_) { /* ignore */ }
+        try {
+            $declared = $seeders[$fqcn]->dependsOn();
+        } catch (\Throwable $_) {
+            /* ignore */
+        }
+
         $resolved = [];
         foreach ($declared as $d) {
             $fq = null;
             // 1) Exact match by FQCN key
             if (isset($seeders[$d])) {
                 $fq = $d;
-            }
-            // 2) Exact match by short name
-            elseif (isset($shortMap[$d])) {
+            } elseif (isset($shortMap[$d])) {
+                // 2) Exact match by short name
                 $fq = $shortMap[$d];
-            }
-            else {
+            } else {
                 // 3) If a FQCN was provided, try its short/basename
                 $pos = strrpos($d, '\\');
                 if ($pos !== false) {

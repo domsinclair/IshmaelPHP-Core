@@ -79,13 +79,21 @@ final class EnvValidateTool implements Tool
 
         $required = [];
         if (isset($input['requiredKeys']) && is_array($input['requiredKeys'])) {
-            foreach ($input['requiredKeys'] as $k) { if (is_string($k)) { $required[] = $k; } }
+            foreach ($input['requiredKeys'] as $k) {
+                if (is_string($k)) {
+                    $required[] = $k;
+                }
+            }
         } elseif (isset($input['schemaPath']) && is_string($input['schemaPath'])) {
             $schemaPath = $input['schemaPath'];
             if (is_file($schemaPath)) {
                 $schema = json_decode(file_get_contents($schemaPath) ?: '[]', true);
                 if (is_array($schema) && isset($schema['required']) && is_array($schema['required'])) {
-                    foreach ($schema['required'] as $k) { if (is_string($k)) { $required[] = $k; } }
+                    foreach ($schema['required'] as $k) {
+                        if (is_string($k)) {
+                            $required[] = $k;
+                        }
+                    }
                 }
             }
         }
@@ -110,7 +118,9 @@ final class EnvValidateTool implements Tool
         $out = [];
         foreach (preg_split('/\r?\n/', $contents) as $line) {
             $line = trim($line);
-            if ($line === '' || str_starts_with($line, '#')) { continue; }
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
             $parts = explode('=', $line, 2);
             if (count($parts) === 2) {
                 $key = trim($parts[0]);

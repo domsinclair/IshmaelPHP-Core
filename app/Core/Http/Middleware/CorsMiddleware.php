@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -25,8 +26,7 @@ final class CorsMiddleware
 {
     /** @var array<string,mixed> */
     private array $config;
-
-    /** @param array<string,mixed> $config */
+/** @param array<string,mixed> $config */
     public function __construct(array $config = [])
     {
         $this->config = $config ?: $this->loadConfig();
@@ -43,9 +43,8 @@ final class CorsMiddleware
 
         $method = strtoupper($req->getMethod());
         $res = $this->applyHeaders($res);
-
         if ($method === 'OPTIONS') {
-            // Preflight: short-circuit with 204 No Content
+        // Preflight: short-circuit with 204 No Content
             return $res->setStatusCode(204);
         }
 

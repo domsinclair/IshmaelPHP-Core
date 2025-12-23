@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Http\Response;
 use PHPUnit\Framework\TestCase;
@@ -12,7 +15,6 @@ final class ResponseTest extends TestCase
         $this->assertSame(201, $res->getStatusCode());
         $this->assertSame('hello', $res->getBody());
         $this->assertSame(['X-Foo' => 'Bar'], $res->getHeaders());
-
         $res->setStatusCode(202)->header('X-Bar', 'Baz')->setBody('ok');
         $this->assertSame(202, $res->getStatusCode());
         $this->assertSame('ok', $res->getBody());

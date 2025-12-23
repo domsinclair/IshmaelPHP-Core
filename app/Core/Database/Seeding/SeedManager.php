@@ -1,9 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Seeding;
 
-use Ishmael\Core\Database\Seeders\SeederRunner; // correct namespace
+use Ishmael\Core\Database\Seeders\SeederRunner;
+// correct namespace
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface;
 use Psr\Log\LoggerInterface;
 
@@ -17,8 +19,7 @@ use Psr\Log\LoggerInterface;
 final class SeedManager
 {
     private SeederRunner $runner;
-
-    /**
+/**
      * Construct a SeedManager.
      *
      * @param DatabaseAdapterInterface $adapter Connected database adapter instance.

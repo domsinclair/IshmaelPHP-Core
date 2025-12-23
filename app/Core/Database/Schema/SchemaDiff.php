@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Database\Schema;
@@ -13,12 +14,11 @@ final class SchemaDiff implements \JsonSerializable
 {
     /** @var ColumnDefinition[] */
     public array $addColumns = [];
-    /** @var IndexDefinition[] */
+/** @var IndexDefinition[] */
     public array $addIndexes = [];
-    /** @var array<int,string> */
+/** @var array<int,string> */
     public array $unsafeChanges = [];
     public bool $createTable = false;
-
     public function __construct(public string $table)
     {
     }

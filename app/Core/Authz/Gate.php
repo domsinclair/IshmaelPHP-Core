@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Authz;
@@ -13,9 +14,8 @@ final class Gate
 {
     /** @var array<string, callable> */
     private array $abilities = [];
-    /** @var array<string, class-string> Map resource class => policy class */
+/** @var array<string, class-string> Map resource class => policy class */
     private array $policies = [];
-
     public function __construct()
     {
         // Load policy map from config if present
@@ -44,7 +44,7 @@ final class Gate
     public function allows(string $ability, mixed $resource = null): bool
     {
         $user = $this->currentUser();
-        // 1) Explicit ability definitions win
+// 1) Explicit ability definitions win
         if (isset($this->abilities[$ability])) {
             return (bool) ($this->abilities[$ability])($user, $resource);
         }
@@ -99,7 +99,9 @@ final class Gate
             $ns = substr($class, 0, strrpos($class, '\\')) ?: '';
             $short = substr($class, strrpos($class, '\\') + 1);
             $candidate = ($ns ? $ns . '\\' : '') . $short . 'Policy';
-            if (class_exists($candidate)) { return new $candidate(); }
+            if (class_exists($candidate)) {
+                return new $candidate();
+            }
         }
         return null;
     }

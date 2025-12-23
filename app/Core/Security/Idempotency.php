@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Security;
@@ -12,20 +13,22 @@ namespace Ishmael\Core\Security;
 final class Idempotency
 {
     private const SESSION_KEY = '_idem.tokens';
-    private const DEFAULT_TTL = 1800; // 30 minutes
+    private const DEFAULT_TTL = 1800;
+// 30 minutes
     private const INPUT_NAME = 'idem_token';
-
-    /** Generate a one-time token and store it with timestamp in session. */
+/** Generate a one-time token and store it with timestamp in session. */
     public static function mint(): string
     {
         $mgr = app('session');
         if ($mgr === null) {
-            // Fall back to native session as a last resort for dev ergonomics
+        // Fall back to native session as a last resort for dev ergonomics
             if (session_status() !== PHP_SESSION_ACTIVE) {
                 @session_start();
             }
             $bucket =& $_SESSION[self::SESSION_KEY];
-            if (!is_array($bucket)) { $bucket = []; }
+            if (!is_array($bucket)) {
+                $bucket = [];
+            }
             $token = self::randomToken();
             $bucket[$token] = time();
             return $token;
@@ -51,23 +54,29 @@ final class Idempotency
         }
         $now = time();
         $cutoff = $now - max(1, $ttlSeconds);
-
         $mgr = app('session');
         if ($mgr === null) {
             if (session_status() !== PHP_SESSION_ACTIVE) {
                 @session_start();
             }
             $bucket =& $_SESSION[self::SESSION_KEY];
-            if (!is_array($bucket)) { $bucket = []; }
+            if (!is_array($bucket)) {
+                $bucket = [];
+            }
             // Cleanup
             foreach ($bucket as $t => $ts) {
-                if (!is_int($ts) || $ts < $cutoff) { unset($bucket[$t]); }
+                if (!is_int($ts) || $ts < $cutoff) {
+                        unset($bucket[$t]);
+                }
             }
             if (!array_key_exists($token, $bucket)) {
                 return false;
             }
             $ts = (int) $bucket[$token];
-            if ($ts < $cutoff) { unset($bucket[$token]); return false; }
+            if ($ts < $cutoff) {
+                unset($bucket[$token]);
+                return false;
+            }
             unset($bucket[$token]);
             return true;
         }
@@ -76,7 +85,9 @@ final class Idempotency
         $bucket = (array) $mgr->get(self::SESSION_KEY, []);
         // Cleanup expired
         foreach ($bucket as $t => $ts) {
-            if (!is_int($ts) || $ts < $cutoff) { unset($bucket[$t]); }
+            if (!is_int($ts) || $ts < $cutoff) {
+                    unset($bucket[$t]);
+            }
         }
         if (!array_key_exists($token, $bucket)) {
             $mgr->put(self::SESSION_KEY, $bucket);

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Session;
@@ -10,8 +11,7 @@ namespace Ishmael\Core\Session;
 final class FileSessionStore implements SessionStore
 {
     private string $directory;
-
-    /**
+/**
      * @param string $directory Directory path where session files are stored.
      */
     public function __construct(string $directory)
@@ -41,7 +41,7 @@ final class FileSessionStore implements SessionStore
         }
         $expiresAt = isset($decoded['__meta']['exp']) ? (int)$decoded['__meta']['exp'] : 0;
         if ($expiresAt > 0 && $expiresAt < time()) {
-            // Expired — best-effort delete
+        // Expired — best-effort delete
             @unlink($path);
             return [];
         }

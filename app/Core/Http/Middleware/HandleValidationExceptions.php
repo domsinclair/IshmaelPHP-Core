@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -21,7 +22,6 @@ final class HandleValidationExceptions
             $accept = (string)($req->getHeader('Accept') ?? '');
             $isJson = str_contains(strtolower($accept), 'application/json')
                 || strtolower((string)$req->getHeader('X-Requested-With', '')) === 'xmlhttprequest';
-
             if ($isJson) {
                 return Response::json([
                     'error' => 'validation_failed',

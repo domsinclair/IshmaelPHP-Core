@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -37,13 +38,13 @@ final class ThrottleMiddleware
 {
     private int $capacity;
     private int $refillTokens;
-    private int $refillInterval; // seconds
+    private int $refillInterval;
+// seconds
     private string $namespace;
-    /** @var callable(Request): string */
+/** @var callable(Request): string */
     private $identityResolver;
     private float $jitterRatio;
-
-    /**
+/**
      * @param array{preset?:string, capacity?:int, refillTokens?:int, refillInterval?:int, namespace?:string, identityResolver?:callable|null, jitterRatio?:float} $options
      */
     public function __construct(array $options = [])
@@ -78,15 +79,12 @@ final class ThrottleMiddleware
         $identity = ($this->identityResolver)($req);
         $routeKey = $this->routeKeyFromRequest($req);
         $bucketKey = 'throttle:' . sha1($routeKey . '|' . $identity);
-
         $now = time();
         $state = (array) (cache()->get($bucketKey, null, $this->namespace) ?? []);
-
         $tokens = (int)($state['tokens'] ?? $this->capacity);
         $lastRefill = (int)($state['last_refill'] ?? $now);
         $resetTs = (int)($state['reset_ts'] ?? 0);
-
-        // Initialize reset time with jitter if missing or in the past
+// Initialize reset time with jitter if missing or in the past
         if ($resetTs <= $now) {
             $jitter = (int)floor($this->refillInterval * $this->jitterRatio * $this->deterministicJitter($identity));
             $resetTs = $now + $this->refillInterval + $jitter;
@@ -121,10 +119,8 @@ final class ThrottleMiddleware
             'identity' => $identity,
             'route' => $routeKey,
         ], $ttl, $this->namespace);
-
         $remaining = max(0, $tokens);
         $resetIn = max(1, $resetTs - $now);
-
         if (!$allowed) {
             $tooMany = new Response('Too Many Requests', 429, []);
             $tooMany->header('RateLimit-Limit', (string)$this->capacity)
@@ -157,7 +153,6 @@ final class ThrottleMiddleware
         $presets = (array) (\config('rate_limit.presets') ?? []);
         $presetName = (string)($options['preset'] ?? ($options['name'] ?? 'default'));
         $preset = (array)($presets[$presetName] ?? []);
-
         $base = [
             'capacity' => 60,
             'refillTokens' => 60,
@@ -167,7 +162,7 @@ final class ThrottleMiddleware
             'jitterRatio' => (float)(\config('rate_limit.jitter_ratio') ?? 0.2),
         ];
         $merged = array_replace($base, $preset, $options);
-        // Normalize keys that might come from config as strings
+// Normalize keys that might come from config as strings
         $merged['capacity'] = (int)$merged['capacity'];
         $merged['refillTokens'] = (int)$merged['refillTokens'];
         $merged['refillInterval'] = (int)$merged['refillInterval'];
@@ -185,7 +180,7 @@ final class ThrottleMiddleware
             ?? $req->getHeader('X-Real-IP')
             ?? $req->getHeader('Client-IP')
             ?? 'unknown';
-        // If multiple IPs in X-Forwarded-For, take the first
+// If multiple IPs in X-Forwarded-For, take the first
         if (strpos($ip, ',') !== false) {
             $ip = trim(explode(',', $ip)[0]);
         }
@@ -199,7 +194,8 @@ final class ThrottleMiddleware
     private function deterministicJitter(string $identity): float
     {
         $hash = substr(sha1($identity), 0, 8);
-        $val = hexdec($hash); // 32-bit
+        $val = hexdec($hash);
+// 32-bit
         return fmod($val / (float)0xFFFFFFFF, 1.0);
     }
 

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Session;
@@ -12,8 +13,7 @@ use Ishmael\Core\Database;
 final class DatabaseSessionStore implements SessionStore
 {
     private string $table;
-
-    /**
+/**
      * @param string $table Table name to store sessions in (default: sessions)
      */
     public function __construct(string $table = 'sessions')
@@ -46,11 +46,11 @@ final class DatabaseSessionStore implements SessionStore
         $json = json_encode($data, JSON_UNESCAPED_SLASHES);
         $sql = "INSERT INTO {$this->table} (id, payload, expires_at) VALUES (:id, :payload, :exp)
                 ON CONFLICT(id) DO UPDATE SET payload = excluded.payload, expires_at = excluded.expires_at";
-        // For MySQL, use REPLACE INTO or ON DUPLICATE KEY UPDATE; but many adapters exist.
+// For MySQL, use REPLACE INTO or ON DUPLICATE KEY UPDATE; but many adapters exist.
         try {
             Database::adapter()->execute($sql, [':id' => $id, ':payload' => $json, ':exp' => $expires]);
         } catch (\Throwable $e) {
-            // Fallback generic upsert strategy
+        // Fallback generic upsert strategy
             $exists = Database::adapter()->query("SELECT 1 FROM {$this->table} WHERE id = :id", [':id' => $id])->fetchColumn();
             if ($exists) {
                 Database::adapter()->execute("UPDATE {$this->table} SET payload=:payload, expires_at=:exp WHERE id=:id", [':id' => $id, ':payload' => $json, ':exp' => $expires]);
@@ -74,16 +74,13 @@ final class DatabaseSessionStore implements SessionStore
     {
         try {
             if (!Database::adapter()->tableExists($this->table)) {
-                // Minimal portable table creation
+            // Minimal portable table creation
                 // Use TEXT for payload to be portable; JSON if supported is acceptable by adapters.
-                $ddl = sprintf(
-                    'CREATE TABLE %s (id VARCHAR(128) PRIMARY KEY, payload TEXT NOT NULL, expires_at INTEGER NOT NULL)',
-                    $this->table
-                );
+                $ddl = sprintf('CREATE TABLE %s (id VARCHAR(128) PRIMARY KEY, payload TEXT NOT NULL, expires_at INTEGER NOT NULL)', $this->table);
                 Database::adapter()->runSql($ddl);
             }
         } catch (\Throwable $e) {
-            // Silent failure if adapter not initialized yet; table will be created on first use when possible.
+        // Silent failure if adapter not initialized yet; table will be created on first use when possible.
         }
     }
 }

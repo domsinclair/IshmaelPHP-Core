@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Http\Request;
 use PHPUnit\Framework\TestCase;
@@ -15,9 +18,7 @@ final class RequestTest extends TestCase
         ];
         $get = ['x' => '1', 'y' => 'abc'];
         $post = ['z' => 'ok'];
-
         $req = new Request('POST', '/foo/bar?x=1&y=abc', $server, $get, $post, [], 'body');
-
         $this->assertSame('POST', $req->getMethod());
         $this->assertSame('/foo/bar', $req->getPath());
         $this->assertSame('app.test', $req->getHost());
@@ -35,7 +36,6 @@ final class RequestTest extends TestCase
         ];
         $req = new Request('GET', '/', $server);
         $this->assertSame('example.local', $req->getHost());
-
         $server = [
             'SERVER_ADDR' => '127.0.0.1',
             'REQUEST_METHOD' => 'GET',

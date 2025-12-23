@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\App;
 use Ishmael\Core\Http\Request;
@@ -33,7 +36,7 @@ final class AppKernelTest extends TestCase
         $app = new App();
         $app->boot();
         $modulesAfterFirst = ModuleManager::$modules;
-        // Call boot again; should not throw and should not mutate ModuleManager state
+// Call boot again; should not throw and should not mutate ModuleManager state
         $app->boot();
         $modulesAfterSecond = ModuleManager::$modules;
         $this->assertSame($modulesAfterFirst, $modulesAfterSecond);
@@ -44,12 +47,10 @@ final class AppKernelTest extends TestCase
         $app = new App();
         $request = Request::fromGlobals();
         $response = $app->handle($request);
-
         $this->assertInstanceOf(Ishmael\Core\Http\Response::class, $response);
         $this->assertIsString($response->getBody());
         $this->assertIsInt($response->getStatusCode());
-
-        // With no controllers present in core test env, we expect a 404 from Router
+// With no controllers present in core test env, we expect a 404 from Router
         $this->assertTrue(in_array($response->getStatusCode(), [200, 404, 500], true));
     }
 
@@ -58,11 +59,9 @@ final class AppKernelTest extends TestCase
         $app = new App();
         $req = Request::fromGlobals();
         $res = $app->handle($req);
-
-        // Should not throw
+// Should not throw
         $app->terminate($req, $res);
-
-        // Response should remain unchanged
+// Response should remain unchanged
         $this->assertSame($res->getStatusCode(), $app->handle($req)->getStatusCode());
     }
 }

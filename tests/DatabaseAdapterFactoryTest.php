@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterFactory;
@@ -14,30 +15,117 @@ use PHPUnit\Framework\TestCase;
 class DummyAdapter implements DatabaseAdapterInterface
 {
     private ?PDO $pdo = null;
-    public function connect(array $config): PDO { $this->pdo = new PDO('sqlite::memory:'); $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC); return $this->pdo; }
-    public function disconnect(): void { $this->pdo = null; }
-    public function isConnected(): bool { return $this->pdo instanceof PDO; }
-    public function query(string $sql, array $params = []): Result { $s = $this->pdo->prepare($sql); $s->execute($params); return new Result($s); }
-    public function execute(string $sql, array $params = []): int { $s = $this->pdo->prepare($sql); $s->execute($params); return $s->rowCount(); }
-    public function lastInsertId(?string $sequence = null): string { return $this->pdo->lastInsertId($sequence ?? ''); }
-    public function beginTransaction(): void { $this->pdo->beginTransaction(); }
-    public function commit(): void { $this->pdo->commit(); }
-    public function rollBack(): void { $this->pdo->rollBack(); }
-    public function inTransaction(): bool { return $this->pdo->inTransaction(); }
-    public function supportsTransactionalDdl(): bool { return true; }
-    public function createTable(TableDefinition $def): void { $cols = array_map(fn($c) => $c->name . ' ' . strtoupper($c->type), $def->columns); $this->runSql('CREATE TABLE ' . $def->name . ' (' . implode(', ', $cols) . ')'); }
-    public function dropTable(string $table): void { $this->runSql('DROP TABLE IF EXISTS ' . $table); }
-    public function addColumn(string $table, ColumnDefinition $def): void { $this->runSql('ALTER TABLE ' . $table . ' ADD COLUMN ' . $def->name . ' ' . strtoupper($def->type)); }
-    public function alterColumn(string $table, ColumnDefinition $def): void { throw new \LogicException('not implemented'); }
-    public function dropColumn(string $table, string $column): void { throw new \LogicException('not implemented'); }
-    public function addIndex(string $table, IndexDefinition $def): void { /* no-op */ }
-    public function dropIndex(string $table, string $name): void { /* no-op */ }
-    public function addForeignKey(string $table, \Ishmael\Core\Database\Schema\ForeignKeyDefinition $def): void { /* no-op */ }
-    public function tableExists(string $table): bool { $s = $this->pdo->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = :n"); $s->execute([':n' => $table]); return (bool)$s->fetch(); }
-    public function columnExists(string $table, string $column): bool { $s = $this->pdo->query('PRAGMA table_info(' . $table . ')'); foreach ($s->fetchAll() as $r) { if ($r['name'] === $column) return true; } return false; }
-    public function getTableDefinition(string $table): TableDefinition { return new TableDefinition($table); }
-    public function runSql(string $sql): void { $this->pdo->exec($sql); }
-    public function getCapabilities(): array { return [self::CAP_TRANSACTIONAL_DDL]; }
+    public function connect(array $config): PDO
+    {
+        $this->pdo = new PDO('sqlite::memory:');
+        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+        return $this->pdo;
+    }
+    public function disconnect(): void
+    {
+        $this->pdo = null;
+    }
+    public function isConnected(): bool
+    {
+        return $this->pdo instanceof PDO;
+    }
+    public function query(string $sql, array $params = []): Result
+    {
+        $s = $this->pdo->prepare($sql);
+        $s->execute($params);
+        return new Result($s);
+    }
+    public function execute(string $sql, array $params = []): int
+    {
+        $s = $this->pdo->prepare($sql);
+        $s->execute($params);
+        return $s->rowCount();
+    }
+    public function lastInsertId(?string $sequence = null): string
+    {
+        return $this->pdo->lastInsertId($sequence ?? '');
+    }
+    public function beginTransaction(): void
+    {
+        $this->pdo->beginTransaction();
+    }
+    public function commit(): void
+    {
+        $this->pdo->commit();
+    }
+    public function rollBack(): void
+    {
+        $this->pdo->rollBack();
+    }
+    public function inTransaction(): bool
+    {
+        return $this->pdo->inTransaction();
+    }
+    public function supportsTransactionalDdl(): bool
+    {
+        return true;
+    }
+    public function createTable(TableDefinition $def): void
+    {
+        $cols = array_map(fn($c) => $c->name . ' ' . strtoupper($c->type), $def->columns);
+        $this->runSql('CREATE TABLE ' . $def->name . ' (' . implode(', ', $cols) . ')');
+    }
+    public function dropTable(string $table): void
+    {
+        $this->runSql('DROP TABLE IF EXISTS ' . $table);
+    }
+    public function addColumn(string $table, ColumnDefinition $def): void
+    {
+        $this->runSql('ALTER TABLE ' . $table . ' ADD COLUMN ' . $def->name . ' ' . strtoupper($def->type));
+    }
+    public function alterColumn(string $table, ColumnDefinition $def): void
+    {
+        throw new \LogicException('not implemented');
+    }
+    public function dropColumn(string $table, string $column): void
+    {
+        throw new \LogicException('not implemented');
+    }
+    public function addIndex(string $table, IndexDefinition $def): void
+    {
+ /* no-op */
+    }
+    public function dropIndex(string $table, string $name): void
+    {
+ /* no-op */
+    }
+    public function addForeignKey(string $table, \Ishmael\Core\Database\Schema\ForeignKeyDefinition $def): void
+    {
+ /* no-op */
+    }
+    public function tableExists(string $table): bool
+    {
+        $s = $this->pdo->prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = :n");
+        $s->execute([':n' => $table]);
+        return (bool)$s->fetch();
+    }
+    public function columnExists(string $table, string $column): bool
+    {
+        $s = $this->pdo->query('PRAGMA table_info(' . $table . ')');
+        foreach ($s->fetchAll() as $r) {
+            if ($r['name'] === $column) {
+                return true;
+            }
+        } return false;
+    }
+    public function getTableDefinition(string $table): TableDefinition
+    {
+        return new TableDefinition($table);
+    }
+    public function runSql(string $sql): void
+    {
+        $this->pdo->exec($sql);
+    }
+    public function getCapabilities(): array
+    {
+        return [self::CAP_TRANSACTIONAL_DDL];
+    }
 }
 
 final class DatabaseAdapterFactoryTest extends TestCase
@@ -63,7 +151,6 @@ final class DatabaseAdapterFactoryTest extends TestCase
     public function testRegisterDefaultsAndCreateAdapters(): void
     {
         DatabaseAdapterFactory::registerDefaults();
-
         $this->assertInstanceOf(MySQLAdapter::class, DatabaseAdapterFactory::create('mysql'));
         $this->assertInstanceOf(SQLiteAdapter::class, DatabaseAdapterFactory::create('sqlite'));
         $this->assertInstanceOf(PostgresAdapter::class, DatabaseAdapterFactory::create('pgsql'));
@@ -82,7 +169,6 @@ final class DatabaseAdapterFactoryTest extends TestCase
         // Register a custom key mapped to an existing adapter class to simulate extensibility
         DatabaseAdapterFactory::register('dummy', SQLiteAdapter::class);
         $adapter = DatabaseAdapterFactory::create('dummy');
-
         $this->assertInstanceOf(DatabaseAdapterInterface::class, $adapter);
         $pdo = $adapter->connect([]);
         $this->assertInstanceOf(PDO::class, $pdo);

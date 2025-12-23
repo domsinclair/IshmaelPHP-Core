@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 namespace IshmaelPHP\McpServer\Protocol;
+
 use IshmaelPHP\McpServer\Support\ErrorEnvelope;
 
 /**

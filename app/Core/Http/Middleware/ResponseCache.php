@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http\Middleware;
@@ -34,8 +35,7 @@ final class ResponseCache
     private string $namespace;
     private bool $allowAuth;
     private bool $honorNoCacheQuery;
-
-    /**
+/**
      * @param array{ttl?:int|null, namespace?:string, vary?:array<int,string>, allowAuth?:bool, honorNoCacheQuery?:bool} $options
      */
     public function __construct(array $options = [])
@@ -83,11 +83,10 @@ final class ResponseCache
 
         $key = $this->makeCacheKey($req);
         $ns = $this->namespace;
-
         $cached = cache()->get($key, null, $ns);
         if (is_array($cached) && isset($cached['status'], $cached['headers'], $cached['body'])) {
             $resp = new Response((string)$cached['body'], (int)$cached['status'], (array)$cached['headers']);
-            // Explicitly set Age header if stored
+        // Explicitly set Age header if stored
             if (isset($cached['stored_at'])) {
                 $age = max(0, time() - (int)$cached['stored_at']);
                 $resp->header('Age', (string)$age);
@@ -101,7 +100,6 @@ final class ResponseCache
         }
 
         $response = $next($req, $res);
-
         if ($this->shouldStoreResponse($req, $response)) {
             $record = [
                 'status' => $response->getStatusCode(),
@@ -109,16 +107,17 @@ final class ResponseCache
                 'body' => $response->getBody(),
                 'stored_at' => time(),
             ];
-            $ttl = $this->ttl; // may be null, CacheManager will use default
+            $ttl = $this->ttl;
+        // may be null, CacheManager will use default
             cache()->set($key, $record, $ttl, $ns, []);
-            // Mark response as MISS for observability
+        // Mark response as MISS for observability
             $response->header('X-Cache', 'MISS');
             if ($ttl !== null) {
                 $response->header('Cache-Control', 'public, max-age=' . max(0, (int)$ttl));
             }
             // Return a fresh Response to ensure X-Cache and any Cache-Control are visible to tests and emitters
             $resp = new Response($response->getBody(), $response->getStatusCode(), $response->getHeaders());
-            // Reinforce header on the new instance
+// Reinforce header on the new instance
             $resp->header('X-Cache', 'MISS');
             if ($ttl !== null) {
                 $resp->header('Cache-Control', 'public, max-age=' . max(0, (int)$ttl));
@@ -128,10 +127,10 @@ final class ResponseCache
             }
             return $resp;
         } else {
-            // Mark on original and return a fresh instance to ensure headers snapshot is updated for tests and SAPI emitters
+        // Mark on original and return a fresh instance to ensure headers snapshot is updated for tests and SAPI emitters
             $response->header('X-Cache', 'BYPASS');
             $resp = new Response($response->getBody(), $response->getStatusCode(), $response->getHeaders());
-            // Re-assert header on the new instance too
+        // Re-assert header on the new instance too
             $resp->header('X-Cache', 'BYPASS');
             if (method_exists($resp, 'refreshLastHeadersSnapshot')) {
                 $resp->refreshLastHeadersSnapshot();
@@ -156,7 +155,9 @@ final class ResponseCache
     {
         // Authorization header
         $authz = (string)($req->getHeader('Authorization') ?? '');
-        if ($authz !== '') { return true; }
+        if ($authz !== '') {
+            return true;
+        }
 
         // Session cookie
         $sessionCookie = (string)(\config('session.cookie') ?? 'ish_session');
@@ -180,19 +181,17 @@ final class ResponseCache
         $method = strtoupper($req->getMethod());
         $path = $req->getPath();
         $query = $req->getQueryParams();
-        // Remove common cache-buster signals
+// Remove common cache-buster signals
         unset($query['_'], $query['cb']);
-        // Sort query for stable keys
+// Sort query for stable keys
         ksort($query);
         $qs = http_build_query($query);
         $urlPart = $path . ($qs !== '' ? '?' . $qs : '');
-
         $varyValues = [];
         foreach ($this->vary as $name) {
             $varyValues[$name] = (string)($req->getHeader($name) ?? '');
         }
         $varyPart = json_encode($varyValues, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
         $raw = $method . ' ' . $urlPart . '|' . $varyPart;
         return 'resp:' . sha1($raw);
     }
@@ -201,7 +200,8 @@ final class ResponseCache
     {
         $status = $response->getStatusCode();
         if ($status < 200 || $status >= 300) {
-            return false; // only 2xx
+            return false;
+        // only 2xx
         }
         // Do not store if Set-Cookie is present
         $headers = $response->getHeaders();
@@ -213,7 +213,10 @@ final class ResponseCache
         // Respect Cache-Control on response
         $cc = '';
         foreach ($headers as $k => $v) {
-            if ($this->normalizeHeaderName($k) === 'cache-control') { $cc = strtolower($v); break; }
+            if ($this->normalizeHeaderName($k) === 'cache-control') {
+                        $cc = strtolower($v);
+                        break;
+            }
         }
         if ($cc !== '') {
             if (str_contains($cc, 'no-store') || str_contains($cc, 'private')) {

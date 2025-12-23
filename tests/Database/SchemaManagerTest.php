@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Tests\Database;
@@ -15,27 +16,27 @@ final class SchemaManagerTest extends TestCase
     {
         // Ensure a clean slate
         $adapter = AdapterTestUtil::sqliteAdapter();
-        try { $adapter->runSql('DROP TABLE IF EXISTS sm_users'); } catch (\Throwable $_) {}
+        try {
+            $adapter->runSql('DROP TABLE IF EXISTS sm_users');
+        } catch (\Throwable $_) {
+        }
     }
 
     public function testCreateAndAdditionsAreSafe(): void
     {
         $adapter = AdapterTestUtil::sqliteAdapter();
         $sm = new SchemaManager($adapter, null);
-
         $def = new TableDefinition('sm_users', [
             new ColumnDefinition('id', 'INTEGER', nullable: false, default: null, length: null, precision: null, scale: null, unsigned: false, autoIncrement: true),
             new ColumnDefinition('email', 'TEXT', false),
         ], [
             new IndexDefinition('idx_sm_users_email', ['email'], 'index'),
         ]);
-
-        // Create table
+// Create table
         $sm->synchronize([$def]);
         $this->assertTrue($adapter->tableExists('sm_users'));
         $this->assertTrue($adapter->columnExists('sm_users', 'email'));
-
-        // Add a new column should be safe
+// Add a new column should be safe
         $def2 = new TableDefinition('sm_users', [
             new ColumnDefinition('id', 'INTEGER', false, null, null, null, null, false, true),
             new ColumnDefinition('email', 'TEXT', false),
@@ -51,11 +52,9 @@ final class SchemaManagerTest extends TestCase
     {
         $adapter = AdapterTestUtil::sqliteAdapter();
         $sm = new SchemaManager($adapter, null);
-
-        // Prepare initial table
+// Prepare initial table
         $adapter->runSql('CREATE TABLE IF NOT EXISTS sm_users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)');
-
-        // Change email type or nullability should be considered unsafe and throw
+// Change email type or nullability should be considered unsafe and throw
         $unsafe = new TableDefinition('sm_users', [
             new ColumnDefinition('id', 'INTEGER', false, null, null, null, null, false, true),
             new ColumnDefinition('email', 'INTEGER', true),

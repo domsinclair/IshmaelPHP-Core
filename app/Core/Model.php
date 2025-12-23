@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core;
@@ -21,8 +22,7 @@ abstract class Model
      * Required for all CRUD operations.
      */
     protected static string $table;
-
-    /**
+/**
      * Opt-in soft delete toggle for this model.
      *
      * When true, delete() will set a deleted_at timestamp instead of removing the row,
@@ -34,8 +34,7 @@ abstract class Model
      * be applied via config('database.soft_deletes.default', false).
      */
     protected static bool $softDeletes = false;
-
-    /**
+/**
      * One-shot scope override for the next read query.
      * Values: null (default scope), 'with' (include deleted), 'only' (only deleted)
      * Reset to null after each read operation.
@@ -44,8 +43,7 @@ abstract class Model
      * @var string|null
      */
     protected static ?string $nextScope = null;
-
-    /**
+/**
      * Generate a UTC timestamp string with microsecond precision.
      * Using microseconds guarantees two adjacent operations in the same second
      * still yield distinct values (important for fast unit tests on SQLite).
@@ -57,7 +55,7 @@ abstract class Model
             $dt = $dt->setTimezone(new \DateTimeZone('UTC'));
             return $dt->format('Y-m-d H:i:s.u');
         } catch (\Throwable) {
-            // Extremely defensive fallback
+        // Extremely defensive fallback
             return gmdate('Y-m-d H:i:s.u');
         }
     }
@@ -85,14 +83,13 @@ abstract class Model
             'createdByColumn' => 'created_by',
             'updatedByColumn' => 'updated_by',
         ];
-
-        // Attribute override if present
+// Attribute override if present
         try {
             if (class_exists(\Ishmael\Core\Attributes\Auditable::class)) {
                 $ref = new \ReflectionClass(static::class);
                 $attrs = $ref->getAttributes(\Ishmael\Core\Attributes\Auditable::class);
                 if ($attrs !== []) {
-                    /** @var \Ishmael\Core\Attributes\Auditable $inst */
+        /** @var \Ishmael\Core\Attributes\Auditable $inst */
                     $inst = $attrs[0]->newInstance();
                     $defaults['timestamps'] = (bool)$inst->timestamps;
                     $defaults['userAttribution'] = (bool)$inst->userAttribution;
@@ -101,7 +98,7 @@ abstract class Model
                 }
             }
         } catch (\Throwable) {
-            // Ignore reflection issues; fall back to config/defaults
+        // Ignore reflection issues; fall back to config/defaults
         }
 
         // Config fallback (allows global enabling without attribute)
@@ -110,12 +107,12 @@ abstract class Model
             if ($cfg !== []) {
                 foreach (['timestamps','userAttribution','createdByColumn','updatedByColumn'] as $k) {
                     if (array_key_exists($k, $cfg) && $cfg[$k] !== null && $cfg[$k] !== '') {
-                        $defaults[$k] = $cfg[$k];
+                            $defaults[$k] = $cfg[$k];
                     }
                 }
             }
         } catch (\Throwable) {
-            // config() may not exist; ignore
+        // config() may not exist; ignore
         }
 
         return [
@@ -150,7 +147,6 @@ abstract class Model
         $adapter = self::adapter();
         $table = static::requireTable();
         [$scopeSql, $scopeParams] = static::scopeWhereSql();
-
         $sql = "SELECT * FROM {$table} WHERE id = :id" . $scopeSql . " LIMIT 1";
         $params = array_merge(['id' => $id], $scopeParams);
         $result = $adapter->query($sql, $params);
@@ -168,11 +164,9 @@ abstract class Model
     {
         $adapter = self::adapter();
         $table = static::requireTable();
-
         [$scopeSql, $scopeParams] = static::scopeWhereSql();
-
         if ($where === []) {
-            // No where: return all rows (respect soft delete scope if enabled)
+        // No where: return all rows (respect soft delete scope if enabled)
             $sql = "SELECT * FROM {$table}" . ($scopeSql !== '' ? " WHERE 1=1{$scopeSql}" : '');
             return $adapter->query($sql, $scopeParams)->fetchAll();
         }
@@ -203,7 +197,6 @@ abstract class Model
     {
         $adapter = self::adapter();
         $table = static::requireTable();
-
         if ($data === []) {
             throw new \InvalidArgumentException('Insert data must not be empty.');
         }
@@ -222,12 +215,18 @@ abstract class Model
         if ($audit['userAttribution'] && class_exists(\Ishmael\Core\Auth\AuthContext::class)) {
             try {
                 $uid = \Ishmael\Core\Auth\AuthContext::getCurrentUserId();
-            } catch (\Throwable) { $uid = null; }
+            } catch (\Throwable) {
+                $uid = null;
+            }
             if ($uid !== null && $uid !== '') {
                 $cb = $audit['createdByColumn'];
                 $ub = $audit['updatedByColumn'];
-                if (!array_key_exists($cb, $data)) { $data[$cb] = $uid; }
-                if (!array_key_exists($ub, $data)) { $data[$ub] = $uid; }
+                if (!array_key_exists($cb, $data)) {
+                    $data[$cb] = $uid;
+                }
+                if (!array_key_exists($ub, $data)) {
+                    $data[$ub] = $uid;
+                }
             }
         }
 
@@ -238,13 +237,8 @@ abstract class Model
             }
         }
         $placeholders = array_map(fn($c) => ':' . $c, $columns);
-        $sql = sprintf(
-            'INSERT INTO %s (%s) VALUES (%s)',
-            $table,
-            implode(', ', $columns),
-            implode(', ', $placeholders)
-        );
-        // Use original keys as param names
+        $sql = sprintf('INSERT INTO %s (%s) VALUES (%s)', $table, implode(', ', $columns), implode(', ', $placeholders));
+// Use original keys as param names
         $adapter->execute($sql, $data);
         return $adapter->lastInsertId();
     }
@@ -260,7 +254,6 @@ abstract class Model
     {
         $adapter = self::adapter();
         $table = static::requireTable();
-
         if ($data === []) {
             throw new \InvalidArgumentException('Update data must not be empty.');
         }
@@ -273,7 +266,9 @@ abstract class Model
         if ($audit['userAttribution'] && !array_key_exists($audit['updatedByColumn'], $data) && class_exists(\Ishmael\Core\Auth\AuthContext::class)) {
             try {
                 $uid = \Ishmael\Core\Auth\AuthContext::getCurrentUserId();
-            } catch (\Throwable) { $uid = null; }
+            } catch (\Throwable) {
+                        $uid = null;
+            }
             if ($uid !== null && $uid !== '') {
                 $data[$audit['updatedByColumn']] = $uid;
             }
@@ -290,7 +285,6 @@ abstract class Model
             $params[$param] = $val;
         }
         $params['id'] = $id;
-
         $sql = 'UPDATE ' . $table . ' SET ' . implode(', ', $sets) . ' WHERE id = :id';
         return $adapter->execute($sql, $params);
     }
@@ -307,7 +301,7 @@ abstract class Model
         $table = static::requireTable();
         if (static::usesSoftDeletes()) {
             $now = static::nowTimestamp();
-            // Also update updated_at when auditable timestamps are enabled
+        // Also update updated_at when auditable timestamps are enabled
             $audit = static::auditingOptions();
             if ($audit['timestamps']) {
                 $sql = "UPDATE {$table} SET deleted_at = :now, updated_at = :now WHERE id = :id";
@@ -367,7 +361,8 @@ abstract class Model
     public static function withDeleted(): static
     {
         static::$nextScope = 'with';
-        return new static(); // return a dummy instance to allow chaining ::withDeleted()::findBy()
+        return new static();
+// return a dummy instance to allow chaining ::withDeleted()::findBy()
     }
 
     /**
@@ -411,11 +406,11 @@ abstract class Model
     {
         $flag = static::$softDeletes ?? false;
         if ($flag === false) {
-            // Allow global opt-in default via config; model can still explicitly enable.
+        // Allow global opt-in default via config; model can still explicitly enable.
             try {
                 $flag = (bool) (\config('database.soft_deletes.default') ?? false);
             } catch (\Throwable) {
-                // config() may not be available in some contexts
+        // config() may not be available in some contexts
             }
         }
         return (bool)$flag;
@@ -429,9 +424,8 @@ abstract class Model
     protected static function scopeWhereSql(): array
     {
         $scope = static::$nextScope;
-        // reset after read consumption
+// reset after read consumption
         static::$nextScope = null;
-
         if (!static::usesSoftDeletes()) {
             return ['', []];
         }

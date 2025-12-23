@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core;
@@ -38,13 +39,11 @@ final class ViewSections
      * @var array<string,string> Accumulated named sections
      */
     private array $sections = [];
-
-    /**
+/**
      * @var string[] Stack of section names being captured (supports nesting)
      */
     private array $captureStack = [];
-
-    /**
+/**
      * Begin capturing output for a section with the given name.
      *
      * @param string $name Section name (e.g., "title", "content").
@@ -64,7 +63,7 @@ final class ViewSections
     public function end(): void
     {
         if (empty($this->captureStack)) {
-            // Nothing to end; safely ignore to keep behavior minimal and predictable
+// Nothing to end; safely ignore to keep behavior minimal and predictable
             return;
         }
 

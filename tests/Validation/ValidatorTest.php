@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Http\Middleware\HandleValidationExceptions;
 use Ishmael\Core\Http\Middleware\StartSessionMiddleware;
@@ -29,8 +32,8 @@ final class ValidatorTest extends TestCase
             StartSessionMiddleware::class,
             HandleValidationExceptions::class,
         ]);
+        $router->add(['POST'], 'submit', function ($req, Response $res): Response {
 
-        $router->add(['POST'], 'submit', function($req, Response $res): Response {
             // Will throw ValidationException on fail
             $data = validate([
                 'email' => 'required|email',
@@ -38,16 +41,13 @@ final class ValidatorTest extends TestCase
             ], $req);
             return Response::json($data);
         });
-
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/submit';
         $_SERVER['HTTP_ACCEPT'] = 'application/json';
         $_POST = ['email' => 'not-an-email', 'age' => '16'];
-
         ob_start();
         $router->dispatch('/submit');
         $out = ob_get_clean();
-
         $this->assertSame(422, http_response_code());
         $this->assertJson($out);
         $payload = json_decode((string)$out, true);
@@ -64,29 +64,25 @@ final class ValidatorTest extends TestCase
             StartSessionMiddleware::class,
             HandleValidationExceptions::class,
         ]);
+        $router->add(['POST'], 'submit', function ($req, Response $res): Response {
 
-        $router->add(['POST'], 'submit', function($req, Response $res): Response {
             $data = validate([
                 'name' => 'required|string|min:3',
             ], $req);
             return Response::text('ok');
         });
-
         $_SERVER['REQUEST_METHOD'] = 'POST';
         $_SERVER['REQUEST_URI'] = '/submit';
         $_SERVER['HTTP_ACCEPT'] = 'text/html';
         $_POST = ['name' => ''];
-
         ob_start();
         $router->dispatch('/submit');
         ob_end_clean();
-
-        // Expect redirect response
+// Expect redirect response
         $this->assertSame(302, http_response_code());
         $hdrs = Response::getLastHeaders();
         $this->assertArrayHasKey('Location', $hdrs);
-
-        // Flash bag should contain errors and old
+// Flash bag should contain errors and old
         $sess = app('session');
         $all = $sess?->all() ?? [];
         $this->assertArrayHasKey('_flash', $all);

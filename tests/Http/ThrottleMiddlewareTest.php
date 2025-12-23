@@ -1,5 +1,8 @@
 <?php
+
 declare(strict_types=1);
+
+namespace Ishmael\Tests;
 
 use Ishmael\Core\Router;
 use Ishmael\Core\Http\Response;
@@ -17,7 +20,7 @@ final class ThrottleMiddlewareTest extends TestCase
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/throttle';
         $_SERVER['HTTP_X_REAL_IP'] = '203.0.113.5';
-        // Ensure config for rate limit is loaded by including file directly if config helper not wired to auto-load
+// Ensure config for rate limit is loaded by including file directly if config helper not wired to auto-load
         // Not necessary here because ThrottleMiddleware provides defaults.
     }
 
@@ -30,9 +33,9 @@ final class ThrottleMiddlewareTest extends TestCase
             'refillInterval' => 60,
             'namespace' => 'rate_test_' . uniqid('', true),
         ]);
-
         $router = new Router();
-        $router->add(['GET'], 'throttle', function($req, Response $res): Response {
+        $router->add(['GET'], 'throttle', function ($req, Response $res): Response {
+
             return Response::text('ok');
         }, [$mw]);
 
@@ -54,7 +57,7 @@ final class ThrottleMiddlewareTest extends TestCase
         ob_end_clean();
         $headers = Response::getLastHeaders();
         $this->assertArrayHasKey('Retry-After', $headers);
-        // We can't easily read status from headers; assert body and that remaining is 0 or small
+// We can't easily read status from headers; assert body and that remaining is 0 or small
         $this->assertSame('0', (string)$headers['RateLimit-Remaining']);
     }
 
@@ -67,10 +70,10 @@ final class ThrottleMiddlewareTest extends TestCase
             'namespace' => 'rate_test_' . uniqid('', true),
         ]);
         $router = new Router();
-        $router->add(['GET'], 'throttle', function($req, Response $res): Response {
+        $router->add(['GET'], 'throttle', function ($req, Response $res): Response {
+
             return Response::text('ok');
         }, [$mw]);
-
         ob_start();
         $router->dispatch('/throttle');
         ob_end_clean();
@@ -78,8 +81,7 @@ final class ThrottleMiddlewareTest extends TestCase
         $this->assertSame('2', (string)$h1['RateLimit-Limit']);
         $this->assertSame('1', (string)$h1['RateLimit-Remaining']);
         $this->assertTrue(((int)$h1['RateLimit-Reset']) >= 1);
-
-        // Next request should reduce remaining further
+// Next request should reduce remaining further
         ob_start();
         $router->dispatch('/throttle');
         ob_end_clean();

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Log;
@@ -13,21 +14,37 @@ use Psr\Log\LogLevel;
 final class NullChannel implements LoggerInterface
 {
     /** @inheritDoc */
-    public function emergency($message, array $context = []): void {}
+    public function emergency($message, array $context = []): void
+    {
+    }
     /** @inheritDoc */
-    public function alert($message, array $context = []): void {}
+    public function alert($message, array $context = []): void
+    {
+    }
     /** @inheritDoc */
-    public function critical($message, array $context = []): void {}
+    public function critical($message, array $context = []): void
+    {
+    }
     /** @inheritDoc */
-    public function error($message, array $context = []): void {}
+    public function error($message, array $context = []): void
+    {
+    }
     /** @inheritDoc */
-    public function warning($message, array $context = []): void {}
+    public function warning($message, array $context = []): void
+    {
+    }
     /** @inheritDoc */
-    public function notice($message, array $context = []): void {}
+    public function notice($message, array $context = []): void
+    {
+    }
     /** @inheritDoc */
-    public function info($message, array $context = []): void {}
+    public function info($message, array $context = []): void
+    {
+    }
     /** @inheritDoc */
-    public function debug($message, array $context = []): void {}
+    public function debug($message, array $context = []): void
+    {
+    }
 
     /**
      * Accepts any record and ignores it.
@@ -36,5 +53,7 @@ final class NullChannel implements LoggerInterface
      * @param string|\Stringable $message
      * @param array<string,mixed> $context
      */
-    public function log($level, $message, array $context = []): void {}
+    public function log($level, $message, array $context = []): void
+    {
+    }
 }

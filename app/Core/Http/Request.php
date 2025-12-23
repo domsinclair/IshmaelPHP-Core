@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http;
@@ -10,31 +11,23 @@ class Request
 {
     private string $method;
     private string $uri;
-    /** @var array<string, mixed> */
+/** @var array<string, mixed> */
     private array $queryParams;
-    /** @var array<string, mixed> */
+/** @var array<string, mixed> */
     private array $parsedBody;
-    /** @var array<string, string> */
+/** @var array<string, string> */
     private array $headers;
     private string $rawBody;
-    /** @var array<string, string> */
+/** @var array<string, string> */
     private array $server;
-
-    /**
+/**
      * @param array<string,string> $server
      * @param array<string,mixed> $query
      * @param array<string,mixed> $post
      * @param array<string,string> $headers
      */
-    public function __construct(
-        string $method,
-        string $uri,
-        array $server = [],
-        array $query = [],
-        array $post = [],
-        array $headers = [],
-        string $rawBody = ''
-    ) {
+    public function __construct(string $method, string $uri, array $server = [], array $query = [], array $post = [], array $headers = [], string $rawBody = '')
+    {
         $this->method = strtoupper($method ?: 'GET');
         $this->uri = $uri ?: '/';
         $this->server = $server;
@@ -52,7 +45,7 @@ class Request
         $query = $_GET ?? [];
         $post = $_POST ?? [];
         $headers = self::serverHeaders($server);
-        // Allow tests to inject a raw body without touching php://input
+// Allow tests to inject a raw body without touching php://input
         $rawBody = (string)($server['ISH_TEST_RAW_BODY'] ?? '');
         if ($rawBody === '') {
             $rawBody = file_get_contents('php://input') ?: '';
@@ -158,7 +151,7 @@ class Request
     {
         $host = $this->getHeader('Host');
         if ($host) {
-            // strip port if present
+        // strip port if present
             $pos = strpos($host, ':');
             return $pos !== false ? substr($host, 0, $pos) : $host;
         }

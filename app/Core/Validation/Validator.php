@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Validation;
@@ -21,10 +22,9 @@ final class Validator
 {
     /** @var array<string,string[]> */
     private array $messages = [];
-    /** @var array<string,string[]> */
+/** @var array<string,string[]> */
     private array $codes = [];
-
-    /**
+/**
      * Validate given data against rules and return sanitized data or throw.
      *
      * @param array<string,mixed> $data
@@ -39,12 +39,13 @@ final class Validator
             $rulesArr = is_array($ruleSpec) ? $ruleSpec : explode('|', (string)$ruleSpec);
             $value = $data[$field] ?? null;
             $present = array_key_exists($field, $data);
-
-            // Parse rules into name=>param
+        // Parse rules into name=>param
             $parsed = [];
             foreach ($rulesArr as $r) {
                 $r = trim((string)$r);
-                if ($r === '') { continue; }
+                if ($r === '') {
+                    continue;
+                }
                 $parts = explode(':', $r, 2);
                 $name = strtolower($parts[0]);
                 $param = $parts[1] ?? null;
@@ -58,29 +59,28 @@ final class Validator
                     continue;
                 }
             } else {
-                // not required; if not present or empty string, skip other rules
+    // not required; if not present or empty string, skip other rules
                 if (!$present || $this->isEmpty($value)) {
                     continue;
                 }
             }
 
             $current = $value;
-
-            // type: string
+// type: string
             if ($this->hasRule($parsed, 'string')) {
                 if (is_scalar($current)) {
                     $current = trim((string)$current);
                 }
                 if (!is_string($current)) {
                     $this->addError($field, 'validation.string', '%s must be a string.');
-                    // Do not cast
+    // Do not cast
                 }
             }
 
             // type: int
             if ($this->hasRule($parsed, 'int')) {
                 if (is_int($current)) {
-                    // ok
+        // ok
                 } elseif (is_string($current) && preg_match('/^-?\d+$/', $current) === 1) {
                     $current = (int)$current;
                 } else {
@@ -103,19 +103,27 @@ final class Validator
                 if ($name === 'min' && $param !== null) {
                     $n = (int)$param;
                     if (is_int($current)) {
-                        if ($current < $n) { $this->addError($field, 'validation.min', '%s must be at least ' . $n . '.'); }
+                        if ($current < $n) {
+                            $this->addError($field, 'validation.min', '%s must be at least ' . $n . '.');
+                        }
                     } else {
                         $len = strlen((string)$current);
-                        if ($len < $n) { $this->addError($field, 'validation.min', '%s must be at least ' . $n . ' characters.'); }
+                        if ($len < $n) {
+                            $this->addError($field, 'validation.min', '%s must be at least ' . $n . ' characters.');
+                        }
                     }
                 }
                 if ($name === 'max' && $param !== null) {
                     $n = (int)$param;
                     if (is_int($current)) {
-                        if ($current > $n) { $this->addError($field, 'validation.max', '%s may not be greater than ' . $n . '.'); }
+                        if ($current > $n) {
+                            $this->addError($field, 'validation.max', '%s may not be greater than ' . $n . '.');
+                        }
                     } else {
                         $len = strlen((string)$current);
-                        if ($len > $n) { $this->addError($field, 'validation.max', '%s may not be greater than ' . $n . ' characters.'); }
+                        if ($len > $n) {
+                            $this->addError($field, 'validation.max', '%s may not be greater than ' . $n . ' characters.');
+                        }
                     }
                 }
             }
@@ -168,22 +176,36 @@ final class Validator
     /** @param array<int,array{0:string,1:?string}> $parsed */
     private function hasRule(array $parsed, string $name): bool
     {
-        foreach ($parsed as [$n, $_]) { if ($n === $name) { return true; } }
+        foreach ($parsed as [$n, $_]) {
+            if ($n === $name) {
+                return true;
+            }
+        }
         return false;
     }
 
     /** @param array<int,array{0:string,1:?string}> $parsed */
     private function firstRule(array $parsed, string $name): ?array
     {
-        foreach ($parsed as $r) { if ($r[0] === $name) { return $r; } }
+        foreach ($parsed as $r) {
+            if ($r[0] === $name) {
+                return $r;
+            }
+        }
         return null;
     }
 
     private function isEmpty(mixed $v): bool
     {
-        if ($v === null) { return true; }
-        if (is_string($v)) { return trim($v) === ''; }
-        if (is_array($v)) { return count($v) === 0; }
+        if ($v === null) {
+            return true;
+        }
+        if (is_string($v)) {
+            return trim($v) === '';
+        }
+        if (is_array($v)) {
+            return count($v) === 0;
+        }
         return false;
     }
 

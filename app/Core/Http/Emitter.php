@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core\Http;
@@ -13,10 +14,9 @@ final class Emitter
     {
         // Status
         http_response_code($response->getStatusCode());
-
-        // Headers
+// Headers
         foreach ($response->getHeaders() as $name => $value) {
-            // Avoid headers already sent
+// Avoid headers already sent
             header($name . ': ' . $value, true);
         }
 

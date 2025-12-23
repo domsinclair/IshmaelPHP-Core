@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Ishmael\Core\ModuleManager;
@@ -13,7 +14,8 @@ final class HerdHostRoutingTest extends TestCase
         $this->resetModules();
         $_SERVER['REQUEST_METHOD'] = 'GET';
         $_SERVER['REQUEST_URI'] = '/';
-        $_SERVER['HTTP_HOST'] = 'Ishmael.test'; // case-insensitive match scenario
+        $_SERVER['HTTP_HOST'] = 'Ishmael.test';
+// case-insensitive match scenario
     }
 
     protected function tearDown(): void
@@ -43,12 +45,10 @@ final class HerdHostRoutingTest extends TestCase
             'routes' => [ '^$' => 'RootController@index' ],
             'routeClosure' => null,
         ];
-
         $router = new Router();
         ob_start();
         $router->dispatch('/');
         $out = ob_get_clean();
-
         $this->assertSame('ROOT', $out);
     }
 }

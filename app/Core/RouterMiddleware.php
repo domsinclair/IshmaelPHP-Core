@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core;
@@ -29,7 +30,7 @@ final class RouterMiddleware
         if (is_string($entry) && class_exists($entry)) {
             $instance = new $entry();
             if (is_callable($instance)) {
-                /** @var callable $call */
+            /** @var callable $call */
                 $call = $instance;
                 return $call;
             }

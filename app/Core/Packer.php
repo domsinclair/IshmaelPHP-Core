@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Ishmael\Core;
@@ -19,18 +20,17 @@ final class Packer
 {
     /** @var string Absolute path to application root */
     private string $appRoot;
-    /** @var string production|development|testing */
+/** @var string production|development|testing */
     private string $env = 'development';
-    /** @var bool */
+/** @var bool */
     private bool $includeDev = false;
-    /** @var string webhost|container */
+/** @var string webhost|container */
     private string $target = 'webhost';
-    /** @var string Output directory (absolute or relative to app root) */
+/** @var string Output directory (absolute or relative to app root) */
     private string $outDir;
-    /** @var bool */
+/** @var bool */
     private bool $dryRun = false;
-
-    /**
+/**
      * @param string $appRoot Application root directory.
      */
     public function __construct(string $appRoot)
@@ -73,22 +73,20 @@ final class Packer
     public function pack(): array
     {
         $modulesDir = $this->appRoot . DIRECTORY_SEPARATOR . 'Modules';
-        // Discover modules using env-aware rules
+// Discover modules using env-aware rules
         ModuleManager::discover($modulesDir, [
             'appEnv' => $this->env,
             'allowDevModules' => $this->includeDev,
         ]);
-
         $selected = ModuleManager::$modules;
         $files = [];
-
-        // Gather module exports
+// Gather module exports
         foreach ($selected as $mod) {
             $modPath = (string)($mod['path'] ?? '');
             $manifest = (array)($mod['manifest'] ?? []);
             $exports = $manifest['export'] ?? [];
             if (!is_array($exports) || empty($exports)) {
-                // conservative defaults if export not specified
+            // conservative defaults if export not specified
                 $exports = ['Controllers', 'Models', 'Views', 'routes.php', 'schema.php', 'module.php', 'module.json'];
             }
             foreach ($exports as $rel) {
@@ -101,8 +99,7 @@ final class Packer
         $cacheDir = $this->appRoot . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache';
         $this->collectIfExists($files, $cacheDir . DIRECTORY_SEPARATOR . 'routes.cache.php');
         $this->collectIfExists($files, $cacheDir . DIRECTORY_SEPARATOR . 'modules.cache.json');
-
-        // Include config snapshot (read-only sources)
+// Include config snapshot (read-only sources)
         $configDir = $this->appRoot . DIRECTORY_SEPARATOR . 'config';
         if (is_dir($configDir)) {
             $this->collectFiles($files, $configDir);
@@ -124,9 +121,8 @@ final class Packer
             'target' => $this->target,
             'files' => $manifestFiles,
         ];
-
         if ($this->dryRun) {
-            // For dry-run we only return the manifest; caller can print it
+        // For dry-run we only return the manifest; caller can print it
             return $manifest;
         }
 
@@ -139,7 +135,6 @@ final class Packer
         // Write manifest.json
         $this->ensureDirectory($bundleDir);
         file_put_contents($bundleDir . DIRECTORY_SEPARATOR . 'manifest.json', json_encode($manifest, JSON_PRETTY_PRINT));
-
         return $manifest;
     }
 
@@ -187,7 +182,7 @@ final class Packer
      * @param string $path
      * @return void
      */
-    private function collectFiles(array & $files, string $path): void
+    private function collectFiles(array &$files, string $path): void
     {
         if (is_file($path)) {
             $files[$path] = true;
@@ -210,7 +205,7 @@ final class Packer
      * @param string $path
      * @return void
      */
-    private function collectIfExists(array & $files, string $path): void
+    private function collectIfExists(array &$files, string $path): void
     {
         if (is_file($path)) {
             $files[$path] = true;
