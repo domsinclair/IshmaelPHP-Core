@@ -7,14 +7,7 @@
       "bump-patch-for-minor-pre-major": true,
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
-        {
-          "type": "regex",
-          "path": "version.php",
-          "updaterOptions": {
-            "search": "return '(\\d+\\.\\d+\\.\\d+)';",
-            "replace": "return '$1';"
-          }
-        }
+        "VERSION"
       ]
     }
   },
