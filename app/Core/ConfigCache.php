@@ -175,7 +175,9 @@ final class ConfigCache
      */
     public static function cachePath(): string
     {
-        $base = function_exists('storage_path') ? storage_path('cache') : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache');
+        $base = function_exists('storage_path')
+            ? storage_path('cache')
+            : (dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'cache');
         return rtrim($base, "\\/") . DIRECTORY_SEPARATOR . 'config.cache.php';
     }
 }

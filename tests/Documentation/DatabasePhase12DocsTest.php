@@ -10,7 +10,8 @@ final class DatabasePhase12DocsTest extends TestCase
 {
     public function testDatabasePhase12GuideExistsAndHasHeadings(): void
     {
-        $path = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'Documentation' . DIRECTORY_SEPARATOR . 'database' . DIRECTORY_SEPARATOR . 'phase-12-database-additions.md';
+        $ds = DIRECTORY_SEPARATOR;
+        $path = __DIR__ . $ds . '..' . $ds . '..' . $ds . 'Documentation' . $ds . 'database' . $ds . 'phase-12-database-additions.md';
         $this->assertFileExists($path, 'Phase 12 database additions guide should exist');
         $contents = file_get_contents($path);
         $this->assertIsString($contents);

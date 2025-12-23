@@ -267,7 +267,17 @@ class Router
     /**
      * Export the compiled route entries for caching.
      *
-     * @return array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:array<int, callable|string>, pattern:string, module?:string, name?:string}>
+     * @return array<int, array{
+     *     methods: string[],
+     *     regex: string,
+     *     paramNames: string[],
+     *     paramTypes: string[],
+     *     handler: mixed,
+     *     middleware: array<int, callable|string>,
+     *     pattern: string,
+     *     module?: string,
+     *     name?: string
+     * }>
      */
     public function exportCompiledMap(): array
     {
@@ -277,7 +287,17 @@ class Router
     /**
      * Load a previously compiled route map. This bypasses module route registration.
      *
-     * @param array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:array<int, callable|string>, pattern:string, module?:string, name?:string}> $routes
+     * @param array<int, array{
+     *     methods: string[],
+     *     regex: string,
+     *     paramNames: string[],
+     *     paramTypes: string[],
+     *     handler: mixed,
+     *     middleware: array<int, callable|string>,
+     *     pattern: string,
+     *     module?: string,
+     *     name?: string
+     * }> $routes
      * @return void
      */
     public function loadCompiledMap(array $routes): void
@@ -351,7 +371,10 @@ class Router
                 $path = $this->stripRegexDelimiters($pattern);
                 return $this->finalizeUrl($path, $query, $absolute);
             }
-            throw new \InvalidArgumentException("Cannot generate URL for named route '{$name}' defined in {$info['source']} — complex regex patterns are not supported for URL generation. Define the route via the fluent API to enable URL generation.");
+            $msg = "Cannot generate URL for named route '{$name}' defined in {$info['source']} — "
+                . "complex regex patterns are not supported for URL generation. "
+                . "Define the route via the fluent API to enable URL generation.";
+            throw new \InvalidArgumentException($msg);
         }
 
         throw new \InvalidArgumentException("Unknown route name '{$name}'.");
@@ -740,7 +763,14 @@ class Router
                     continue;
                 }
 
-                throw new \RuntimeException(sprintf('Cannot resolve dependency $%s (%s) for %s::__construct(). Provide it via the container or make the parameter optional with a default.', $p->getName(), $name ?: ($named?->getName() ?? 'scalar'), $class));
+                $msg = sprintf(
+                    'Cannot resolve dependency $%s (%s) for %s::__construct(). '
+                    . 'Provide it via the container or make the parameter optional with a default.',
+                    $p->getName(),
+                    $name ?: ($named?->getName() ?? 'scalar'),
+                    $class
+                );
+                throw new \RuntimeException($msg);
             }
 
             return $ref->newInstanceArgs($args);
@@ -781,9 +811,12 @@ class Router
         }
         $ctrl = $this->resolveClass($class);
         if (!method_exists($ctrl, $action)) {
-        // Suggest available public methods (excluding magic/constructor)
+            // Suggest available public methods (excluding magic/constructor)
             $refClass = new \ReflectionClass($ctrl);
-            $methods = array_values(array_filter(array_map(fn($m) => $m->getName(), $refClass->getMethods(\ReflectionMethod::IS_PUBLIC)), fn($n) => $n[0] !== '_' && $n !== '__invoke' && $n !== '__construct'));
+            $methods = array_values(array_filter(
+                array_map(fn($m) => $m->getName(), $refClass->getMethods(\ReflectionMethod::IS_PUBLIC)),
+                fn($n) => $n[0] !== '_' && $n !== '__invoke' && $n !== '__construct'
+            ));
             $suggest = $methods ? (' Available actions: ' . implode(', ', $methods)) : '';
             ob_end_clean();
             return Response::text("Action not found: {$action} on {$class}." . $suggest, 404);
@@ -803,7 +836,8 @@ class Router
                 $typeName = $type instanceof \ReflectionNamedType ? $type->getName() : null;
                 if ($typeName === Request::class) {
                     if ($seenReq) {
-                        throw new \InvalidArgumentException("Invalid handler signature: multiple Request parameters in {$class}::{$action}.");
+                        $msg = "Invalid handler signature: multiple Request parameters in {$class}::{$action}.";
+                        throw new \InvalidArgumentException($msg);
                     }
                     $seenReq = true;
                     $args[] = $req;
@@ -811,7 +845,8 @@ class Router
                 }
                 if ($typeName === Response::class) {
                     if ($seenRes) {
-                        throw new \InvalidArgumentException("Invalid handler signature: multiple Response parameters in {$class}::{$action}.");
+                        $msg = "Invalid handler signature: multiple Response parameters in {$class}::{$action}.";
+                        throw new \InvalidArgumentException($msg);
                     }
                     $seenRes = true;
                     $args[] = $res;
@@ -819,7 +854,10 @@ class Router
                 }
                 // If a class-typed parameter is present that we cannot resolve, error early with a nice message
                 if ($typeName && class_exists($typeName)) {
-                    throw new \InvalidArgumentException("Invalid handler parameter type '{$typeName}' in {$class}::{$action}. Only Request and Response are auto-injected; other parameters must be scalars mapped from route segments.");
+                    $msg = "Invalid handler parameter type '{$typeName}' in {$class}::{$action}. "
+                        . "Only Request and Response are auto-injected; other parameters must be "
+                        . "scalars mapped from route segments.";
+                    throw new \InvalidArgumentException($msg);
                 }
                 // Fill remaining user params positionally
                 if (array_key_exists($i, $positionals)) {

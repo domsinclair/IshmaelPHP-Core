@@ -245,12 +245,10 @@ class MySQLAdapter implements DatabaseAdapterInterface
             case $t === 'INT' || str_contains($t, 'INTEGER'):
                 return 'INT' . ($c->unsigned ? ' UNSIGNED' : '');
             case str_starts_with($t, 'VARCHAR'):
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       $len = $c->length ?? 255;
-
+                $len = $c->length ?? 255;
                 return 'VARCHAR(' . $len . ')';
             case str_starts_with($t, 'CHAR'):
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       $len = $c->length ?? 1;
-
+                $len = $c->length ?? 1;
                 return 'CHAR(' . $len . ')';
             case $t === 'TEXT' || str_contains($t, 'TEXT'):
                 return 'TEXT';

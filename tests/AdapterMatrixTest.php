@@ -67,7 +67,12 @@ final class AdapterMatrixTest extends TestCase
                         $parts[$a[0]] = $a[1];
                 }
             }
-            $config = ['host' => $parts['host'] ?? '127.0.0.1', 'database' => $parts['dbname'] ?? '', 'username' => $_SERVER['ISH_TEST_MYSQL_USER'] ?? 'root', 'password' => $_SERVER['ISH_TEST_MYSQL_PASS'] ?? ''];
+            $config = [
+                'host' => $parts['host'] ?? '127.0.0.1',
+                'database' => $parts['dbname'] ?? '',
+                'username' => $_SERVER['ISH_TEST_MYSQL_USER'] ?? 'root',
+                'password' => $_SERVER['ISH_TEST_MYSQL_PASS'] ?? ''
+            ];
         }
 
         $adapter = new MySQLAdapter();

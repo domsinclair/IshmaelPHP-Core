@@ -43,15 +43,16 @@ final class PackerTest extends TestCase
         $packer->configure('production', false, 'webhost', null, true);
         $manifest = $packer->pack();
         $paths = $this->manifestPaths($manifest);
-        $this->assertContains('Modules' . DIRECTORY_SEPARATOR . 'SharedOne' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'HelloController.php', $paths);
-        $this->assertContains('Modules' . DIRECTORY_SEPARATOR . 'ProdOnly' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'HelloController.php', $paths);
-        $this->assertNotContains('Modules' . DIRECTORY_SEPARATOR . 'DevOnly' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'HelloController.php', $paths);
+        $ctrl = DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'HelloController.php';
+        $this->assertContains('Modules' . DIRECTORY_SEPARATOR . 'SharedOne' . $ctrl, $paths);
+        $this->assertContains('Modules' . DIRECTORY_SEPARATOR . 'ProdOnly' . $ctrl, $paths);
+        $this->assertNotContains('Modules' . DIRECTORY_SEPARATOR . 'DevOnly' . $ctrl, $paths);
 // Production, include-dev flag
         $packer2 = new Packer($this->appRoot);
         $packer2->configure('production', true, 'webhost', null, true);
         $manifest2 = $packer2->pack();
         $paths2 = $this->manifestPaths($manifest2);
-        $this->assertContains('Modules' . DIRECTORY_SEPARATOR . 'DevOnly' . DIRECTORY_SEPARATOR . 'Controllers' . DIRECTORY_SEPARATOR . 'HelloController.php', $paths2);
+        $this->assertContains('Modules' . DIRECTORY_SEPARATOR . 'DevOnly' . $ctrl, $paths2);
     }
 
     public function testPackerIncludesConfigAndOptionalCaches(): void
@@ -128,7 +129,7 @@ PHP;
         if (!is_dir($dir)) {
             return;
         }
-        $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST);
+        $it = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
         foreach ($it as $file) {
             $p = $file->getPathname();
             if ($file->isDir()) {
@@ -142,7 +143,7 @@ PHP;
 
     private function resetDiscoveredModules(): void
     {
-        $ref = new ReflectionClass(ModuleManager::class);
+        $ref = new \ReflectionClass(ModuleManager::class);
         $prop = $ref->getProperty('modules');
         $prop->setAccessible(true);
         $prop->setValue(null, []);

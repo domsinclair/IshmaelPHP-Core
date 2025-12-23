@@ -159,7 +159,8 @@ class SQLiteAdapter implements DatabaseAdapterInterface
                         continue;
             }
             $local = '(' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->columns)) . ')';
-            $ref = $this->quoteIdent($fk->referencesTable) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns)) . ')';
+            $refCols = implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns));
+            $ref = $this->quoteIdent($fk->referencesTable) . ' (' . $refCols . ')';
             $segment = 'FOREIGN KEY ' . $local . ' REFERENCES ' . $ref;
             if ($fk->onDelete) {
                 $segment .= ' ON DELETE ' . strtoupper($fk->onDelete);
@@ -273,7 +274,13 @@ class SQLiteAdapter implements DatabaseAdapterInterface
         // In SQLite, PRIMARY KEY implies NOT NULL even if PRAGMA reports notnull=0.
                 $nullable = false;
             }
-            $def->addColumn(new ColumnDefinition(name: (string)$row['name'], type: $type, nullable: $nullable, default: $row['dflt_value'] !== null ? (string)$row['dflt_value'] : null, autoIncrement: $isPk && stripos($type, 'INT') !== false,));
+            $def->addColumn(new ColumnDefinition(
+                name: (string)$row['name'],
+                type: $type,
+                nullable: $nullable,
+                default: $row['dflt_value'] !== null ? (string)$row['dflt_value'] : null,
+                autoIncrement: $isPk && stripos($type, 'INT') !== false,
+            ));
         }
         return $def;
     }
@@ -283,7 +290,7 @@ class SQLiteAdapter implements DatabaseAdapterInterface
         // Make CREATE TABLE idempotent for test friendliness: inject IF NOT EXISTS when missing
         $normalized = ltrim($sql);
         if (preg_match('/^CREATE\s+TABLE\s+(?!IF\s+NOT\s+EXISTS)/i', $normalized) === 1) {
-        // Replace the first occurrence of "CREATE TABLE" with "CREATE TABLE IF NOT EXISTS"
+            // Replace the first occurrence of "CREATE TABLE" with "CREATE TABLE IF NOT EXISTS"
             $sql = preg_replace('/^\s*CREATE\s+TABLE\s+/i', 'CREATE TABLE IF NOT EXISTS ', $sql, 1) ?? $sql;
         }
         $this->requirePdo()->exec($sql);

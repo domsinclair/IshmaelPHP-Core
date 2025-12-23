@@ -163,7 +163,8 @@ class PostgresAdapter implements DatabaseAdapterInterface
                 continue;
             }
             $local = '(' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->columns)) . ')';
-            $ref = $this->quoteIdent($fk->referencesTable) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns)) . ')';
+            $refCols = implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns));
+            $ref = $this->quoteIdent($fk->referencesTable) . ' (' . $refCols . ')';
             $seg = 'FOREIGN KEY ' . $local . ' REFERENCES ' . $ref;
             if ($fk->onDelete) {
                 $seg .= ' ON DELETE ' . strtoupper($fk->onDelete);
@@ -234,7 +235,8 @@ class PostgresAdapter implements DatabaseAdapterInterface
     {
         $type = strtolower($def->type);
         if ($type === 'primary') {
-            $sql = 'ALTER TABLE ' . $this->quoteIdent($table) . ' ADD PRIMARY KEY (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)) . ')';
+            $cols = implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns));
+            $sql = 'ALTER TABLE ' . $this->quoteIdent($table) . ' ADD PRIMARY KEY (' . $cols . ')';
             $this->runSql($sql);
             return;
         }

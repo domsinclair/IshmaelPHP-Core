@@ -392,13 +392,15 @@ final class MigrationRunner
         if ($batch <= 0) {
             return [];
         }
-        return $this->adapter->query('SELECT id,module,name,batch,applied_at FROM ishmael_migrations WHERE batch = :b ORDER BY id DESC', [':b' => $batch])->all();
+        $sql = 'SELECT id,module,name,batch,applied_at FROM ishmael_migrations WHERE batch = :b ORDER BY id DESC';
+        return $this->adapter->query($sql, [':b' => $batch])->all();
     }
 
     /** @return array<array{id:int,module:string,name:string,batch:int,applied_at:string}> */
     private function appliedByModuleAll(string $module): array
     {
-        return $this->adapter->query('SELECT id,module,name,batch,applied_at FROM ishmael_migrations WHERE module = :m ORDER BY batch DESC, id DESC', [':m' => $module])->all();
+        $sql = 'SELECT id,module,name,batch,applied_at FROM ishmael_migrations WHERE module = :m ORDER BY batch DESC, id DESC';
+        return $this->adapter->query($sql, [':m' => $module])->all();
     }
 
     /** @return array<array{id:int,module:string,name:string,batch:int,applied_at:string}> */

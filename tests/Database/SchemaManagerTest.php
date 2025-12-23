@@ -27,7 +27,12 @@ final class SchemaManagerTest extends TestCase
         $adapter = AdapterTestUtil::sqliteAdapter();
         $sm = new SchemaManager($adapter, null);
         $def = new TableDefinition('sm_users', [
-            new ColumnDefinition('id', 'INTEGER', nullable: false, default: null, length: null, precision: null, scale: null, unsigned: false, autoIncrement: true),
+            new ColumnDefinition(
+                'id',
+                'INTEGER',
+                nullable: false,
+                autoIncrement: true
+            ),
             new ColumnDefinition('email', 'TEXT', false),
         ], [
             new IndexDefinition('idx_sm_users_email', ['email'], 'index'),
