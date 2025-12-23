@@ -53,9 +53,15 @@ final class DatabaseSessionStore implements SessionStore
         // Fallback generic upsert strategy
             $exists = Database::adapter()->query("SELECT 1 FROM {$this->table} WHERE id = :id", [':id' => $id])->fetchColumn();
             if ($exists) {
-                Database::adapter()->execute("UPDATE {$this->table} SET payload=:payload, expires_at=:exp WHERE id=:id", [':id' => $id, ':payload' => $json, ':exp' => $expires]);
+                Database::adapter()->execute(
+                    "UPDATE {$this->table} SET payload=:payload, expires_at=:exp WHERE id=:id",
+                    [':id' => $id, ':payload' => $json, ':exp' => $expires]
+                );
             } else {
-                Database::adapter()->execute("INSERT INTO {$this->table} (id, payload, expires_at) VALUES (:id, :payload, :exp)", [':id' => $id, ':payload' => $json, ':exp' => $expires]);
+                Database::adapter()->execute(
+                    "INSERT INTO {$this->table} (id, payload, expires_at) VALUES (:id, :payload, :exp)",
+                    [':id' => $id, ':payload' => $json, ':exp' => $expires]
+                );
             }
         }
     }

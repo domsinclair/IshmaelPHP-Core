@@ -93,8 +93,16 @@ final class RememberMeMiddleware
         }
     }
 
-    private function buildCookie(string $name, string $value, int $expires, string $path, string $domain, bool $secure, bool $httpOnly, string $sameSite): string
-    {
+    private function buildCookie(
+        string $name,
+        string $value,
+        int $expires,
+        string $path,
+        string $domain,
+        bool $secure,
+        bool $httpOnly,
+        string $sameSite
+    ): string {
         $parts = [rawurlencode($name) . '=' . rawurlencode($value)];
         if ($expires > 0) {
             $parts[] = 'Expires=' . gmdate('D, d-M-Y H:i:s T', $expires);

@@ -118,7 +118,10 @@ class MySQLAdapter implements DatabaseAdapterInterface
                 continue;
             }
             $local = '(' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->columns)) . ')';
-            $ref = $this->quoteIdent($fk->referencesTable) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns)) . ')';
+            $ref = $this->quoteIdent($fk->referencesTable) . ' (' . implode(
+                ', ',
+                array_map(fn($c) => $this->quoteIdent((string)$c), $fk->referencesColumns)
+            ) . ')';
             $seg = 'FOREIGN KEY ' . $local . ' REFERENCES ' . $ref;
             if ($fk->onDelete) {
                 $seg .= ' ON DELETE ' . strtoupper($fk->onDelete);
@@ -159,11 +162,20 @@ class MySQLAdapter implements DatabaseAdapterInterface
     {
         $type = strtolower($def->type);
         if ($type === 'primary') {
-            $sql = 'ALTER TABLE ' . $this->quoteIdent($table) . ' ADD PRIMARY KEY (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)) . ')';
+            $sql = 'ALTER TABLE ' . $this->quoteIdent($table) . ' ADD PRIMARY KEY (' . implode(
+                ', ',
+                array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)
+            ) . ')';
         } elseif ($type === 'unique') {
-            $sql = 'CREATE UNIQUE INDEX ' . $this->quoteIdent($def->name) . ' ON ' . $this->quoteIdent($table) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)) . ')';
+            $sql = 'CREATE UNIQUE INDEX ' . $this->quoteIdent($def->name) . ' ON ' . $this->quoteIdent($table) . ' (' . implode(
+                ', ',
+                array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)
+            ) . ')';
         } else {
-            $sql = 'CREATE INDEX ' . $this->quoteIdent($def->name) . ' ON ' . $this->quoteIdent($table) . ' (' . implode(', ', array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)) . ')';
+            $sql = 'CREATE INDEX ' . $this->quoteIdent($def->name) . ' ON ' . $this->quoteIdent($table) . ' (' . implode(
+                ', ',
+                array_map(fn($c) => $this->quoteIdent((string)$c), $def->columns)
+            ) . ')';
         }
         $this->runSql($sql);
     }
@@ -249,7 +261,7 @@ class MySQLAdapter implements DatabaseAdapterInterface
             case $t === 'DATE':
                 return 'DATE';
             case str_starts_with($t, 'DECIMAL') || $t === 'NUMERIC':
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       $p = $c->precision ?? 10;
+                $p = $c->precision ?? 10;
                 $s = $c->scale ?? 0;
 
                 return 'DECIMAL(' . $p . ',' . $s . ')';

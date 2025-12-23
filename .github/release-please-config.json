@@ -1,22 +1,23 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
-  "release-type": "simple",
-  "bump-minor-pre-major": true,
-  "bump-patch-for-minor-pre-major": true,
   "packages": {
-    ".": {}
-  },
-  "changelog-path": "CHANGELOG.md",
-  "extra-files": [
-    {
-      "path": "version.php",
-      "updater": {
-        "type": "regex",
-        "search": "return '(\\d+\\.\\d+\\.\\d+)';",
-        "replace": "return '$1';"
-      }
+    ".": {
+      "release-type": "simple",
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": true,
+      "changelog-path": "CHANGELOG.md",
+      "extra-files": [
+        {
+          "type": "regex",
+          "path": "version.php",
+          "updater-options": {
+            "search": "return '(\\d+\\.\\d+\\.\\d+)';",
+            "replace": "return '$1';"
+          }
+        }
+      ]
     }
-  ],
+  },
   "changelog-types": [
     { "type": "feat", "section": "Features" },
     { "type": "fix", "section": "Bug Fixes" },

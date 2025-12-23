@@ -13,7 +13,17 @@ namespace Ishmael\Core;
  *     'hash' => 'sha1-of-route-sources',
  *     'generatedAt' => 'YYYY-mm-dd HH:ii:ss',
  *   ],
- *   'routes' => array<int, array{methods:string[], regex:string, paramNames:string[], paramTypes:string[], handler:mixed, middleware:array, pattern:string, module?:string, name?:string}>
+ *   'routes' => array<int, array{
+ *     methods:string[],
+ *     regex:string,
+ *     paramNames:string[],
+ *     paramTypes:string[],
+ *     handler:mixed,
+ *     middleware:array,
+ *     pattern:string,
+ *     module?:string,
+ *     name?:string
+ *   }>
  * ]
  */
 final class RouteCache

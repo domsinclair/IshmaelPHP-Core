@@ -310,11 +310,11 @@ class PostgresAdapter implements DatabaseAdapterInterface
             case $upperType === 'INT' || str_contains($upperType, 'INTEGER'):
                 return 'INTEGER';
             case str_starts_with($upperType, 'VARCHAR'):
-                                                                                                                                                                                                                                             $len = $c->length ?? 255;
+                $len = $c->length ?? 255;
 
                 return 'VARCHAR(' . $len . ')';
             case str_starts_with($upperType, 'CHAR'):
-                                                                                                                                                                                                                                             $len = $c->length ?? 1;
+                $len = $c->length ?? 1;
 
                 return 'CHAR(' . $len . ')';
             case $upperType === 'TEXT' || str_contains($upperType, 'TEXT'):
@@ -324,7 +324,7 @@ class PostgresAdapter implements DatabaseAdapterInterface
             case $upperType === 'DATE':
                 return 'DATE';
             case str_starts_with($upperType, 'DECIMAL') || $upperType === 'NUMERIC':
-                                                                                                                                                                                                                                             $p = $c->precision ?? 10;
+                $p = $c->precision ?? 10;
                 $s = $c->scale ?? 0;
 
                 return 'DECIMAL(' . $p . ',' . $s . ')';

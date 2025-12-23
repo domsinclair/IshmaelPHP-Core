@@ -88,8 +88,17 @@ final class StartSessionMiddleware
         }
     }
 
-    private function setCookieHeader(Response $response, string $name, string $value, int $expires, string $path, string $domain, bool $secure, bool $httpOnly, string $sameSite): void
-    {
+    private function setCookieHeader(
+        Response $response,
+        string $name,
+        string $value,
+        int $expires,
+        string $path,
+        string $domain,
+        bool $secure,
+        bool $httpOnly,
+        string $sameSite
+    ): void {
         $parts = [
             rawurlencode($name) . '=' . rawurlencode($value),
         ];

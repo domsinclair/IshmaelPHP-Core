@@ -104,7 +104,7 @@ final class CacheManager
         $defaultTtl = (int) (config('cache.default_ttl') ?? 0);
         switch ($driver) {
             case 'array':
-                                                                                                                                                                                                                                                                                 $store = new ArrayCacheStore();
+                $store = new ArrayCacheStore();
 
                 break;
             case 'database':

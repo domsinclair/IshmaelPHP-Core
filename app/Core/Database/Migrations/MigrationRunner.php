@@ -337,8 +337,11 @@ final class MigrationRunner
                 $stored = $byName[$name]['checksum'] ?? null;
                 if ($stored === null) {
                 // Backfill silently
-                    $this->adapter->execute('UPDATE ishmael_migrations SET checksum = :c WHERE module = :m AND name = :n', [':c' => $onDisk, ':m' => $mod, ':n' => $name]);
-                    continue;
+                $this->adapter->execute(
+                    'UPDATE ishmael_migrations SET checksum = :c WHERE module = :m AND name = :n',
+                    [':c' => $onDisk, ':m' => $mod, ':n' => $name]
+                );
+                continue;
                 }
                 if (!hash_equals((string)$stored, $onDisk)) {
                     $mismatches[] = ['module' => $mod, 'name' => $name];
@@ -372,9 +375,10 @@ final class MigrationRunner
     private function recordApplied(string $module, string $name, int $batch, ?string $checksum): void
     {
         $now = (new DateTimeImmutable())->format('Y-m-d H:i:s');
-        $this->adapter->execute('INSERT INTO ishmael_migrations (module,name,batch,applied_at,checksum) VALUES (:m,:n,:b,:t,:c)', [
-            ':m' => $module, ':n' => $name, ':b' => $batch, ':t' => $now, ':c' => $checksum,
-        ]);
+        $this->adapter->execute(
+            'INSERT INTO ishmael_migrations (module,name,batch,applied_at,checksum) VALUES (:m,:n,:b,:t,:c)',
+            [':m' => $module, ':n' => $name, ':b' => $batch, ':t' => $now, ':c' => $checksum]
+        );
     }
 
     private function removeAppliedRecord(string $module, string $name): void

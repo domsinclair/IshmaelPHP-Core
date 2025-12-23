@@ -76,7 +76,7 @@ final class DatabaseResetter
         $this->logger->info('Database reset start', ['purge' => $purge, 'driver' => $driver]);
         switch ($driver) {
             case 'sqlite':
-                                                                                                                                                                                                                                                                                                                                                                                                                                             $this->resetSqlite($purge);
+                $this->resetSqlite($purge);
 
                 break;
             case 'mysql':
@@ -237,12 +237,26 @@ final class DatabaseResetter
     {
         // Use pg_sequences view available in modern PostgreSQL versions
         try {
-            $rows = $this->adapter->query("SELECT schemaname, sequencename FROM pg_sequences WHERE schemaname = 'public'")->all();
-            return array_values(array_map(fn($r) => ($r['schemaname'] ? ($r['schemaname'] . '.') : '') . (string)$r['sequencename'], $rows));
+            $rows = $this->adapter->query(
+                "SELECT schemaname, sequencename FROM pg_sequences WHERE schemaname = 'public'"
+            )->all();
+            return array_values(
+                array_map(
+                    fn($r) => ($r['schemaname'] ? ($r['schemaname'] . '.') : '') . (string)$r['sequencename'],
+                    $rows
+                )
+            );
         } catch (\Throwable $e) {
-        // Fallback using information_schema
-            $rows = $this->adapter->query("SELECT sequence_schema, sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'")->all();
-            return array_values(array_map(fn($r) => ($r['sequence_schema'] ? ($r['sequence_schema'] . '.') : '') . (string)$r['sequence_name'], $rows));
+            // Fallback using information_schema
+            $rows = $this->adapter->query(
+                "SELECT sequence_schema, sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public'"
+            )->all();
+            return array_values(
+                array_map(
+                    fn($r) => ($r['sequence_schema'] ? ($r['sequence_schema'] . '.') : '') . (string)$r['sequence_name'],
+                    $rows
+                )
+            );
         }
     }
 
@@ -253,7 +267,9 @@ final class DatabaseResetter
     private function listAllTablesPortable(): array
     {
         try {
-            $rows = $this->adapter->query("SELECT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema','pg_catalog')")->all();
+            $rows = $this->adapter->query(
+                "SELECT table_name FROM information_schema.tables WHERE table_schema NOT IN ('information_schema', 'pg_catalog')"
+            )->all();
             return array_values(array_map(fn($r) => (string)$r['table_name'], $rows));
         } catch (\Throwable $_) {
             return [];

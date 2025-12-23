@@ -114,7 +114,12 @@ abstract class Controller
                     return str_starts_with($path, '/');
             };
             if (!$isAbsolute($layoutPath)) {
-                if (str_starts_with($layoutPath, './') || str_starts_with($layoutPath, '../') || str_starts_with($layoutPath, '.\\') || str_starts_with($layoutPath, '..\\')) {
+                $isRelative = str_starts_with($layoutPath, './')
+                    || str_starts_with($layoutPath, '../')
+                    || str_starts_with($layoutPath, '.\\')
+                    || str_starts_with($layoutPath, '..\\');
+
+                if ($isRelative) {
                     $layoutPath = dirname($viewPath) . DIRECTORY_SEPARATOR . $layoutPath;
                 } else {
                     $layoutPath = $basePath . ltrim($layoutPath, '/\\');
@@ -135,8 +140,12 @@ abstract class Controller
             if (!$resolvedLayoutPath) {
                 $resolvedLayoutPath = $layoutPath;
 // Resolve "any/path/../" patterns
-                while (preg_match('#[^' . preg_quote(DIRECTORY_SEPARATOR, '#') . ']+' . preg_quote(DIRECTORY_SEPARATOR, '#') . '\.\.(' . preg_quote(DIRECTORY_SEPARATOR, '#') . '|$)#', $resolvedLayoutPath)) {
-                    $resolvedLayoutPath = preg_replace('#[^' . preg_quote(DIRECTORY_SEPARATOR, '#') . ']+' . preg_quote(DIRECTORY_SEPARATOR, '#') . '\.\.(' . preg_quote(DIRECTORY_SEPARATOR, '#') . '|$)#', '', $resolvedLayoutPath, 1);
+                $pattern = '#[^' . preg_quote(DIRECTORY_SEPARATOR, '#') . ']+'
+                    . preg_quote(DIRECTORY_SEPARATOR, '#') . '\.\.('
+                    . preg_quote(DIRECTORY_SEPARATOR, '#') . '|$)#';
+
+                while (preg_match($pattern, $resolvedLayoutPath)) {
+                    $resolvedLayoutPath = preg_replace($pattern, '', $resolvedLayoutPath, 1);
                 }
                 // Clean up trailing slash if resolution emptied a segment
                 $resolvedLayoutPath = rtrim($resolvedLayoutPath, DIRECTORY_SEPARATOR);

@@ -8,8 +8,18 @@ use JsonSerializable;
 
 class ColumnDefinition implements JsonSerializable
 {
-    public function __construct(public string $name, public string $type, public bool $nullable = false, public mixed $default = null, public ?int $length = null, public ?int $precision = null, public ?int $scale = null, public bool $unsigned = false, public bool $autoIncrement = false, public array $extras = [],)
-    {
+    public function __construct(
+        public string $name,
+        public string $type,
+        public bool $nullable = false,
+        public mixed $default = null,
+        public ?int $length = null,
+        public ?int $precision = null,
+        public ?int $scale = null,
+        public bool $unsigned = false,
+        public bool $autoIncrement = false,
+        public array $extras = [],
+    ) {
     }
 
     public function toArray(): array

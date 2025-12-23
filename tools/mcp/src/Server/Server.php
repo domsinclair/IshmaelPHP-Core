@@ -15,12 +15,17 @@ use IshmaelPHP\McpServer\Support\Telemetry;
 final class Server
 {
     private RequestRouter $router;
+
     private StdioTransport $transport;
+
     private ResourceProvider $resources;
+
     private PromptProvider $prompts;
-    private string $version;
+
     private Settings $settings;
+
     private Telemetry $telemetry;
+
     private CancellationRegistry $cancellations;
 
     public function __construct(
@@ -28,7 +33,6 @@ final class Server
         StdioTransport $transport,
         ResourceProvider $resources,
         PromptProvider $prompts,
-        string $version,
         ?Settings $settings = null,
         ?Telemetry $telemetry = null,
         ?CancellationRegistry $cancellations = null
@@ -37,7 +41,6 @@ final class Server
         $this->transport = $transport;
         $this->resources = $resources;
         $this->prompts = $prompts;
-        $this->version = $version;
         $this->settings = $settings ?? new Settings();
         $this->telemetry = $telemetry ?? new Telemetry($this->settings);
         $this->cancellations = $cancellations ?? new CancellationRegistry();
@@ -52,18 +55,22 @@ final class Server
         while (true) {
             $start = (int)floor(microtime(true) * 1000);
             $message = $this->transport->read();
+
             if ($message === null) {
                 // EOF: exit loop
                 break;
             }
+
             if ($message === []) {
                 continue;
             }
+
             // If transport surfaced a standardized error envelope (e.g., parse error), forward as-is
             if (isset($message['error']) && isset($message['version']) && array_key_exists('id', $message)) {
                 $this->transport->write($message);
                 continue;
             }
+
             $id = $message['id'] ?? null;
             $method = (string)($message['method'] ?? '');
             $params = is_array($message['params'] ?? null) ? $message['params'] : [];

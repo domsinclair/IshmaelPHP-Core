@@ -45,7 +45,15 @@ final class ThrottleMiddleware
     private $identityResolver;
     private float $jitterRatio;
 /**
-     * @param array{preset?:string, capacity?:int, refillTokens?:int, refillInterval?:int, namespace?:string, identityResolver?:callable|null, jitterRatio?:float} $options
+     * @param array{
+     *     preset?:string,
+     *     capacity?:int,
+     *     refillTokens?:int,
+     *     refillInterval?:int,
+     *     namespace?:string,
+     *     identityResolver?:callable|null,
+     *     jitterRatio?:float
+     * } $options
      */
     public function __construct(array $options = [])
     {

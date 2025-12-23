@@ -154,12 +154,25 @@ final class Blueprint
      * @param string|null $onUpdate Action on update when supported.
      * @return $this Fluent builder.
      */
-    public function foreignKey(string|array $columns, string $referencesTable, string|array $referencesColumns = 'id', ?string $name = null, ?string $onDelete = null, ?string $onUpdate = null): self
-    {
+    public function foreignKey(
+        string|array $columns,
+        string $referencesTable,
+        string|array $referencesColumns = 'id',
+        ?string $name = null,
+        ?string $onDelete = null,
+        ?string $onUpdate = null
+    ): self {
         $localCols = is_array($columns) ? $columns : [$columns];
         $refCols = is_array($referencesColumns) ? $referencesColumns : [$referencesColumns];
         $constraintName = $name ?? ('fk_' . $this->table . '_' . implode('_', $localCols) . '__' . $referencesTable . '_' . implode('_', $refCols));
-        $this->foreignKeys[] = new ForeignKeyDefinition(name: $constraintName, columns: $localCols, referencesTable: $referencesTable, referencesColumns: $refCols, onDelete: $onDelete, onUpdate: $onUpdate,);
+        $this->foreignKeys[] = new ForeignKeyDefinition(
+            name: $constraintName,
+            columns: $localCols,
+            referencesTable: $referencesTable,
+            referencesColumns: $refCols,
+            onDelete: $onDelete,
+            onUpdate: $onUpdate,
+        );
         return $this;
     }
 
@@ -175,8 +188,15 @@ final class Blueprint
      * @param string|null $onUpdate Action on update.
      * @return $this
      */
-    public function foreignId(string $name, string $referencesTable, bool $nullable = false, string $type = 'INTEGER', string $referencesColumn = 'id', ?string $onDelete = null, ?string $onUpdate = null): self
-    {
+    public function foreignId(
+        string $name,
+        string $referencesTable,
+        bool $nullable = false,
+        string $type = 'INTEGER',
+        string $referencesColumn = 'id',
+        ?string $onDelete = null,
+        ?string $onUpdate = null
+    ): self {
         $this->columns[] = new ColumnDefinition($name, $type, nullable: $nullable);
         return $this->foreignKey($name, $referencesTable, $referencesColumn, null, $onDelete, $onUpdate);
     }

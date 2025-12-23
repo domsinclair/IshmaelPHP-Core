@@ -71,12 +71,18 @@ final class SchemaManager
         $schemaFile = rtrim($modulePath, "\\/ ") . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'schema.php';
         $moduleName = basename(rtrim($modulePath, "\\/ "));
         if (!is_file($schemaFile)) {
-            $this->logger->debug('No module schema file found; nothing to apply', ['module' => $moduleName, 'modulePath' => $modulePath] + $this->correlationContext());
+            $this->logger->debug(
+                'No module schema file found; nothing to apply',
+                ['module' => $moduleName, 'modulePath' => $modulePath] + $this->correlationContext()
+            );
             return;
         }
         $defs = require $schemaFile;
         if (!is_array($defs)) {
-            $this->logger->error('Module schema file did not return an array', ['module' => $moduleName, 'modulePath' => $modulePath] + $this->correlationContext());
+            $this->logger->error(
+                'Module schema file did not return an array',
+                ['module' => $moduleName, 'modulePath' => $modulePath] + $this->correlationContext()
+            );
             throw new \RuntimeException("Module schema file must return an array of TableDefinition instances: {$schemaFile}");
         }
 
@@ -96,9 +102,18 @@ final class SchemaManager
         }
         try {
             $this->synchronize($tables);
-            $this->logger->info('Finished module schema apply', ['module' => $moduleName, 'tables' => array_map(fn($t) => $t instanceof TableDefinition ? $t->name : null, $tables)] + $this->correlationContext());
+            $this->logger->info(
+                'Finished module schema apply',
+                [
+                    'module' => $moduleName,
+                    'tables' => array_map(fn($t) => $t instanceof TableDefinition ? $t->name : null, $tables)
+                ] + $this->correlationContext()
+            );
         } catch (\Throwable $e) {
-            $this->logger->error('Module schema apply failed', ['module' => $moduleName, 'error' => $e->getMessage(), 'exception' => get_class($e)] + $this->correlationContext());
+            $this->logger->error(
+                'Module schema apply failed',
+                ['module' => $moduleName, 'error' => $e->getMessage(), 'exception' => get_class($e)] + $this->correlationContext()
+            );
             throw $e;
         }
     }
@@ -292,7 +307,18 @@ final class SchemaManager
                         $columns[] = $c;
                         continue;
             }
-            $columns[] = new ColumnDefinition(name: (string)($c['name'] ?? ''), type: (string)($c['type'] ?? 'TEXT'), nullable: (bool)($c['nullable'] ?? false), default: $c['default'] ?? null, length: isset($c['length']) ? (int)$c['length'] : null, precision: isset($c['precision']) ? (int)$c['precision'] : null, scale: isset($c['scale']) ? (int)$c['scale'] : null, unsigned: (bool)($c['unsigned'] ?? false), autoIncrement: (bool)($c['autoIncrement'] ?? false), extras: (array)($c['extras'] ?? []),);
+            $columns[] = new ColumnDefinition(
+                name: (string)($c['name'] ?? ''),
+                type: (string)($c['type'] ?? 'TEXT'),
+                nullable: (bool)($c['nullable'] ?? false),
+                default: $c['default'] ?? null,
+                length: isset($c['length']) ? (int)$c['length'] : null,
+                precision: isset($c['precision']) ? (int)$c['precision'] : null,
+                scale: isset($c['scale']) ? (int)$c['scale'] : null,
+                unsigned: (bool)($c['unsigned'] ?? false),
+                autoIncrement: (bool)($c['autoIncrement'] ?? false),
+                extras: (array)($c['extras'] ?? []),
+            );
         }
         $indexes = [];
         foreach ((array)($arr['indexes'] ?? []) as $i) {
@@ -300,7 +326,13 @@ final class SchemaManager
                     $indexes[] = $i;
                     continue;
             }
-            $indexes[] = new IndexDefinition(name: (string)($i['name'] ?? ''), columns: (array)($i['columns'] ?? []), type: (string)($i['type'] ?? 'index'), where: isset($i['where']) ? (string)$i['where'] : null, extras: (array)($i['extras'] ?? []),);
+            $indexes[] = new IndexDefinition(
+                name: (string)($i['name'] ?? ''),
+                columns: (array)($i['columns'] ?? []),
+                type: (string)($i['type'] ?? 'index'),
+                where: isset($i['where']) ? (string)$i['where'] : null,
+                extras: (array)($i['extras'] ?? []),
+            );
         }
         $foreignKeys = [];
         foreach ((array)($arr['foreignKeys'] ?? []) as $f) {
@@ -308,7 +340,15 @@ final class SchemaManager
                     $foreignKeys[] = $f;
                     continue;
             }
-            $foreignKeys[] = new ForeignKeyDefinition(name: (string)($f['name'] ?? ''), columns: (array)($f['columns'] ?? []), referencesTable: (string)($f['referencesTable'] ?? ''), referencesColumns: (array)($f['referencesColumns'] ?? ['id']), onDelete: isset($f['onDelete']) ? (string)$f['onDelete'] : null, onUpdate: isset($f['onUpdate']) ? (string)$f['onUpdate'] : null, extras: (array)($f['extras'] ?? []),);
+            $foreignKeys[] = new ForeignKeyDefinition(
+                name: (string)($f['name'] ?? ''),
+                columns: (array)($f['columns'] ?? []),
+                referencesTable: (string)($f['referencesTable'] ?? ''),
+                referencesColumns: (array)($f['referencesColumns'] ?? ['id']),
+                onDelete: isset($f['onDelete']) ? (string)$f['onDelete'] : null,
+                onUpdate: isset($f['onUpdate']) ? (string)$f['onUpdate'] : null,
+                extras: (array)($f['extras'] ?? []),
+            );
         }
         return new TableDefinition($name, $columns, $indexes, $foreignKeys, (array)($arr['extras'] ?? []));
     }
