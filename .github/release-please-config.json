@@ -8,7 +8,7 @@
       "changelog-path": "CHANGELOG.md",
       "extra-files": [
         {
-          "type": "regex",
+          "updater": "regex",
           "path": "version.php",
           "updaterOptions": {
             "search": "return '(\\d+\\.\\d+\\.\\d+)';",
