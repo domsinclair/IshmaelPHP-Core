@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
     ".": {
-      "release-type": "simple",
+      "release-type": "php",
       "bump-minor-pre-major": true,
       "bump-patch-for-minor-pre-major": true,
       "changelog-path": "CHANGELOG.md",
@@ -10,7 +10,7 @@
         {
           "type": "regex",
           "path": "version.php",
-          "updater-options": {
+          "updaterOptions": {
             "search": "return '(\\d+\\.\\d+\\.\\d+)';",
             "replace": "return '$1';"
           }

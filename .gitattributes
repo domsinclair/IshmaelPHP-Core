@@ -1,3 +1,6 @@
+# Enforce LF line endings for PHP files
+*.php text eol=lf
+
 # Do not include these in Composer/zip exports
 /tools export-ignore
 /Docs export-ignore
