@@ -11,6 +11,11 @@
 
   <rule ref="PSR12"/>
 
+  <!-- Bootstrap files typically have side effects and define constants/symbols -->
+  <rule ref="PSR1.Files.SideEffects.FoundWithSymbols">
+    <exclude-pattern>tests/bootstrap.php</exclude-pattern>
+  </rule>
+
   <!-- Allow long lines and mixed caps in test method names -->
   <rule ref="Generic.Files.LineLength">
     <properties>

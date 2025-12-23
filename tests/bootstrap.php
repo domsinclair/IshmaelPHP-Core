@@ -60,7 +60,7 @@ Logger::init(['path' => $logPath]);
 // Ensure a clean Database static state at suite start to avoid cross-test leakage
 if (class_exists(\Ishmael\Core\Database::class)) {
     try {
-        $ref = new ReflectionClass(\Ishmael\Core\Database::class);
+        $ref = new \ReflectionClass(\Ishmael\Core\Database::class);
         foreach (['connection', 'adapter'] as $prop) {
             if ($ref->hasProperty($prop)) {
                 $p = $ref->getProperty($prop);
@@ -68,7 +68,7 @@ if (class_exists(\Ishmael\Core\Database::class)) {
                 $p->setValue(null, null);
             }
         }
-    } catch (Throwable $e) {
+    } catch (\Throwable $e) {
     // non-fatal in tests
     }
 }

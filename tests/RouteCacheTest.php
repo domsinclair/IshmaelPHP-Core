@@ -49,12 +49,3 @@ final class RouteCacheTest extends TestCase
         $this->assertSame([], $compiled['routes'][0]['middleware']);
     }
 }
-
-// Test double for middleware
-final class ExampleMiddleware
-{
-    public function __invoke($req, $res, $next)
-    {
-        return $next($req, $res);
-    }
-}

@@ -27,6 +27,11 @@
       "app/Helpers/helpers.php"
     ]
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Ishmael\\Tests\\": "tests/"
+    }
+  },
   "require": {
     "php": "^8.2",
     "monolog/monolog": "^3.0"

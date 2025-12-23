@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+namespace Ishmael\Tests\Http;
+
 use Ishmael\Core\Http\Middleware\ResponseCache;
 use Ishmael\Core\Http\Response;
 use Ishmael\Core\Router;

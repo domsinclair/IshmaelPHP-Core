@@ -337,11 +337,11 @@ final class MigrationRunner
                 $stored = $byName[$name]['checksum'] ?? null;
                 if ($stored === null) {
                 // Backfill silently
-                $this->adapter->execute(
-                    'UPDATE ishmael_migrations SET checksum = :c WHERE module = :m AND name = :n',
-                    [':c' => $onDisk, ':m' => $mod, ':n' => $name]
-                );
-                continue;
+                    $this->adapter->execute(
+                        'UPDATE ishmael_migrations SET checksum = :c WHERE module = :m AND name = :n',
+                        [':c' => $onDisk, ':m' => $mod, ':n' => $name]
+                    );
+                    continue;
                 }
                 if (!hash_equals((string)$stored, $onDisk)) {
                     $mismatches[] = ['module' => $mod, 'name' => $name];

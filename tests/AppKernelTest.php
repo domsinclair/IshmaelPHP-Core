@@ -6,6 +6,7 @@ namespace Ishmael\Tests;
 
 use Ishmael\Core\App;
 use Ishmael\Core\Http\Request;
+use Ishmael\Core\Http\Response;
 use Ishmael\Core\ModuleManager;
 use PHPUnit\Framework\TestCase;
 
@@ -25,7 +26,7 @@ final class AppKernelTest extends TestCase
 
     private function resetModules(): void
     {
-        $ref = new ReflectionClass(ModuleManager::class);
+        $ref = new \ReflectionClass(ModuleManager::class);
         $prop = $ref->getProperty('modules');
         $prop->setAccessible(true);
         $prop->setValue(null, []);
@@ -47,7 +48,7 @@ final class AppKernelTest extends TestCase
         $app = new App();
         $request = Request::fromGlobals();
         $response = $app->handle($request);
-        $this->assertInstanceOf(Ishmael\Core\Http\Response::class, $response);
+        $this->assertInstanceOf(Response::class, $response);
         $this->assertIsString($response->getBody());
         $this->assertIsInt($response->getStatusCode());
 // With no controllers present in core test env, we expect a 404 from Router
