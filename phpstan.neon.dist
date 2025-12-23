@@ -14,10 +14,9 @@ parameters:
 	reportUnmatchedIgnoredErrors: false
 	checkMissingCallableSignature: true
 	checkMissingIterableValueType: true
-	checkGenericClassInNonGenericObjectType: false
-	checkTooWideReturnType: true
 	checkUninitializedProperties: true
-	
-disabledRules:
-	# Allow simple dynamic properties in examples during v0.1
-	- PHPStan\\Rules\\Properties\\AccessPropertiesRule
+	ignoreErrors:
+		-
+			identifier: missingType.generics
+		# Allow simple dynamic properties in examples during v0.1
+		- '#Access to an undefined property .*#'
