@@ -89,15 +89,12 @@ final class SchemaManager
         $this->logger->info('Starting module schema apply', ['module' => $moduleName] + $this->correlationContext());
 // Normalize to a flat list of TableDefinition
         $tables = [];
-        foreach ($defs as $k => $v) {
+        foreach ($defs as $v) {
             if ($v instanceof TableDefinition) {
                 $tables[] = $v;
             } elseif (is_array($v) && isset($v['name'])) {
-    // allow associative arrays: convert to TableDefinition
+                // allow associative arrays: convert to TableDefinition
                 $tables[] = $this->arrayToTableDefinition($v);
-            } elseif ($k instanceof TableDefinition) {
-                $tables[] = $k;
-    // unlikely, but be permissive
             }
         }
         try {
@@ -106,7 +103,7 @@ final class SchemaManager
                 'Finished module schema apply',
                 [
                     'module' => $moduleName,
-                    'tables' => array_map(fn($t) => $t instanceof TableDefinition ? $t->name : null, $tables)
+                    'tables' => array_map(fn(TableDefinition $t) => $t->name, $tables)
                 ] + $this->correlationContext()
             );
         } catch (\Throwable $e) {
@@ -153,9 +150,7 @@ final class SchemaManager
         $existingCols = [];
         if ($current instanceof TableDefinition) {
             foreach ($current->columns as $c) {
-                if ($c instanceof ColumnDefinition) {
-                    $existingCols[strtolower($c->name)] = $c;
-                }
+                $existingCols[strtolower($c->name)] = $c;
             }
         }
 
@@ -202,9 +197,7 @@ final class SchemaManager
         $existingIdx = [];
         if ($current instanceof TableDefinition) {
             foreach ($current->indexes as $i) {
-                if ($i instanceof IndexDefinition) {
-                    $existingIdx[strtolower($i->name)] = $i;
-                }
+                $existingIdx[strtolower($i->name)] = $i;
             }
         }
         foreach ($desired->indexes as $idx) {
@@ -218,10 +211,8 @@ final class SchemaManager
             } else {
             // If present but different columns/type, require migration
                 $curr = $existingIdx[$key];
-                if ($curr instanceof IndexDefinition) {
-                    if ($curr->type !== $idx->type || $curr->columns !== $idx->columns) {
-                            $diff->addUnsafe("Index '{$idx->name}': change detected; write an explicit migration to modify indexes.");
-                    }
+                if ($curr->type !== $idx->type || $curr->columns !== $idx->columns) {
+                        $diff->addUnsafe("Index '{$idx->name}': change detected; write an explicit migration to modify indexes.");
                 }
             }
         }
@@ -247,9 +238,6 @@ final class SchemaManager
             }
 
             foreach ($defs as $def) {
-                if (!$def instanceof TableDefinition) {
-                        continue;
-                }
                 $table = $def->name;
                 $diff = $this->diff($table, $def);
                 if (!$diff->isSafe()) {

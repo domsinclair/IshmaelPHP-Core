@@ -55,8 +55,8 @@ final class SchemaDiff implements \JsonSerializable
         return [
             'table' => $this->table,
             'createTable' => $this->createTable,
-            'addColumns' => array_map(fn($c) => $c instanceof ColumnDefinition ? $c->toArray() : $c, $this->addColumns),
-            'addIndexes' => array_map(fn($i) => $i instanceof IndexDefinition ? $i->toArray() : $i, $this->addIndexes),
+            'addColumns' => array_map(fn(ColumnDefinition $c) => $c->toArray(), $this->addColumns),
+            'addIndexes' => array_map(fn(IndexDefinition $i) => $i->toArray(), $this->addIndexes),
             'unsafe' => $this->unsafeChanges,
         ];
     }

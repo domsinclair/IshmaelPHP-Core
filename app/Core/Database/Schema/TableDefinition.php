@@ -38,9 +38,9 @@ class TableDefinition implements JsonSerializable
     {
         return [
             'name' => $this->name,
-            'columns' => array_map(fn($c) => $c instanceof ColumnDefinition ? $c->toArray() : $c, $this->columns),
-            'indexes' => array_map(fn($i) => $i instanceof IndexDefinition ? $i->toArray() : $i, $this->indexes),
-            'foreignKeys' => array_map(fn($f) => $f instanceof ForeignKeyDefinition ? $f->toArray() : $f, $this->foreignKeys),
+            'columns' => array_map(fn(ColumnDefinition $c) => $c->toArray(), $this->columns),
+            'indexes' => array_map(fn(IndexDefinition $i) => $i->toArray(), $this->indexes),
+            'foreignKeys' => array_map(fn(ForeignKeyDefinition $f) => $f->toArray(), $this->foreignKeys),
             'extras' => $this->extras,
         ];
     }

@@ -175,10 +175,7 @@ class Database
             }
         }
         // Should not reach here; rethrow last if somehow did
-        if ($last) {
-            throw $last;
-        }
-        return self::transaction($fn);
+        throw $last;
     }
 
     /**

@@ -29,8 +29,9 @@ final class PhpPasswordHasher implements HasherInterface
     public function hash(string $plain): string
     {
         [$algo, $opts] = $this->resolveAlgo();
+        /** @var string|false|null $hash */
         $hash = password_hash($plain, $algo, $opts);
-        if ($hash === false) {
+        if ($hash === false || $hash === null) {
             throw new \RuntimeException('Failed to hash password');
         }
         return $hash;

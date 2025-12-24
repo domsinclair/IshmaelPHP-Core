@@ -70,18 +70,17 @@ abstract class Controller
 // Also expose common variables to the view scope (best-effort)
         /** @var array<string,mixed> $data */
         $data = $this->data;
-/** @var \Ishmael\Core\Http\Request|null $request */
+        /** @var \Ishmael\Core\Http\Request $request */
         $request = \Ishmael\Core\Http\Request::fromGlobals();
-/** @var \Ishmael\Core\Http\Response|null $response */
+        /** @var \Ishmael\Core\Http\Response|null $response */
         $response = null;
-// Response instance may not be available in legacy dispatch; reserved for future pipeline wiring
+        // Response instance may not be available in legacy dispatch; reserved for future pipeline wiring
 
         // Make provided variables available in the view scope (cannot overwrite reserved ones)
         extract($vars, EXTR_SKIP);
-// Provide a lightweight route() callable in view scope for named URL generation
-        /** @var callable(string,array<string,mixed>,array<string,mixed>,bool):string $route */
+        // Provide a lightweight route() Closure in view scope for named URL generation
+        /** @var \Closure(string, array=, array=, bool=): string $route */
         $route = static function (string $name, array $params = [], array $query = [], bool $absolute = false): string {
-
             return \Ishmael\Core\Router::url($name, $params, $query, $absolute);
         };
 // Buffer child view output to allow optional layout handling without breaking existing behavior

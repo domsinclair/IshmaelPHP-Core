@@ -95,7 +95,7 @@ final class App
         $status = 200;
         if ($thrown instanceof \Throwable) {
             $status = 500;
-        } elseif ($this->router && method_exists($this->router, 'getLastResponse')) {
+        } elseif ($this->router) {
             $last = $this->router->getLastResponse();
             if ($last instanceof Response) {
                 $status = $last->getStatusCode();
@@ -105,7 +105,7 @@ final class App
         } else {
             $status = http_response_code() ?: 200;
         }
-        return new Response($body ?? '', $status);
+        return new Response($body, $status);
     }
 
     /**
