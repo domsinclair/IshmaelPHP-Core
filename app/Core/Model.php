@@ -341,7 +341,7 @@ abstract class Model
      * @param string $column Column name
      * @param array<string,mixed> $existingParams Current param map to avoid collisions
      */
-    private static function paramName(string $column, array $existingParams): string
+    protected static function paramName(string $column, array $existingParams): string
     {
         $base = preg_replace('/[^a-zA-Z0-9_]/', '_', $column) ?: 'p';
         $name = $base;

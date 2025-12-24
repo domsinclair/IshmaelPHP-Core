@@ -188,9 +188,6 @@ final class DailyRotatingFileChannel implements LoggerInterface
         }
         try {
             while (($file = readdir($dh)) !== false) {
-                if (!is_string($file)) {
-                    continue;
-                }
                 if (str_starts_with($file, $patternStart) && str_ends_with($file, $suffix)) {
             // extract date segment YYYY-MM-DD
                     $datePart = substr($file, strlen($patternStart), 10);

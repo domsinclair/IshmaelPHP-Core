@@ -132,9 +132,7 @@ final class LoggerManager
 
         // Apply JSON Lines formatter by default
         $formatter = new \Ishmael\Core\Log\Monolog\JsonLinesFormatter();
-        if (method_exists($handler, 'setFormatter')) {
-            $handler->setFormatter($formatter);
-        }
+        $handler->setFormatter($formatter);
         $logger->pushHandler($handler);
         return new MonologChannel($logger);
     }

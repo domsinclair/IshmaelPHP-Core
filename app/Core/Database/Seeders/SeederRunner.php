@@ -252,12 +252,7 @@ final class SeederRunner
         $out = [];
 // Consider all declared classes so repeated runs (require_once no-ops) still discover seeders
         foreach ($declaredAfter as $class) {
-            try {
-                $ref = new \ReflectionClass($class);
-            } catch (\ReflectionException) {
-                continue;
-            // skip bogus
-            }
+            $ref = new \ReflectionClass($class);
             // Verify class file is inside one of the module seeder directories
             $file = $ref->getFileName() ?: '';
             $filePath = str_replace(['\\', '/'], DIRECTORY_SEPARATOR, (string)$file);

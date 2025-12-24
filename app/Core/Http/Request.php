@@ -42,8 +42,8 @@ class Request
         $server = $_SERVER;
         $method = (string)($server['REQUEST_METHOD'] ?? 'GET');
         $uri = (string)($server['REQUEST_URI'] ?? '/');
-        $query = $_GET ?? [];
-        $post = $_POST ?? [];
+        $query = $_GET;
+        $post = $_POST;
         $headers = self::serverHeaders($server);
 // Allow tests to inject a raw body without touching php://input
         $rawBody = (string)($server['ISH_TEST_RAW_BODY'] ?? '');

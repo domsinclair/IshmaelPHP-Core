@@ -6,6 +6,7 @@ namespace Ishmael\Core\Log;
 
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use Stringable;
 
 /**
  * PSR-3 logging channel that writes formatted log lines to STDERR.

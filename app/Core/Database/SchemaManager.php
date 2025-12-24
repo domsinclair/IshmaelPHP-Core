@@ -398,14 +398,17 @@ final class SchemaManager
 // Prefer schema-declared name
             $tableName = $td->name ?: $tableName;
             // If model exposes a static $table (may be protected), read via reflection
-            if (class_exists($class) && property_exists($class, 'table')) {
+            if (class_exists($class)) {
                 try {
-                    $ref = new \ReflectionProperty($class, 'table');
-                    if ($ref->isStatic()) {
-                        $ref->setAccessible(true);
-                        $val = (string)$ref->getValue();
-                        if ($val !== '') {
-                            $tableName = $val;
+                    $ref = new \ReflectionClass($class);
+                    if ($ref->hasProperty('table')) {
+                        $prop = $ref->getProperty('table');
+                        if ($prop->isStatic()) {
+                            $prop->setAccessible(true);
+                            $val = (string)$prop->getValue();
+                            if ($val !== '') {
+                                $tableName = $val;
+                            }
                         }
                     }
                 } catch (\ReflectionException $e) {
