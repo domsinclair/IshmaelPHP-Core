@@ -227,6 +227,7 @@ class Router
             $entry['module'] = (string)$ctx['module'];
         }
         // Inherit CSRF group policy when present and not overridden for this route
+        /** @var array<string, mixed> $ctx */
         if (isset($ctx['_csrf']) && !isset($entry['_csrf'])) {
             $entry['_csrf'] = $ctx['_csrf'];
         }
@@ -661,17 +662,13 @@ class Router
         $this->lastResponse = $result;
         http_response_code($result->getStatusCode());
 // Freeze the headers snapshot exactly as they will be emitted so tests can read it deterministically
-        if (method_exists($result, 'refreshLastHeadersSnapshot')) {
-            $result->refreshLastHeadersSnapshot();
-        }
+        $result->refreshLastHeadersSnapshot();
         foreach ($result->getHeaders() as $k => $v) {
             header($k . ': ' . $v, true);
         }
         echo $result->getBody();
 // Final snapshot after emission to ensure tests see exactly what was sent
-        if (method_exists($result, 'refreshLastHeadersSnapshot')) {
-            $result->refreshLastHeadersSnapshot();
-        }
+        $result->refreshLastHeadersSnapshot();
     }
 
     /**

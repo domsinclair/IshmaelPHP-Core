@@ -14,6 +14,8 @@ use Ishmael\Core\Database\Schema\TableDefinition;
  * - Provide a thin, static CRUD surface that delegates to the active Database adapter.
  * - Expose a static schema() hook for SchemaManager (optional) to obtain a TableDefinition.
  * - Keep zero hidden state; no relations or magic properties.
+ *
+ * @phpstan-consistent-constructor
  */
 abstract class Model
 {
@@ -320,7 +322,7 @@ abstract class Model
     protected static function requireTable(): string
     {
         $table = static::$table ?? '';
-        if (!is_string($table) || $table === '') {
+        if ($table === '') {
             $cls = static::class;
             throw new \LogicException("Model {$cls} must declare a non-empty protected static $table name.");
         }

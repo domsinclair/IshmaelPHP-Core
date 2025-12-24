@@ -79,6 +79,7 @@ final class Packer
             'allowDevModules' => $this->includeDev,
         ]);
         $selected = ModuleManager::$modules;
+        /** @var array<string, bool> $files */
         $files = [];
 // Gather module exports
         foreach ($selected as $mod) {
