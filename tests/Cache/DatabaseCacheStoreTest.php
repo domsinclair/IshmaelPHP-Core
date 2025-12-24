@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ishmael\Tests;
 
 use Ishmael\Core\Cache\DatabaseCacheStore;
+use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class DatabaseCacheStoreTest extends TestCase

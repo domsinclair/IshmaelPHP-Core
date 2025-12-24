@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Ishmael\Tests;
 
+use DateTimeImmutable;
+use DateTimeZone;
 use Ishmael\Core\Http\Response;
 use PHPUnit\Framework\TestCase;
 

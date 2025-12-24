@@ -8,6 +8,7 @@ use Ishmael\Core\App;
 use Ishmael\Core\Http\Request;
 use Ishmael\Core\ModuleManager;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 final class ErrorHandlingTest extends TestCase
 {

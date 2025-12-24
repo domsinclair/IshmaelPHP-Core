@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit colors="true" bootstrap="tests\bootstrap.php" cacheResultFile=".phpunit.result.cache">
+<phpunit colors="true" bootstrap="tests/bootstrap.php" cacheResultFile=".phpunit.result.cache">
     <testsuites>
         <testsuite name="IshmaelPHP-Core Test Suite">
             <directory>tests</directory>
-            <exclude>tests\Database\AdapterConformanceTest.php</exclude>
+            <exclude>tests/Database/AdapterConformanceTest.php</exclude>
         </testsuite>
     </testsuites>
     <coverage processUncoveredFiles="true">

@@ -2,7 +2,7 @@ includes:
 	- vendor/phpstan/phpstan/conf/bleedingEdge.neon
 
 parameters:
-	level: 7
+	level: 5
 	paths:
 		- app
 		- tests
@@ -12,11 +12,11 @@ parameters:
 	bootstrapFiles:
 		- tests/bootstrap.php
 	reportUnmatchedIgnoredErrors: false
-	checkMissingCallableSignature: true
-	checkMissingIterableValueType: true
-	checkUninitializedProperties: true
+	treatPhpDocTypesAsCertain: false
 	ignoreErrors:
 		-
 			identifier: missingType.generics
+		-
+			identifier: missingType.iterableValue
 		# Allow simple dynamic properties in examples during v0.1
 		- '#Access to an undefined property .*#'

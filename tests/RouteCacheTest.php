@@ -7,6 +7,7 @@ namespace Ishmael\Tests;
 use Ishmael\Core\RouteCache;
 use Ishmael\Core\Router;
 use PHPUnit\Framework\TestCase;
+use RuntimeException;
 
 final class RouteCacheTest extends TestCase
 {

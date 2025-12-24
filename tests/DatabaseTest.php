@@ -6,7 +6,10 @@ namespace Ishmael\Tests;
 
 use Ishmael\Core\Database;
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterFactory;
+use PDO;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
+use RuntimeException;
 
 final class DatabaseTest extends TestCase
 {

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace Ishmael\Tests;
 
+use InvalidArgumentException;
 use Ishmael\Core\Router;
 use Ishmael\Core\Http\Response;
 use Ishmael\Core\ModuleManager;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 final class RouterNamedRoutesTest extends TestCase
 {

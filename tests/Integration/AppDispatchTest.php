@@ -10,6 +10,7 @@ use Ishmael\Core\Http\Response;
 use Ishmael\Core\ModuleManager;
 use Ishmael\Core\Router;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 final class AppDispatchTest extends TestCase
 {

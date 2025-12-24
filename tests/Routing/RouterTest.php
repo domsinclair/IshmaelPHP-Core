@@ -8,6 +8,7 @@ use Ishmael\Core\ModuleManager;
 use Ishmael\Core\Router;
 use Ishmael\Core\Http\Response;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 final class RouterTest extends TestCase
 {

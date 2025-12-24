@@ -6,6 +6,7 @@ namespace Ishmael\Tests;
 
 use Ishmael\Core\ModuleManager;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 
 final class ModuleManagerTest extends TestCase
 {

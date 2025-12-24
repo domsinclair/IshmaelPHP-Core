@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ishmael\Tests;
 
 use Ishmael\Core\DatabaseAdapters\SQLiteAdapter;
+use PDO;
 use PHPUnit\Framework\TestCase;
 
 final class SQLiteAdapterTest extends TestCase
