@@ -135,9 +135,7 @@ final class ThrottleMiddleware
                 ->header('RateLimit-Remaining', (string)$remaining)
                 ->header('RateLimit-Reset', (string)$resetIn)
                 ->header('Retry-After', (string)$resetIn);
-            if (method_exists($tooMany, 'refreshLastHeadersSnapshot')) {
-                $tooMany->refreshLastHeadersSnapshot();
-            }
+            $tooMany->refreshLastHeadersSnapshot();
             return $tooMany;
         }
 
@@ -145,9 +143,7 @@ final class ThrottleMiddleware
         $response->header('RateLimit-Limit', (string)$this->capacity)
             ->header('RateLimit-Remaining', (string)$remaining)
             ->header('RateLimit-Reset', (string)$resetIn);
-        if (method_exists($response, 'refreshLastHeadersSnapshot')) {
-            $response->refreshLastHeadersSnapshot();
-        }
+        $response->refreshLastHeadersSnapshot();
         return $response;
     }
 

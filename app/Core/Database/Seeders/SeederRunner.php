@@ -254,7 +254,7 @@ final class SeederRunner
         foreach ($declaredAfter as $class) {
             try {
                 $ref = new \ReflectionClass($class);
-            } catch (\Throwable $_) {
+            } catch (\ReflectionException) {
                 continue;
             // skip bogus
             }

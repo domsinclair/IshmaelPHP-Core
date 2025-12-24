@@ -39,7 +39,7 @@ class Request
 
     public static function fromGlobals(): self
     {
-        $server = $_SERVER ?? [];
+        $server = $_SERVER;
         $method = (string)($server['REQUEST_METHOD'] ?? 'GET');
         $uri = (string)($server['REQUEST_URI'] ?? '/');
         $query = $_GET ?? [];

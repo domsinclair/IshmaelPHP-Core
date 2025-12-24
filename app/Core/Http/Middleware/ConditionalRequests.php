@@ -118,16 +118,12 @@ final class ConditionalRequests
 // Build 304 response preserving caching headers
             $preserve = $this->preserveHeaders($response);
             $not = new Response('', 304, $preserve);
-            if (method_exists($not, 'refreshLastHeadersSnapshot')) {
-                $not->refreshLastHeadersSnapshot();
-            }
+            $not->refreshLastHeadersSnapshot();
             return $not;
         }
 
         // Validators applied on 200
-        if (method_exists($response, 'refreshLastHeadersSnapshot')) {
-            $response->refreshLastHeadersSnapshot();
-        }
+        $response->refreshLastHeadersSnapshot();
         return $response;
     }
 

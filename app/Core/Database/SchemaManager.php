@@ -352,7 +352,7 @@ final class SchemaManager
         }
         // Fallback to framework default if available
         try {
-            if (class_exists(Logger::class) && method_exists(Logger::class, 'init')) {
+            if (class_exists(Logger::class)) {
                 Logger::init([]);
                 if (function_exists('app')) {
                     $svc = app(\Psr\Log\LoggerInterface::class);
@@ -397,8 +397,8 @@ final class SchemaManager
             $tableName = '';
 // Prefer schema-declared name
             $tableName = $td->name ?: $tableName;
-// If model exposes a static $table (may be protected), read via reflection
-            if (property_exists($class, 'table')) {
+            // If model exposes a static $table (may be protected), read via reflection
+            if (class_exists($class) && property_exists($class, 'table')) {
                 try {
                     $ref = new \ReflectionProperty($class, 'table');
                     if ($ref->isStatic()) {

@@ -91,11 +91,9 @@ final class ResponseCache
                 $age = max(0, time() - (int)$cached['stored_at']);
                 $resp->header('Age', (string)$age);
             }
-            // Standard cache hit header for diagnostics
+            // Standard cache cache hit header for diagnostics
             $resp->header('X-Cache', 'HIT');
-            if (method_exists($resp, 'refreshLastHeadersSnapshot')) {
-                $resp->refreshLastHeadersSnapshot();
-            }
+            $resp->refreshLastHeadersSnapshot();
             return $resp;
         }
 
@@ -122,9 +120,7 @@ final class ResponseCache
             if ($ttl !== null) {
                 $resp->header('Cache-Control', 'public, max-age=' . max(0, (int)$ttl));
             }
-            if (method_exists($resp, 'refreshLastHeadersSnapshot')) {
-                $resp->refreshLastHeadersSnapshot();
-            }
+            $resp->refreshLastHeadersSnapshot();
             return $resp;
         } else {
         // Mark on original and return a fresh instance to ensure headers snapshot is updated for tests and SAPI emitters
@@ -132,9 +128,7 @@ final class ResponseCache
             $resp = new Response($response->getBody(), $response->getStatusCode(), $response->getHeaders());
         // Re-assert header on the new instance too
             $resp->header('X-Cache', 'BYPASS');
-            if (method_exists($resp, 'refreshLastHeadersSnapshot')) {
-                $resp->refreshLastHeadersSnapshot();
-            }
+            $resp->refreshLastHeadersSnapshot();
             return $resp;
         }
     }
