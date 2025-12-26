@@ -2,12 +2,29 @@
 <?php
 
 declare(strict_types=1);
+ini_set('display_errors', '0');
+error_reporting(0);
 
-// Autoload resolution: prefer local vendor of this package, then project root vendor.
+$cwd = getcwd();
 $autoloadPaths = [
+    // Running inside the framework repo itself
     __DIR__ . '/../vendor/autoload.php',
-    __DIR__ . '/../../../vendor/autoload.php',
+
+    // Installed at project/vendor/ishmael/framework/tools/mcp/bin/ish-mcp → up to project/vendor/autoload.php
+    __DIR__ . '/../../../../../autoload.php',
+
+    // Some vendors place autoload.php directly under project/vendor (same result as previous)
+    // (kept for clarity; same as above)
+
+    // When the launcher sets the working directory to project root (PhpStorm plugin does)
+    $cwd ? ($cwd . DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR . 'autoload.php') : null,
+
+    // Extra fallback: if the bin is nested one level deeper in a variant layout
+    __DIR__ . '/../../../../../../autoload.php',
 ];
+
+$autoloadPaths = array_values(array_filter($autoloadPaths));
+
 $loaded = false;
 foreach ($autoloadPaths as $path) {
     if (is_file($path)) {
@@ -17,7 +34,8 @@ foreach ($autoloadPaths as $path) {
     }
 }
 if (!$loaded) {
-    fwrite(STDERR, "[ish-mcp] Autoloader not found. Run 'composer install' in tools/mcp or project root.\n");
+    fwrite(STDERR, "[ish-mcp] Autoloader not found. Checked:\n  - " . implode("\n  - ", $autoloadPaths) . "\n" .
+        "Ensure you ran 'composer install' in the project root.\n");
     exit(1);
 }
 
@@ -45,35 +63,26 @@ use IshmaelPHP\McpServer\Tools\FeaturePackIntegrateTool;
 use IshmaelPHP\McpServer\Project\ProjectContext;
 
 $version = '0.1.0';
-
 $transport = new StdioTransport();
 $router = new RequestRouter();
-
-// Register core tools
 $router->registerTool(new HealthVersionTool($version));
 
-// Discover project context (root, binaries, sandbox); degraded mode if not found
 $context = ProjectContext::discover();
 if ($context->getRoot() === null) {
     fwrite(STDERR, "[ish-mcp] Warning: Ishmael project root not detected from CWD. Some tools may be limited.\n");
 }
-// Register project/info tool for visibility of discovery
 $router->registerTool(new ProjectInfoTool($context));
-// Register Task 3F tools (read-only/dry-run)
 $router->registerTool(new FeaturePackListTool($context));
 $router->registerTool(new FeaturePackCreateTool($context));
-// Register Task 6 tools (v0.2+ incubation)
 $router->registerTool(new TestTool($context));
 $router->registerTool(new LintTool($context));
 $router->registerTool(new LogTailTool($context));
 $router->registerTool(new ContainerDescribeTool($context));
 $router->registerTool(new MigrateTool($context));
 $router->registerTool(new EnvValidateTool($context));
-// Register Task 6F tools (feature packs: install + integrate)
 $router->registerTool(new FeaturePackInstallTool($context));
 $router->registerTool(new FeaturePackIntegrateTool($context));
 
-// Resources: combine built-ins with docs:* and templates:* discovered under project root (read-only)
 $staticResources = new StaticResourceProvider([
     ['id' => 'docs:feature-packs', 'description' => 'Ishmael Feature Packs overview'],
     ['id' => 'docs:getting-started', 'description' => 'Getting started with Ishmael'],
@@ -87,11 +96,9 @@ if ($context->getRoot() !== null && $context->getSandbox() !== null) {
         $root . DIRECTORY_SEPARATOR . 'site',
     ]);
     $templatesProvider = new TemplatesResourceProvider($sandbox, $root . DIRECTORY_SEPARATOR . 'Templates');
-    // Always include packaged docs as a fallback source so Composer installs still have docs
     $packagedDocs = new PackageDocsResourceProvider();
     $resources = new AggregateResourceProvider([$staticResources, $docsProvider, $templatesProvider, $packagedDocs]);
 } else {
-    // Degraded: no project context. Still expose packaged docs if present.
     $packagedDocs = new PackageDocsResourceProvider();
     $resources = new AggregateResourceProvider([$staticResources, $packagedDocs]);
 }
