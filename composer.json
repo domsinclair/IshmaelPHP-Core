@@ -16,8 +16,7 @@
   ],
   "type": "library",
   "bin": [
-    "bin/ish",
-    "tools/mcp/bin/ish-mcp"
+    "bin/ish"
   ],
   "autoload": {
     "psr-4": {

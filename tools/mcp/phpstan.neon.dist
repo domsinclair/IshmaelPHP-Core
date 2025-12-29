@@ -1,7 +1,0 @@
-parameters:
-  phpVersion: 80200
-  paths:
-    - src
-  level: 6
-  ignoreErrors:
-    - identifier: missingType.iterableValue
