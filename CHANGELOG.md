@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.11](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.10...v0.7.11) (2025-12-29)
+
+
+### Miscellaneous Chores
+
+* Remove mcp from core now that it is a standalone entity. ([20d2a55](https://github.com/domsinclair/IshmaelPHP-Core/commit/20d2a5508f76770495e3286e5da5587c7bf11c68))
+
 ## [0.7.10](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.9...v0.7.10) (2025-12-26)
 
 
