@@ -690,6 +690,15 @@ TXT;
                             'ModuleName' => $studly,
                             'module' => $moduleSlug,
                     ]);
+
+                    // If file is a controller, prefix it with ModuleName
+                    if (str_contains($rel, 'Controllers' . DIRECTORY_SEPARATOR) && str_ends_with($rel, 'Controller.php.stub')) {
+                        $filename = basename($outPath);
+                        if (!str_starts_with($filename, $studly)) {
+                            $outPath = str_replace($filename, $studly . $filename, $outPath);
+                        }
+                    }
+
                     // Drop .stub suffix for destination files
                     if (str_ends_with($outPath, '.stub')) {
                         $outPath = substr($outPath, 0, -5);
@@ -702,19 +711,18 @@ TXT;
                                 '->get(\'/' . $moduleSlug . '\',',
                                 (string)$rendered
                         );
+                        // Prefix the controller name with Studly module name
+                        $rendered = preg_replace(
+                                '#->get\(\'/' . preg_quote($moduleSlug, '#') . '\',\\s*\'([^\']*Controller@index)\'\)#',
+                                '->get(\'/' . $moduleSlug . '\', \'' . $studly . '$1\')',
+                                (string)$rendered
+                        );
                         // Replace placeholder route names like <module>.home if present
                         $rendered = str_replace('<module>.', $moduleSlug . '.', (string)$rendered);
                         // Ensure any api/health route is also scoped under the module prefix
                         $rendered = preg_replace(
                                 '#(\\$router->get\\()\\s*\'/?api/health\'#',
                                 '$1\'/' . $moduleSlug . '/api/health\'',
-                                (string)$rendered
-                        );
-                        // If the stub points home to a non-existent BlogHomeController, replace with a simple closure placeholder
-                        $homeReplacement = '->get(\'/' . $moduleSlug . '\', function($req, \\Ishmael\\Core\\Http\\Response $res): \\Ishmael\\Core\\Http\\Response { return $res->setBody(\'' . $studly . ' module home\'); })';
-                        $rendered = preg_replace(
-                                '#->get\(\'/' . preg_quote($moduleSlug, '#') . '\',\\s*\'[^\']*HomeController@index\'\)#',
-                                $homeReplacement,
                                 (string)$rendered
                         );
                         // Some older stubs accidentally included a second PHP header and an extra closure; keep only the first closure body

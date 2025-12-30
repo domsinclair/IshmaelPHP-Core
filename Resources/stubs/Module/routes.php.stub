@@ -19,7 +19,7 @@ use Ishmael\Core\Http\Response;
 
 return function (Router $router): void {
     // Home page for the module
-    $router->get('/', '<ModuleName>HomeController@index')->name('<module>.home');
+    $router->get('/', 'Controller@index')->name('<module>.home');
 
     // Example JSON endpoint
     $router->get('api/health', function($req, Response $res): Response {

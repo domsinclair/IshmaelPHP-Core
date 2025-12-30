@@ -1,0 +1,24 @@
+<?php
+declare(strict_types=1);
+
+namespace Modules\<ModuleName>\Controllers;
+
+use Ishmael\Core\Controller;
+
+/**
+ * <ModuleName>Controller
+ *
+ * Default controller for the <ModuleName> module.
+ */
+final class <ModuleName>Controller extends Controller
+{
+    /**
+     * Display the module home page.
+     */
+    public function index(): void
+    {
+        $this->render('home', [
+            'module' => '<ModuleName>'
+        ]);
+    }
+}
