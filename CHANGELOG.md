@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.12](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.11...v0.7.12) (2025-12-30)
+
+
+### Bug Fixes
+
+* Make module was failing to create a controller. ([c34c493](https://github.com/domsinclair/IshmaelPHP-Core/commit/c34c49388b9d78c10ac5237b96b3a0c32583543d))
+
 ## [0.7.11](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.10...v0.7.11) (2025-12-29)
 
 
