@@ -2,6 +2,7 @@
   "name": "<ModuleName>",
   "version": "0.1.0",
   "env": "shared",
+  "dependencies": [],
   "description": "Scaffolded module <ModuleName>",
   "routes": "Modules/<ModuleName>/routes.php",
   "authors": [

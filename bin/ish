@@ -25,6 +25,8 @@
     use Ishmael\Core\Database\Seeding\SeedManager;
     use Ishmael\Core\ModuleManager;
 
+    $previewMode = false;
+
     /**
      * Locate the Composer autoloader.
      *
@@ -111,6 +113,10 @@
      */
     function ensureDirectory(string $path): void
     {
+        global $previewMode;
+        if ($previewMode) {
+            return;
+        }
         if (!is_dir($path)) {
             if (!mkdir($path, 0777, true) && !is_dir($path)) {
                 throw new RuntimeException('Failed to create directory: ' . $path);
@@ -128,6 +134,14 @@
      */
     function writeFile(string $path, string $contents, bool $overwrite = false): void
     {
+        global $previewMode;
+        if ($previewMode) {
+            echo "---PREVIEW-START---" . PHP_EOL;
+            echo "Path: " . $path . PHP_EOL;
+            echo "Content:" . PHP_EOL . $contents . PHP_EOL;
+            echo "---PREVIEW-END---" . PHP_EOL;
+            return;
+        }
         if (file_exists($path) && !$overwrite) {
             throw new RuntimeException('File already exists: ' . $path);
         }
@@ -369,6 +383,7 @@ PHP;
                         'options' => [
                                 ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
                                 ['name' => '--api', 'description' => 'Hint API-style module (no session/CSRF route grouping)'],
+                                ['name' => '--dependencies', 'description' => 'Comma-separated list of module dependencies', 'accepts' => 'DEPS'],
                         ],
                 ],
                 [
@@ -499,11 +514,19 @@ PHP;
                                 ['name' => '--api', 'description' => 'Generate routes without session/CSRF grouping (for API/stateless)'],
                         ],
                 ],
+                [
+                        'name' => 'modules:check',
+                        'description' => 'Validate the module dependency graph and detect shadow dependencies.',
+                        'options' => [
+                                ['name' => '--modules', 'description' => 'Path to modules directory'],
+                        ],
+                ],
         ];
     }
 
     // 5) Dispatch
     $command = $argv[1] ?? 'help';
+    $previewMode = isset($options['preview']);
 
     // Persist CLI metadata on every run (cheap) to keep docs in sync
     persistCliMetadata($appRoot, cliCommandRegistry());
@@ -519,7 +542,7 @@ PHP;
 
 Usage:
   ish help
-  ish make:module <Name> [--templates=PATH] [--api]
+  ish make:module <Name> [--templates=PATH] [--api] [--dependencies=A,B]
   ish make:resource <Module> <Name> [--templates=PATH] [--api] [--public-get-only]
   ish make:controller <Module> <Name> [--invokable] [--templates=PATH]
   ish make:service <Module> <Name> [--templates=PATH]
@@ -539,6 +562,7 @@ Usage:
   ish route:clear [--file=PATH]
   ish make:routes <Module> [--api]
   ish make:routes --module=Name [--api]
+  ish modules:check [--modules=PATH]
   ish pack --env=production [--include-dev] [--target=webhost|container] [--out=./dist] [--dry-run]
 
 Options:
@@ -669,6 +693,12 @@ TXT;
                 $dest = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $studly;
                 $templateRoot = resolveTemplateDir('Module', $appRoot, isset($options['templates']) ? (string)$options['templates'] : null);
 
+                // Phase 17: Support --dependencies option
+                $dependencies = [];
+                if (isset($options['dependencies']) && is_string($options['dependencies'])) {
+                    $dependencies = array_map('trim', explode(',', $options['dependencies']));
+                }
+
                 // Render-copy template tree: strip .stub suffixes and replace tokens
                 $iterator = new RecursiveIteratorIterator(
                         new RecursiveDirectoryIterator($templateRoot, FilesystemIterator::SKIP_DOTS),
@@ -690,6 +720,16 @@ TXT;
                             'ModuleName' => $studly,
                             'module' => $moduleSlug,
                     ]);
+
+                    // Phase 17: Inject dependencies into manifest
+                    if (basename($outPath) === 'module.php' || basename($outPath) === 'module.php.stub') {
+                        $depString = !empty($dependencies) ? "'" . implode("', '", $dependencies) . "'" : "";
+                        $rendered = str_replace("'dependencies' => [],", "'dependencies' => [{$depString}],", (string)$rendered);
+                    }
+                    if (basename($outPath) === 'module.json' || basename($outPath) === 'module.json.stub') {
+                        $depJson = json_encode($dependencies);
+                        $rendered = str_replace('"dependencies": [],', '"dependencies": ' . $depJson . ',', (string)$rendered);
+                    }
 
                     // If file is a controller, prefix it with ModuleName
                     if (str_contains($rel, 'Controllers' . DIRECTORY_SEPARATOR) && str_ends_with($rel, 'Controller.php.stub')) {
@@ -1273,6 +1313,120 @@ TPL;
                 ModuleManager::clearCache($cachePath);
                 echo 'Modules cache cleared: ' . $cachePath . PHP_EOL;
                 exit(0);
+            }
+
+            case 'modules:check': {
+                $modulesDir = isset($options['modules']) ? (string)$options['modules'] : ($appRoot . DIRECTORY_SEPARATOR . 'Modules');
+                echo "Checking modules in: {$modulesDir}\n\n";
+
+                if (!is_dir($modulesDir)) {
+                    echo "❌ Modules directory not found.\n";
+                    exit(1);
+                }
+
+                // 1. Load all manifests
+                $manifests = [];
+                foreach (glob($modulesDir . '/*', GLOB_ONLYDIR) as $dir) {
+                    $name = basename($dir);
+                    $phpFile = $dir . DIRECTORY_SEPARATOR . 'module.php';
+                    $jsonFile = $dir . DIRECTORY_SEPARATOR . 'module.json';
+                    $data = [];
+                    if (is_file($phpFile)) {
+                        $data = require $phpFile;
+                    } elseif (is_file($jsonFile)) {
+                        $data = json_decode((string)file_get_contents($jsonFile), true);
+                    }
+                    $manifests[$name] = $data ?: [];
+                }
+
+                $errors = 0;
+                $warnings = 0;
+
+                // 2. Validate Dependency Graph
+                echo "1. Validating Dependency Graph...\n";
+                foreach ($manifests as $name => $manifest) {
+                    $deps = $manifest['dependencies'] ?? [];
+                    foreach ($deps as $dep) {
+                        if (!isset($manifests[$dep])) {
+                            echo "  ❌ Module '{$name}' depends on MISSING module '{$dep}'\n";
+                            $errors++;
+                        }
+                    }
+
+                    // Environment safety check
+                    $env = $manifest['env'] ?? 'shared';
+                    foreach ($deps as $dep) {
+                        if (isset($manifests[$dep])) {
+                            $depEnv = $manifests[$dep]['env'] ?? 'shared';
+                            if ($depEnv === 'development' && in_array($env, ['shared', 'production'], true)) {
+                                echo "  ❌ Safety Violation: {$env} module '{$name}' depends on development module '{$dep}'\n";
+                                $errors++;
+                            }
+                        }
+                    }
+                }
+
+                // Circular dependency check
+                try {
+                    // We can't easily use sortModules here because it needs full discovery info,
+                    // but we can re-implement a simple version for manifests.
+                    $visited = [];
+                    $tempVisited = [];
+                    $checkCircular = function ($name) use (&$checkCircular, &$visited, &$tempVisited, $manifests) {
+                        if (isset($tempVisited[$name])) throw new Exception($name);
+                        if (!isset($visited[$name])) {
+                            $tempVisited[$name] = true;
+                            $deps = $manifests[$name]['dependencies'] ?? [];
+                            foreach ($deps as $dep) {
+                                if (isset($manifests[$dep])) $checkCircular($dep);
+                            }
+                            unset($tempVisited[$name]);
+                            $visited[$name] = true;
+                        }
+                    };
+                    foreach (array_keys($manifests) as $name) {
+                        $checkCircular($name);
+                    }
+                } catch (Exception $e) {
+                    echo "  ❌ Circular dependency detected involving: " . $e->getMessage() . "\n";
+                    $errors++;
+                }
+
+                if ($errors === 0) echo "  ✅ Dependency graph is valid.\n";
+
+                // 3. Shadow Dependencies (Basic)
+                echo "\n2. Checking for Shadow Dependencies (experimental)...\n";
+                foreach (glob($modulesDir . '/*', GLOB_ONLYDIR) as $dir) {
+                    $moduleName = basename($dir);
+                    $declaredDeps = $manifests[$moduleName]['dependencies'] ?? [];
+                    $shadows = [];
+
+                    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir));
+                    foreach ($files as $file) {
+                        if ($file->isDir() || $file->getExtension() !== 'php') continue;
+                        $content = file_get_contents($file->getPathname());
+                        // Simple regex for "use Modules\OtherModule\..."
+                        if (preg_match_all('/use\s+Modules\\\\([A-Za-z0-9]+)\\\\/', $content, $matches)) {
+                            foreach ($matches[1] as $usedModule) {
+                                if ($usedModule !== $moduleName && !in_array($usedModule, $declaredDeps)) {
+                                    $shadows[$usedModule] = true;
+                                }
+                            }
+                        }
+                    }
+
+                    if (!empty($shadows)) {
+                        foreach (array_keys($shadows) as $sm) {
+                            echo "  ⚠️ Module '{$moduleName}' uses classes from '{$sm}' but does not declare it as a dependency.\n";
+                            $warnings++;
+                        }
+                    }
+                }
+
+                if ($warnings === 0 && $errors === 0) echo "  ✅ No shadow dependencies found.\n";
+
+                echo "\nSummary: {$errors} errors, {$warnings} warnings.\n";
+                exit($errors > 0 ? 1 : 0);
             }
 
             case 'route:cache': {

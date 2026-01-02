@@ -22,6 +22,12 @@ final class ModuleManager
      * - APP_ENV=development or testing: include all.
      * - Logs a warning when a development module is present in production without explicit override.
      *
+     * Phase 17 — Module Interdependency:
+     * - Supports 'dependencies' key in manifest (array of module names).
+     * - Performs topological sort so dependencies are booted before dependents.
+     * - Detects circular dependencies.
+     * - Safety check: Shared/Production modules cannot depend on Development modules.
+     *
      * @param string $modulesPath Root directory containing module folders.
      * @param array<string,mixed> $options Optional options: [
      *   'appEnv' => 'production'|'development'|'testing',
@@ -53,11 +59,13 @@ final class ModuleManager
             }
         }
 
+        $discovered = [];
         foreach (glob($modulesPath . '/*', GLOB_ONLYDIR) as $moduleDir) {
             $moduleName = basename($moduleDir);
             $manifest = self::loadManifest($moduleDir);
             $moduleEnv = $manifest['env'] ?? 'shared';
             $enabled = $manifest['enabled'] ?? true;
+
             if (!$enabled) {
                 Logger::info("⏭️ Skipping disabled module: {$moduleName}");
                 continue;
@@ -71,29 +79,91 @@ final class ModuleManager
             }
 
             [$routes, $routeClosure] = self::loadRoutesInfo($moduleDir);
-            self::$modules[$moduleName] = [
+            $discovered[$moduleName] = [
                 'name'   => $moduleName,
                 'path'   => realpath($moduleDir),
                 'env'    => $moduleEnv,
                 'manifest' => $manifest,
-                // Preview for future Event Bus: surface hooks as-is from manifest (no execution yet)
                 'hooks'  => isset($manifest['hooks']) && is_array($manifest['hooks']) ? $manifest['hooks'] : [],
-                // Preview for future SchemaManager: surface schema pointer/metadata as-is
                 'schema' => $manifest['schema'] ?? null,
                 'routes' => $routes,
                 'routeClosure' => $routeClosure,
+                'dependencies' => $manifest['dependencies'] ?? [],
             ];
-            Logger::info("✅ Discovered module: {$moduleName} (routes: " . count($routes) . ")");
         }
 
-        if (empty(self::$modules)) {
+        if (empty($discovered)) {
             Logger::info("⚠️ No modules discovered in {$modulesPath}");
+            return;
+        }
+
+        self::$modules = self::sortModules($discovered);
+
+        foreach (self::$modules as $name => $module) {
+            Logger::info("✅ Discovered module: {$name} (routes: " . count($module['routes']) . ")");
         }
 
         // Optional: write cache snapshot
         if (self::$cachePath) {
             @file_put_contents(self::$cachePath, json_encode(self::$modules, JSON_PRETTY_PRINT));
         }
+    }
+
+    /**
+     * Sort modules based on dependencies using a topological sort (Kahn's algorithm).
+     * Also performs circular dependency detection and environment safety checks.
+     *
+     * @param array<string, array> $discovered
+     * @return array<string, array> Sorted modules
+     * @throws \RuntimeException If a circular dependency or environment mismatch is detected.
+     */
+    private static function sortModules(array $discovered): array
+    {
+        $sorted = [];
+        $visited = [];
+        $tempVisited = [];
+
+        $visit = function (string $name) use (&$visit, &$sorted, &$visited, &$tempVisited, $discovered): void {
+            if (isset($tempVisited[$name])) {
+                throw new \RuntimeException("❌ Circular dependency detected involving module: {$name}");
+            }
+
+            if (!isset($visited[$name])) {
+                $tempVisited[$name] = true;
+
+                $module = $discovered[$name] ?? null;
+                if ($module) {
+                    $dependencies = $module['dependencies'] ?? [];
+                    foreach ($dependencies as $dep) {
+                        if (!isset($discovered[$dep])) {
+                            Logger::warning("⚠️ Module '{$name}' depends on missing module '{$dep}'");
+                            continue;
+                        }
+
+                        // Safety check: shared/production modules cannot depend on development modules
+                        $depEnv = $discovered[$dep]['env'] ?? 'shared';
+                        $modEnv = $module['env'] ?? 'shared';
+                        if ($depEnv === 'development' && in_array($modEnv, ['shared', 'production'], true)) {
+                            throw new \RuntimeException("❌ Safety Violation: {$modEnv} module '{$name}' cannot depend on development module '{$dep}'");
+                        }
+
+                        $visit($dep);
+                    }
+                }
+
+                unset($tempVisited[$name]);
+                $visited[$name] = true;
+                if ($module) {
+                    $sorted[$name] = $module;
+                }
+            }
+        };
+
+        foreach (array_keys($discovered) as $name) {
+            $visit($name);
+        }
+
+        return $sorted;
     }
 
     /**
