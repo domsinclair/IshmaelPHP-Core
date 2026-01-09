@@ -384,6 +384,7 @@ PHP;
                                 ['name' => '--templates', 'description' => 'Override template source directory', 'accepts' => 'PATH'],
                                 ['name' => '--api', 'description' => 'Hint API-style module (no session/CSRF route grouping)'],
                                 ['name' => '--dependencies', 'description' => 'Comma-separated list of module dependencies', 'accepts' => 'DEPS'],
+                                ['name' => '--knowledge', 'description' => 'Mark as a knowledge-dense module (RAG-friendly)'],
                         ],
                 ],
                 [
@@ -725,10 +726,21 @@ TXT;
                     if (basename($outPath) === 'module.php' || basename($outPath) === 'module.php.stub') {
                         $depString = !empty($dependencies) ? "'" . implode("', '", $dependencies) . "'" : "";
                         $rendered = str_replace("'dependencies' => [],", "'dependencies' => [{$depString}],", (string)$rendered);
+
+                        // Injection of knowledge metadata
+                        if (isset($options['knowledge'])) {
+                            $knowledgeMeta = "\n    'type' => 'content',\n    'audience' => 'developer',\n    'stability' => 'stable',\n    'knowledge' => true,\n";
+                            $rendered = str_replace("'dependencies' => [{$depString}],", "'dependencies' => [{$depString}],{$knowledgeMeta}", (string)$rendered);
+                        }
                     }
                     if (basename($outPath) === 'module.json' || basename($outPath) === 'module.json.stub') {
                         $depJson = json_encode($dependencies);
                         $rendered = str_replace('"dependencies": [],', '"dependencies": ' . $depJson . ',', (string)$rendered);
+
+                        if (isset($options['knowledge'])) {
+                            $intentJson = ',"intent": {"type": "content", "audience": "developer", "stability": "stable", "knowledge": true}';
+                            $rendered = str_replace('"dependencies": ' . $depJson . ',', '"dependencies": ' . $depJson . $intentJson . ',', (string)$rendered);
+                        }
                     }
 
                     // If file is a controller, prefix it with ModuleName
@@ -1104,7 +1116,7 @@ TPL;
                 $moduleArg = $argv[2] ?? '';
                 $pathArg = $argv[3] ?? '';
                 if ($moduleArg === '' || $pathArg === '') {
-                    throw new InvalidArgumentException('Usage: ish make:view <Module> <resource>/<view> [--templates=PATH]');
+                    throw new InvalidArgumentException('Usage: ish make:view <Module> <resource>/<view> [--templates=PATH] [--knowledge]');
                 }
                 $moduleStudly = toStudlyCase($moduleArg);
                 $parts = explode('/', str_replace('\\', '/', $pathArg));
@@ -1118,6 +1130,16 @@ TPL;
                 if (!is_file($stub)) { throw new RuntimeException('Missing view stub: ' . $stub); }
                 $contents = file_get_contents($stub);
                 if ($contents === false) { throw new RuntimeException('Failed to read view stub'); }
+
+                // RAG-friendly knowledge helper wrapping
+                if (isset($options['knowledge'])) {
+                    $contents = "<?php echo knowledge_page('" . ucfirst($view) . "', function() use (\$sections, \$data, \$request, \$response) { ?>\n" .
+                                "    <?php echo concept('Overview', function() use (\$sections, \$data, \$request, \$response) { ?>\n" .
+                                "        " . $contents . "\n" .
+                                "    <?php }); ?>\n" .
+                                "<?php }); ?>";
+                }
+
                 $contents = replaceTokens($contents, [
                         'ModuleName' => $moduleStudly,
                         'resource' => $resource,
@@ -1336,7 +1358,15 @@ TPL;
                     } elseif (is_file($jsonFile)) {
                         $data = json_decode((string)file_get_contents($jsonFile), true);
                     }
-                    $manifests[$name] = $data ?: [];
+                    if (!is_array($data)) {
+                        $data = [];
+                    }
+                    // Apply defaults
+                    $data['name'] = $data['name'] ?? $name;
+                    $data['env'] = $data['env'] ?? 'shared';
+                    $data['dependencies'] = $data['dependencies'] ?? [];
+
+                    $manifests[$name] = $data;
                 }
 
                 $errors = 0;

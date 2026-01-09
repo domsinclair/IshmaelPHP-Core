@@ -663,3 +663,75 @@ if (!function_exists('cache')) {
     }
 
 }
+
+/**
+ * -------------------------------------------------------------
+ * Semantic View Helpers (AI-Friendly RAG)
+ * -------------------------------------------------------------
+ */
+
+if (!function_exists('knowledge_page')) {
+    /**
+     * Defines the root of a knowledge-dense view.
+     *
+     * @param string $title Page title
+     * @param Closure $content Content renderer
+     * @return string
+     */
+    function knowledge_page(string $title, Closure $content): string
+    {
+        ob_start();
+        $content();
+        $inner = ob_get_clean();
+
+        return sprintf(
+            "<article class=\"ish-knowledge-page\" data-knowledge-page=\"%s\">\n%s\n</article>",
+            e($title),
+            $inner
+        );
+    }
+}
+
+if (!function_exists('concept')) {
+    /**
+     * Wraps a specific conceptual unit.
+     *
+     * @param string $name Concept name
+     * @param Closure $content Content renderer
+     * @return string
+     */
+    function concept(string $name, Closure $content): string
+    {
+        ob_start();
+        $content();
+        $inner = ob_get_clean();
+
+        return sprintf(
+            "<section class=\"ish-concept\" data-concept=\"%s\">\n%s\n</section>",
+            e($name),
+            $inner
+        );
+    }
+}
+
+if (!function_exists('code_example')) {
+    /**
+     * Explicitly marks code blocks to distinguish them from descriptive text.
+     *
+     * @param string $lang Language identifier
+     * @param Closure $content Content renderer
+     * @return string
+     */
+    function code_example(string $lang, Closure $content): string
+    {
+        ob_start();
+        $content();
+        $inner = ob_get_clean();
+
+        return sprintf(
+            "<div class=\"ish-code-example\" data-lang=\"%s\">\n<pre><code>%s</code></pre>\n</div>",
+            e($lang),
+            trim($inner)
+        );
+    }
+}

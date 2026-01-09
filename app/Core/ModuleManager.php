@@ -89,6 +89,7 @@ final class ModuleManager
                 'routes' => $routes,
                 'routeClosure' => $routeClosure,
                 'dependencies' => $manifest['dependencies'] ?? [],
+                'intent' => self::resolveIntent($manifest),
             ];
         }
 
@@ -224,6 +225,7 @@ final class ModuleManager
             'name' => basename($moduleDir),
             'env' => 'shared',
             'enabled' => true,
+            'dependencies' => [],
         ];
     }
 
@@ -282,5 +284,35 @@ final class ModuleManager
     public static function get(string $moduleName): ?array
     {
         return self::$modules[$moduleName] ?? null;
+    }
+
+    /**
+     * Resolve the module's intent metadata from the manifest.
+     * Supports both flat keys (module.php) and nested 'intent' object (module.json).
+     *
+     * @param array<string,mixed> $manifest
+     * @return array{type: string, audience: string, stability: string, knowledge: bool}
+     */
+    private static function resolveIntent(array $manifest): array
+    {
+        $defaults = [
+            'type' => 'feature',
+            'audience' => 'end-user',
+            'stability' => 'stable',
+            'knowledge' => false,
+        ];
+
+        // module.json often nests under 'intent'
+        if (isset($manifest['intent']) && is_array($manifest['intent'])) {
+            return array_merge($defaults, $manifest['intent']);
+        }
+
+        // module.php often uses flat keys
+        return [
+            'type' => (string)($manifest['type'] ?? $defaults['type']),
+            'audience' => (string)($manifest['audience'] ?? $defaults['audience']),
+            'stability' => (string)($manifest['stability'] ?? $defaults['stability']),
+            'knowledge' => (bool)($manifest['knowledge'] ?? $defaults['knowledge']),
+        ];
     }
 }

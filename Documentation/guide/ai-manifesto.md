@@ -14,7 +14,8 @@ Ishmael is designed to be a "Zero-Friction, High-Intelligence" framework. It fav
 ### 1.2 Module-First Architecture
 *   **Directive**: All business logic should reside within a Module (`Modules/`).
 *   **Reason**: Ishmael is strictly modular. The `app/` directory is for framework-level overrides and core bootstrap, not for feature logic.
-*   **Pattern**: If you need a new feature, start with `ish make:module <Name>`.
+*   **Interdependency**: Modules must explicitly declare their dependencies in `module.php` or `module.json`. Avoid "Shadow Dependencies" (using code from another module without declaring it).
+*   **Pattern**: If you need a new feature, start with `ish make:module <Name> --dependencies=Core,Auth`.
 
 ### 1.3 Service-Based Decoupling
 *   **Directive**: Use the Dependency Injection (DI) container (`app()` helper) to resolve services.
@@ -37,7 +38,11 @@ To prevent data loss, environment corruption, or runtime errors, follow these pr
 *   **Directive**: After adding or modifying routes, verify them using `ish:listRoutes`.
 *   **Check**: Ensure the `integrity.valid` flag is `true` for all newly defined routes.
 
-### 2.4 Scaffolding Preview
+### 2.4 Module Integrity
+*   **Directive**: After modifying module manifests or imports, run `ish:modules:check`.
+*   **Check**: Ensure no circular dependencies or shadow dependencies are reported.
+
+### 2.5 Scaffolding Preview
 *   **Directive**: When generating code using `make:` commands, prefer using the `preview` flag.
 *   **Reason**: This allows you to review the generated code and present it to the user for approval before it is committed to the filesystem.
 *   **Action**: Use the `preview` parameter in `MakeControllerTool`, `MakeModuleTool`, etc.
@@ -55,9 +60,17 @@ To prevent data loss, environment corruption, or runtime errors, follow these pr
 ### 3.3 Models
 *   **Rule**: Use Models for data access and persistence logic. Avoid putting complex business logic inside Models.
 
+### 3.4 Knowledge & RAG (Retrieval-Augmented Generation)
+*   **Rule**: When creating documentation or content-heavy views, use the semantic helpers to ensure clear structure for AI extraction.
+*   **Helpers**:
+    *   `knowledge_page(string $title, Closure $content)`: Root container for knowledge assets.
+    *   `concept(string $title, Closure $details)`: Focused sections describing a single idea.
+    *   `code_example(string $language, Closure $code)`: Explicitly marked code blocks.
+*   **Scaffolding**: Use the `--knowledge` flag with `make:module` or `make:view` to automatically apply these patterns.
+
 ## 4. MCP Server Interaction
 
-The MCP server is your "Internal Consultant". 
+The MCP server is your "Internal Consultant".
 
 *   **Introspect Before Acting**: Use `ish://config/manifest` to see available classes and methods before suggesting a code change.
 *   **Use Stubs for Accuracy**: Reference `ish://stubs/Project/Config.php` and `ish://stubs/Project/Tables.php` to avoid "guessing" configuration keys or table names.
