@@ -16,7 +16,7 @@ final class App
     private bool $booted = false;
     private ?Router $router = null;
     private array $config = [];
-/**
+    /**
      * Boot the application (idempotent).
      */
     public function boot(): void
@@ -79,11 +79,20 @@ final class App
         } catch (\Throwable $e) {
             $thrown = $e;
             Logger::error('Kernel handle exception: ' . $e->getMessage());
-        // Build an error response instead of echoing directly
+            // Build an error response
             $debug = ($this->config['debug'] ?? false) === true;
             $err = Response::fromThrowable($e, $debug);
-            http_response_code($err->getStatusCode());
-            echo $err->getBody();
+            // Use the error body to avoid duplication or mixed content.
+            // We set it here, and it will be captured by the while-loop below if needed,
+            // but since we want to DISCARD the existing buffer, we'll handle it carefully.
+            $status = $err->getStatusCode();
+            $body = $err->getBody();
+
+            // Clean up any nested buffers before returning the error response
+            while (ob_get_level() > $level) {
+                ob_end_clean();
+            }
+            return new Response($body, $status);
         }
         $body = ob_get_clean();
 // Ensure output buffer is balanced in case of errors

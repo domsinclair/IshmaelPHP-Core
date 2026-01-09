@@ -1,33 +1,33 @@
 <?php
 
-    declare(strict_types=1);
+declare(strict_types=1);
 
 namespace Ishmael\Core;
 
 /**
-     * Base Controller
-     * ----------------
-     * Provides common functionality for all controllers.
-     * Handles view rendering, JSON responses, and shared helpers.
-     *
-     * View Conventions
-     * - View files are plain PHP located under: Modules/{Module}/Views/{resource}/{view}.php
-     * - Common view names: index.php, show.php, create.php, edit.php, _form.php, _flash.php, layout.php
-     * - The render() method accepts the view path relative to the module's Views/ directory (without .php)
-     * - Layouts are optional. A child view can opt into a layout by setting $layoutFile inside the view.
-     *
-     * Variables exposed to views
-     * - $sections  Ishmael\Core\ViewSections instance available for defining/yielding sections.
-     * - $data      Array of controller-scoped data (from $this->data), convenient for layouts/partials.
-     * - $request   Current HTTP request when available; may be null in legacy dispatch paths.
-     * - $response  Current HTTP response when available; may be null in legacy dispatch paths.
-     * - $route     Callable helper for URL generation by named routes: fn(string $name, array $params = [], array $query = [], bool $absolute = false): string
-     */
+ * Base Controller
+ * ----------------
+ * Provides common functionality for all controllers.
+ * Handles view rendering, JSON responses, and shared helpers.
+ *
+ * View Conventions
+ * - View files are plain PHP located under: Modules/{Module}/Views/{resource}/{view}.php
+ * - Common view names: index.php, show.php, create.php, edit.php, _form.php, _flash.php, layout.php
+ * - The render() method accepts the view path relative to the module's Views/ directory (without .php)
+ * - Layouts are optional. A child view can opt into a layout by setting $layoutFile inside the view.
+ *
+ * Variables exposed to views
+ * - $sections  Ishmael\Core\ViewSections instance available for defining/yielding sections.
+ * - $data      Array of controller-scoped data (from $this->data), convenient for layouts/partials.
+ * - $request   Current HTTP request when available; may be null in legacy dispatch paths.
+ * - $response  Current HTTP response when available; may be null in legacy dispatch paths.
+ * - $route     Callable helper for URL generation by named routes: fn(string $name, array $params = [], array $query = [], bool $absolute = false): string
+ */
 abstract class Controller
 {
     /** @var array<string,mixed> Arbitrary data available to views */
     protected array $data = [];
-/**
+    /**
      * Render a view file from within the current module or app.
      *
      * Backward compatibility:
@@ -47,22 +47,24 @@ abstract class Controller
      * @param string $view View name relative to the module's Views/ folder (without .php).
      * @param array<string,mixed> $vars Variables extracted into the view scope.
      */
-    protected function render(string $view, array $vars = []): void
+    protected function render(string $view, array $vars = []): string
     {
         $moduleName = $this->getModuleName();
         $module = ModuleManager::get($moduleName);
         if (!$module) {
             http_response_code(500);
-            echo "Module not found: {$moduleName}";
-            return;
+            $msg = "Module not found: {$moduleName}";
+            echo $msg;
+            return $msg;
         }
 
         $basePath = rtrim($module['path'], '/\\') . '/Views/';
         $viewPath = $basePath . $view . '.php';
         if (!file_exists($viewPath)) {
             http_response_code(500);
-            echo "View not found: {$viewPath}";
-            return;
+            $msg = "View not found: {$viewPath}";
+            echo $msg;
+            return $msg;
         }
 
         // Expose a minimal sections helper to views
@@ -84,7 +86,7 @@ abstract class Controller
             return \Ishmael\Core\Router::url($name, $params, $query, $absolute);
         };
 // Buffer child view output to allow optional layout handling without breaking existing behavior
-            ob_start();
+        ob_start();
         include $viewPath;
         $childOutput = (string) ob_get_clean();
 // If the child view sets $layoutFile, attempt to render a layout
@@ -101,16 +103,16 @@ abstract class Controller
             $layoutPath = $layoutFile;
             $isAbsolute = static function (string $path): bool {
 
-                    // Windows drive letter, e.g., C:\...
+                // Windows drive letter, e.g., C:\...
                 if (preg_match('~^[a-zA-Z]:[/\\\\]~', $path) === 1) {
                     return true;
                 }
-                    // Windows UNC path, e.g., \\server\share\...
+                // Windows UNC path, e.g., \\server\share\...
                 if (preg_match('~^[/\\\\]{2}~', $path) === 1) {
                     return true;
                 }
-                    // Unix absolute
-                    return str_starts_with($path, '/');
+                // Unix absolute
+                return str_starts_with($path, '/');
             };
             if (!$isAbsolute($layoutPath)) {
                 $isRelative = str_starts_with($layoutPath, './')
@@ -125,16 +127,16 @@ abstract class Controller
                 }
             }
 
-                // Append .php if not present
+            // Append .php if not present
             if (substr($layoutPath, -4) !== '.php') {
                 $layoutPath .= '.php';
             }
 
-                // Normalize directory separators for portability
-                $layoutPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $layoutPath);
+            // Normalize directory separators for portability
+            $layoutPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $layoutPath);
 // Try to resolve to a canonical path if the file exists, otherwise keep as constructed
-                // On some Windows environments, realpath may fail with relative parent components if not absolute enough
-                $resolvedLayoutPath = realpath($layoutPath);
+            // On some Windows environments, realpath may fail with relative parent components if not absolute enough
+            $resolvedLayoutPath = realpath($layoutPath);
 // If realpath failed, try manually resolving .. for the check
             if (!$resolvedLayoutPath) {
                 $resolvedLayoutPath = $layoutPath;
@@ -152,18 +154,23 @@ abstract class Controller
 
             if (!file_exists($resolvedLayoutPath)) {
                 http_response_code(500);
-                echo "Layout not found: {$layoutPath} (Resolved: {$resolvedLayoutPath})";
-                return;
+                $msg = "Layout not found: {$layoutPath} (Resolved: {$resolvedLayoutPath})";
+                echo $msg;
+                return $msg;
             }
 
-                // Include the layout in the same scope so it can access $sections and any view variables
-                // Use the resolved path for inclusion to ensure it's absolute and correct
-                include $resolvedLayoutPath;
-                return;
+            // Include the layout in the same scope so it can access $sections and any view variables
+            // Use the resolved path for inclusion to ensure it's absolute and correct
+            ob_start();
+            include $resolvedLayoutPath;
+            $output = (string) ob_get_clean();
+            echo $output;
+            return $output;
         }
 
-            // No layout requested: behave as before
-            echo $childOutput;
+        // No layout requested: behave as before
+        echo $childOutput;
+        return $childOutput;
     }
 
     /**
@@ -188,9 +195,9 @@ abstract class Controller
      * @param string $view
      * @param array<string,mixed> $vars
      */
-    protected function view(string $view, array $vars = []): void
+    protected function view(string $view, array $vars = []): string
     {
-        $this->render($view, $vars);
+        return $this->render($view, $vars);
     }
 
     /**

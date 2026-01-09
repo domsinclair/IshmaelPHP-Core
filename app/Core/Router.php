@@ -786,7 +786,7 @@ class Router
         if ($module === 'App') {
             $class = "App\\Controllers\\{$controller}";
         } elseif ($module) {
-            $class = "Modules\\{$module}\\Controllers\\{$controller}";
+            $class = str_contains($controller, '\\') ? $controller : "Modules\\{$module}\\Controllers\\{$controller}";
         } elseif (str_contains($controller, '\\')) {
             $class = $controller;
         // fully-qualified provided
