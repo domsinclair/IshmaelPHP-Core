@@ -4,3 +4,4 @@
 # Do not include these in Composer/zip exports
 /tests export-ignore
 /.github export-ignore
+/.release-please-manifest.json export-ignore
