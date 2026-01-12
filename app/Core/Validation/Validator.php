@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Ishmael\Core\Validation;
 
 use Ishmael\Core\Http\Request;
+use Ishmael\Core\Http\UploadedFile;
 
 /**
  * Validator provides minimal validation with common rules and i18n-ready codes.
@@ -106,6 +107,8 @@ final class Validator
                         if ($current < $n) {
                             $this->addError($field, 'validation.min', '%s must be at least ' . $n . '.');
                         }
+                    } elseif ($current instanceof UploadedFile) {
+                        // handled by separate logic or skipped here
                     } else {
                         $len = strlen((string)$current);
                         if ($len < $n) {
@@ -119,6 +122,8 @@ final class Validator
                         if ($current > $n) {
                             $this->addError($field, 'validation.max', '%s may not be greater than ' . $n . '.');
                         }
+                    } elseif ($current instanceof UploadedFile) {
+                        // handled by separate logic or skipped here
                     } else {
                         $len = strlen((string)$current);
                         if ($len > $n) {
@@ -132,7 +137,8 @@ final class Validator
             $inRule = $this->firstRule($parsed, 'in');
             if ($inRule !== null && $inRule[1] !== null) {
                 $allowed = array_map('trim', explode(',', (string)$inRule[1]));
-                if (!in_array((string)$current, $allowed, true)) {
+                $str = $current instanceof UploadedFile ? $current->getClientOriginalName() : (string)$current;
+                if (!in_array($str, $allowed, true)) {
                     $this->addError($field, 'validation.in', '%s must be one of: ' . implode(', ', $allowed) . '.');
                 }
             }
@@ -147,6 +153,92 @@ final class Validator
                 }
             }
 
+            // file
+            if ($this->hasRule($parsed, 'file')) {
+                if (!($current instanceof UploadedFile) || !$current->isValid()) {
+                    $this->addError($field, 'validation.file', '%s must be a valid uploaded file.');
+                }
+            }
+
+            // image
+            if ($this->hasRule($parsed, 'image')) {
+                if (!($current instanceof UploadedFile) || !$current->isValid()) {
+                    $this->addError($field, 'validation.image', '%s must be an image.');
+                } else {
+                    $mime = $current->getClientMimeType();
+                    $allowed = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+                    if (!in_array($mime, $allowed, true)) {
+                        $this->addError($field, 'validation.image', '%s must be an image (jpg, png, gif, webp).');
+                    }
+                }
+            }
+
+            // mimes:jpg,png,pdf
+            $mimesRule = $this->firstRule($parsed, 'mimes');
+            if ($mimesRule !== null && $mimesRule[1] !== null) {
+                if (!($current instanceof UploadedFile) || !$current->isValid()) {
+                    $this->addError($field, 'validation.mimes', '%s must be a file of type: ' . $mimesRule[1] . '.');
+                } else {
+                    $allowedExts = array_map('strtolower', array_map('trim', explode(',', (string)$mimesRule[1])));
+                    $filename = $current->getClientOriginalName();
+                    $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+                    if (!in_array($ext, $allowedExts, true)) {
+                        $this->addError($field, 'validation.mimes', '%s must be a file of type: ' . $mimesRule[1] . '.');
+                    }
+                }
+            }
+
+            // max:2048 (for files, this is KB)
+            $maxRule = $this->firstRule($parsed, 'max');
+            if ($maxRule !== null && $maxRule[1] !== null) {
+                if ($current instanceof UploadedFile) {
+                    $maxKb = (int)$maxRule[1];
+                    if ($current->getSize() > $maxKb * 1024) {
+                        $this->addError($field, 'validation.max_file', '%s may not be greater than ' . $maxKb . ' kilobytes.');
+                    }
+                }
+            }
+
+            // dimensions:min_width=100,min_height=100
+            $dimRule = $this->firstRule($parsed, 'dimensions');
+            if ($dimRule !== null && $dimRule[1] !== null) {
+                if (!($current instanceof UploadedFile) || !$current->isValid()) {
+                    $this->addError($field, 'validation.dimensions', '%s must be an image with valid dimensions.');
+                } else {
+                    $params = [];
+                    foreach (explode(',', (string)$dimRule[1]) as $pair) {
+                        $kv = explode('=', $pair, 2);
+                        if (count($kv) === 2) {
+                            $params[trim($kv[0])] = (int)trim($kv[1]);
+                        }
+                    }
+                    $imgSize = @getimagesize($current->getRealPath());
+                    if ($imgSize === false) {
+                        $this->addError($field, 'validation.dimensions', '%s must be a valid image.');
+                    } else {
+                        [$width, $height] = $imgSize;
+                        if (isset($params['min_width']) && $width < $params['min_width']) {
+                            $this->addError($field, 'validation.dimensions.min_width', '%s width must be at least ' . $params['min_width'] . 'px.');
+                        }
+                        if (isset($params['min_height']) && $height < $params['min_height']) {
+                            $this->addError($field, 'validation.dimensions.min_height', '%s height must be at least ' . $params['min_height'] . 'px.');
+                        }
+                        if (isset($params['max_width']) && $width > $params['max_width']) {
+                            $this->addError($field, 'validation.dimensions.max_width', '%s width may not be greater than ' . $params['max_width'] . 'px.');
+                        }
+                        if (isset($params['max_height']) && $height > $params['max_height']) {
+                            $this->addError($field, 'validation.dimensions.max_height', '%s height may not be greater than ' . $params['max_height'] . 'px.');
+                        }
+                        if (isset($params['width']) && $width !== $params['width']) {
+                            $this->addError($field, 'validation.dimensions.width', '%s width must be ' . $params['width'] . 'px.');
+                        }
+                        if (isset($params['height']) && $height !== $params['height']) {
+                            $this->addError($field, 'validation.dimensions.height', '%s height must be ' . $params['height'] . 'px.');
+                        }
+                    }
+                }
+            }
+
             // Assign sanitized value if no errors for field
             if (!isset($this->messages[$field])) {
                 $clean[$field] = $current;
@@ -154,10 +246,20 @@ final class Validator
         }
 
         if (!empty($this->messages)) {
-            throw new ValidationException($this->messages, $this->codes, $data);
+            throw new ValidationException($this->messages, $this->codes);
         }
 
         return $clean;
+    }
+
+    public function getErrors(): array
+    {
+        return $this->messages;
+    }
+
+    public function getCodes(): array
+    {
+        return $this->codes;
     }
 
     /**

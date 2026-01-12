@@ -73,30 +73,30 @@ final class MediaController
 
     public function upload(Request $request, Response $response): Response
     {
-        $file = $request->file('image'); // depends on your Request implementation
-        if (!$file) {
-            return $response->withStatus(422)->withBody('No file uploaded');
+        // Use the new validator rules for files
+        try {
+            $data = validate([
+                'image' => 'required|image|max:5120', // 5MB
+            ], $request);
+        } catch (\Ishmael\Core\Validation\ValidationException $e) {
+            return Response::json([
+                'error' => 'validation_failed',
+                'messages' => $e->getMessages()
+            ], 422);
         }
 
-        // Basic validations: size/type
-        $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
-        if (!in_array($file->getClientMimeType(), $allowed, true)) {
-            return $response->withStatus(415)->withBody('Unsupported media type');
-        }
+        $file = $request->file('image');
 
-        if ($file->getSize() > 5 * 1024 * 1024) { // 5MB
-            return $response->withStatus(413)->withBody('File too large');
-        }
-
-        // Ensure directory exists
-        if (!is_dir($this->uploadDir)) {
-            mkdir($this->uploadDir, 0775, true);
+        // Ensure directory exists using public_path helper
+        $uploadDir = public_path('uploads/blog');
+        if (!is_dir($uploadDir)) {
+            mkdir($uploadDir, 0775, true);
         }
 
         // Build a safe filename: yyyy/mm/slug-rand.ext
         $ext = pathinfo($file->getClientOriginalName(), PATHINFO_EXTENSION);
         $datePath = date('Y/m');
-        $dir = $this->uploadDir . DIRECTORY_SEPARATOR . $datePath;
+        $dir = $uploadDir . DIRECTORY_SEPARATOR . $datePath;
         if (!is_dir($dir)) {
             mkdir($dir, 0775, true);
         }
@@ -106,13 +106,11 @@ final class MediaController
         $name = $slug . '-' . substr(bin2hex(random_bytes(4)), 0, 8) . '.' . $ext;
 
         $targetPath = $dir . DIRECTORY_SEPARATOR . $name;
-        $file->moveTo($targetPath); // adjust to your upload handling API
+        $file->moveTo($targetPath);
 
-        $url = rtrim($this->publicBase, '/') . '/' . $datePath . '/' . $name;
+        $url = '/uploads/blog/' . $datePath . '/' . $name;
 
-        // Return JSON with the URL so the editor can insert it
-        $payload = json_encode(['url' => $url], JSON_UNESCAPED_SLASHES);
-        return $response->withHeader('Content-Type', 'application/json')->withBody($payload);
+        return Response::json(['url' => $url]);
     }
 }
 ```
@@ -135,7 +133,7 @@ Example view snippet below your Body textarea:
   <?= function_exists('csrfField') ? csrfField() : '' ?>
   <input type="file" name="image" accept="image/*" required />
   <button type="submit">Upload</button>
-  
+
   <!-- Optional: also include the token in a header for fetch() if your middleware checks headers -->
 </form>
 
@@ -225,35 +223,29 @@ final class PrivateMediaController
 
     public function __construct()
     {
-        // App-agnostic: resolve relative to module, then fall back to app storage
-        $this->diskRoot = dirname(__DIR__, 4) . '/storage/modules/blog/media';
+        $this->diskRoot = storage_path('modules/blog/media');
     }
 
     public function show(Request $request, Response $response, string $id): Response
     {
-        // Example lookup: map ID -> absolute file path stored in DB
-        // In real code, fetch a Media row by $id and check ownership/permissions.
-        $media = $this->findMediaRecord($id); // pseudo call
+        // Example lookup: map ID -> relative path stored in DB
+        $media = $this->findMediaRecord($id);
         if (!$media) {
-            return $response->withStatus(404)->withBody('Not found');
+            return $response->setStatusCode(404)->setBody('Not found');
         }
 
-        $user = $request->getAttribute('user');
+        $user = app('auth')?->user(); // or however you get the current user
         if (!$this->canView($user, $media)) {
-            return $response->withStatus(403)->withBody('Forbidden');
+            return $response->setStatusCode(403)->setBody('Forbidden');
         }
 
-        $path = $this->diskRoot . DIRECTORY_SEPARATOR . ltrim($media['path'], '\\/');
+        $path = storage_path('modules/blog/media/' . ltrim($media['path'], '\\/'));
         if (!is_file($path)) {
-            return $response->withStatus(404)->withBody('Not found');
+            return $response->setStatusCode(404)->setBody('Not found');
         }
 
-        $mime = $this->detectMime($path);
-        $body = fopen($path, 'rb');
-        return $response
-            ->withHeader('Content-Type', $mime)
-            ->withHeader('Cache-Control', 'private, max-age=0, no-store')
-            ->withBody($body); // stream file contents
+        // Use the new download helper for streaming
+        return Response::download($path);
     }
 
     private function detectMime(string $path): string
@@ -277,17 +269,16 @@ Add another action on MediaController (or a new controller) to accept uploads in
 ```php
 public function uploadPrivate(Request $request, Response $response): Response
 {
+    try {
+        validate([
+            'image' => 'required|image|max:10240', // 10MB
+        ], $request);
+    } catch (\Ishmael\Core\Validation\ValidationException $e) {
+        return Response::json(['errors' => $e->getMessages()], 422);
+    }
+
     $file = $request->file('image');
-    if (!$file) {
-        return $response->withStatus(422)->withBody('No file');
-    }
-
-    $allowed = ['image/jpeg','image/png','image/gif','image/webp'];
-    if (!in_array($file->getClientMimeType(), $allowed, true)) {
-        return $response->withStatus(415)->withBody('Unsupported');
-    }
-
-    $root = dirname(__DIR__, 4) . '/storage/modules/blog/media';
+    $root = storage_path('modules/blog/media');
     $datePath = date('Y/m');
     $dir = $root . DIRECTORY_SEPARATOR . $datePath;
     if (!is_dir($dir)) {
@@ -306,9 +297,8 @@ public function uploadPrivate(Request $request, Response $response): Response
     // $mediaId = $repo->create([...]);
 
     // Return a module route URL for embedding in Markdown (authors only)
-    $url = route('blog.media.private.show', ['id' => /*$mediaId*/ '123']); // example
-    $payload = json_encode(['url' => $url], JSON_UNESCAPED_SLASHES);
-    return $response->withHeader('Content-Type', 'application/json')->withBody($payload);
+    $url = route('blog.media.private.show', ['id' => /*$mediaId*/ '123']);
+    return Response::json(['url' => $url]);
 }
 ```
 

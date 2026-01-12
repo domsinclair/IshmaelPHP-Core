@@ -21,6 +21,17 @@ final class Emitter
         }
 
         // Body
-        echo $response->getBody();
+        if ($response->isFileResponse() && ($path = $response->getFilePath())) {
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
+            $handle = fopen($path, 'rb');
+            if ($handle) {
+                fpassthru($handle);
+                fclose($handle);
+            }
+        } else {
+            echo $response->getBody();
+        }
     }
 }

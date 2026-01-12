@@ -13,6 +13,8 @@ class Response
 /** @var array<string,string> */
     private array $headers = [];
     private string $body = '';
+    private ?string $filePath = null;
+    private bool $isFileResponse = false;
 /** @var array<string,string> */
     private static array $lastHeaders = [];
 /** @param array<string,string> $headers */
@@ -64,6 +66,36 @@ class Response
     {
         $headers = ['Location' => $location] + $headers;
         return new self('', $status, $headers);
+    }
+
+    public static function download(string $path, string $name = null, array $headers = []): self
+    {
+        $response = new self('', 200, $headers);
+        $response->filePath = $path;
+        $response->isFileResponse = true;
+
+        $filename = $name ?? basename($path);
+        $response->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+        if (!isset($headers['Content-Type'])) {
+            $mime = 'application/octet-stream';
+            if (function_exists('mime_content_type')) {
+                $mime = @mime_content_type($path) ?: 'application/octet-stream';
+            }
+            $response->header('Content-Type', $mime);
+        }
+
+        return $response;
+    }
+
+    public function isFileResponse(): bool
+    {
+        return $this->isFileResponse;
+    }
+
+    public function getFilePath(): ?string
+    {
+        return $this->filePath;
     }
 
     public static function fromThrowable(\Throwable $e, bool $debug = false): self

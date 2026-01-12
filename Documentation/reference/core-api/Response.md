@@ -9,6 +9,7 @@
 - `json(mixed $data, int $status, array $headers)`
 - `html(string $body, int $status, array $headers)`
 - `redirect(string $location, int $status, array $headers)`
+- `download(string $path, string $name = null, array $headers = []): self`: Creates a streaming file download response.
 - `fromThrowable(Throwable $e, bool $debug)`
 - `setStatusCode(int $code)`
 - `getStatusCode()`

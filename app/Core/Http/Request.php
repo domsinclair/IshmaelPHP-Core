@@ -20,13 +20,18 @@ class Request
     private string $rawBody;
 /** @var array<string, string> */
     private array $server;
+/** @var array<string, UploadedFile|UploadedFile[]> */
+    private array $files = [];
+
 /**
      * @param array<string,string> $server
      * @param array<string,mixed> $query
      * @param array<string,mixed> $post
      * @param array<string,string> $headers
+     * @param string $rawBody
+     * @param array<string, UploadedFile|UploadedFile[]> $files
      */
-    public function __construct(string $method, string $uri, array $server = [], array $query = [], array $post = [], array $headers = [], string $rawBody = '')
+    public function __construct(string $method, string $uri, array $server = [], array $query = [], array $post = [], array $headers = [], string $rawBody = '', array $files = [])
     {
         $this->method = strtoupper($method ?: 'GET');
         $this->uri = $uri ?: '/';
@@ -35,6 +40,7 @@ class Request
         $this->parsedBody = $post;
         $this->headers = $headers ?: $this->extractHeadersFromServer($server);
         $this->rawBody = $rawBody;
+        $this->files = $files;
     }
 
     public static function fromGlobals(): self
@@ -50,7 +56,85 @@ class Request
         if ($rawBody === '') {
             $rawBody = file_get_contents('php://input') ?: '';
         }
-        return new self($method, $uri, $server, $query, $post, $headers, $rawBody);
+
+        $files = self::normalizeFiles($_FILES);
+
+        return new self($method, $uri, $server, $query, $post, $headers, $rawBody, $files);
+    }
+
+    /**
+     * @param array $files Raw $_FILES array
+     * @return array<string, UploadedFile|UploadedFile[]>
+     */
+    private static function normalizeFiles(array $files): array
+    {
+        $normalized = [];
+
+        foreach ($files as $key => $value) {
+            if ($value instanceof UploadedFile) {
+                $normalized[$key] = $value;
+                continue;
+            }
+
+            if (is_array($value) && isset($value['tmp_name'])) {
+                if (is_array($value['tmp_name'])) {
+                    $normalized[$key] = self::normalizeNestedFiles($value);
+                } else {
+                    $normalized[$key] = new UploadedFile(
+                        (string)$value['name'],
+                        (string)$value['type'],
+                        (string)$value['tmp_name'],
+                        (int)$value['error'],
+                        (int)$value['size']
+                    );
+                }
+            }
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * @param array $files Nested $_FILES entry
+     * @return UploadedFile[]
+     */
+    private static function normalizeNestedFiles(array $files): array
+    {
+        $normalized = [];
+        $count = count($files['tmp_name']);
+        $keys = array_keys($files['tmp_name']);
+
+        for ($i = 0; $i < $count; $i++) {
+            $key = $keys[$i];
+            $normalized[] = new UploadedFile(
+                (string)$files['name'][$key],
+                (string)$files['type'][$key],
+                (string)$files['tmp_name'][$key],
+                (int)$files['error'][$key],
+                (int)$files['size'][$key]
+            );
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Get an uploaded file by key.
+     * @param string $key
+     * @return UploadedFile|UploadedFile[]|null
+     */
+    public function file(string $key): mixed
+    {
+        return $this->files[$key] ?? null;
+    }
+
+    /**
+     * Get all uploaded files.
+     * @return array<string, UploadedFile|UploadedFile[]>
+     */
+    public function allFiles(): array
+    {
+        return $this->files;
     }
 
     /**

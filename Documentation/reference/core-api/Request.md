@@ -19,3 +19,5 @@
 - `getHost()`
 - `getSubdomainParts()`
 - `input(string $key, mixed $default)`
+- `file(string $key): mixed`: Returns an `UploadedFile` instance, an array of them, or `null`.
+- `allFiles(): array`: Returns all uploaded files.

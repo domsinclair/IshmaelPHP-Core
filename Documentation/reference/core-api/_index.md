@@ -81,9 +81,11 @@ Auto-generated stubs for public types in Ishmael Core.
 | [StackChannel](StackChannel.md) | `Ishmael\Core\Log` | class |
 | [StartSessionMiddleware](StartSessionMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [StderrChannel](StderrChannel.md) | `Ishmael\Core\Log` | class |
+| [StorageInterface](StorageInterface.md) | `Ishmael\Core\Support` | interface |
 | [TableDefinition](TableDefinition.md) | `Ishmael\Core\Database\Schema` | class |
 | [ThrottleMiddleware](ThrottleMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
 | [TrailingSlashMiddleware](TrailingSlashMiddleware.md) | `Ishmael\Core\Http\Middleware` | class |
+| [UploadedFile](UploadedFile.md) | `Ishmael\Core\Http` | class |
 | [UserProviderInterface](UserProviderInterface.md) | `Ishmael\Core\Auth` | interface |
 | [ValidationException](ValidationException.md) | `Ishmael\Core\Validation` | class |
 | [Validator](Validator.md) | `Ishmael\Core\Validation` | class |

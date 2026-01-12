@@ -90,6 +90,20 @@ if (!function_exists('storage_path')) {
 
 }
 
+if (!function_exists('public_path')) {
+    function public_path(string $path = ''): string
+    {
+        $base = base_path('public');
+        if ($path === '') {
+            return $base;
+        }
+        // Normalize provided subpath for Windows/Linux and avoid duplicate separators
+        $normalized = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, trim($path, "\\/"));
+        return $base . DIRECTORY_SEPARATOR . $normalized;
+    }
+
+}
+
     /**
      * Simple JSON-safe logger.
      */
