@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.18](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.17...v0.7.18) (2026-01-13)
+
+
+### Miscellaneous Chores
+
+* Framework documentation additions to improve ai agent integration ([076ca77](https://github.com/domsinclair/IshmaelPHP-Core/commit/076ca7752125d455c806588bd61ddc6a0b9a340c))
+
 ## [0.7.17](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.16...v0.7.17) (2026-01-12)
 
 
