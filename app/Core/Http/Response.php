@@ -68,7 +68,7 @@ class Response
         return new self('', $status, $headers);
     }
 
-    public static function download(string $path, string $name = null, array $headers = []): self
+    public static function download(string $path, ?string $name = null, array $headers = []): self
     {
         $response = new self('', 200, $headers);
         $response->filePath = $path;

@@ -48,8 +48,19 @@ final class App
 // Discover modules once
         $modulesPath = $this->config['paths']['modules'] ?? base_path('modules');
         ModuleManager::discover($modulesPath);
-// Prepare router
+
+        // Initialize container and register module services
+        $container = new Container();
+        foreach (ModuleManager::$modules as $module) {
+            $services = $module['manifest']['services'] ?? [];
+            foreach ($services as $abstract => $concrete) {
+                $container->bind($abstract, $concrete);
+            }
+        }
+
+        // Prepare router
         $this->router = new Router();
+        $this->router->setContainer($container);
 // Set active router for static facade usage in route files
         Router::setActive($this->router);
 // Apply global middleware from config if provided
