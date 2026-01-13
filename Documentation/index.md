@@ -1,10 +1,13 @@
-# Ishmael PHP Documentation
+# Ishmael Core Documentation
 
-Welcome to the Ishmael PHP documentation. This site is built with MkDocs (Material theme) and is intended to be a living, versioned set of end‑user guides and references.
+Welcome to the IshmaelPHP Framework documentation.
 
-- Guides: step-by-step introductions and tutorials
-- How‑to: short task-oriented recipes
-- Concepts: deeper explanations of core ideas
-- Reference: auto-generated API and routes summaries
+## Documentation Sections
 
-To contribute: update Markdown under this folder and ensure your code changes include docblocks so the API reference generators can pick them up.
+- [**Conventions**](guide/conventions.md): Database and structural standards.
+- [**AI Collaboration**](guide/ai-collaboration.md): How to work with AI assistants and MCP servers.
+- [**Concepts**](concepts/service-layer.md): Core architectural patterns like the Service Layer and [Standard Library Pattern](concepts/standard-library-pattern.md).
+- [**How-To Guides**](how-to/create-a-module.md): Practical recipes and [question framing](how-to/framing-questions.md) for AI.
+- [**CLI Reference**](reference/cli-commands.md): Detailed map of `ish` commands with AI context.
+- [**Decision Cheat Sheet**](reference/cheat-sheet.md): Quick "Decision vs. Result" reference.
+- [**Examples**](examples/dog-module.md): Full-featured examples like the Dog Management module.
