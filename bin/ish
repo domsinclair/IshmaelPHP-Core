@@ -1651,7 +1651,7 @@ TPL;
             case 'feature:pack': {
                 $moduleArg = $argv[2] ?? '';
                 if ($moduleArg === '') {
-                    throw new InvalidArgumentException('Usage: ish feature:pack <Module> [--out=PATH]');
+                    throw new InvalidArgumentException('Usage: ish feature:pack <Module> [--out=PATH] [--type=community|commercial] [--registry-out=PATH]');
                 }
                 $moduleStudly = toStudlyCase($moduleArg);
                 $moduleDir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly;
@@ -1728,6 +1728,73 @@ TPL;
 
                 $zip->close();
                 echo "Feature packed successfully: {$zipPath}" . PHP_EOL;
+
+                // --- Registry XML Generation ---
+                $type = $options['type'] ?? $manifest['license_type'] ?? 'community';
+                $type = strtolower((string)$type);
+                if (!in_array($type, ['community', 'commercial'])) {
+                    $type = 'community';
+                }
+
+                $name = $manifest['name'] ?? strtolower($moduleStudly);
+                $title = $manifest['title'] ?? $moduleStudly;
+                $category = $manifest['category'] ?? 'General';
+                $synopsis = $manifest['synopsis'] ?? ($manifest['description'] ?? "A feature pack for IshmaelPHP.");
+                $installCmd = $manifest['install-command'] ?? "ish feature:install " . $zipName;
+
+                $capabilities = $manifest['capabilities'] ?? [];
+                if (empty($capabilities) && isset($manifest['type'])) {
+                    $capabilities[] = $manifest['type'];
+                }
+
+                $authorName = $manifest['author']['name'] ?? 'Unknown Author';
+                $authorEmail = $manifest['author']['email'] ?? '';
+                $authorUrl = $manifest['author']['url'] ?? '';
+
+                $xml = "    <!-- Entry for a " . ucfirst($type) . " Feature Pack -->\n";
+                $xml .= "    <feature name=\"" . htmlspecialchars((string)$name) . "\">\n";
+                $xml .= "        <title>" . htmlspecialchars((string)$title) . "</title>\n";
+                $xml .= "        <category>" . htmlspecialchars((string)$category) . "</category>\n";
+                $xml .= "        <synopsis>" . htmlspecialchars((string)$synopsis) . "</synopsis>\n";
+
+                if ($type === 'commercial') {
+                    $enforcement = $manifest['license_enforcement'] ?? 'development';
+                    $trial = ($manifest['license_trial'] ?? true) ? 'true' : 'false';
+                    $xml .= "        <license type=\"commercial\" enforcement=\"" . htmlspecialchars((string)$enforcement) . "\" trial=\"" . $trial . "\" />\n";
+                } else {
+                    $xml .= "        <license type=\"community\" enforcement=\"none\" />\n";
+                }
+
+                $xml .= "        <install-command>" . htmlspecialchars((string)$installCmd) . "</install-command>\n";
+
+                if (!empty($capabilities)) {
+                    $xml .= "        <capabilities>\n";
+                    foreach ($capabilities as $cap) {
+                        $xml .= "            <capability>" . htmlspecialchars((string)$cap) . "</capability>\n";
+                    }
+                    $xml .= "        </capabilities>\n";
+                }
+
+                $xml .= "        <author>\n";
+                $xml .= "            <name>" . htmlspecialchars((string)$authorName) . "</name>\n";
+                if ($authorEmail) {
+                    $xml .= "            <email>" . htmlspecialchars((string)$authorEmail) . "</email>\n";
+                }
+                if ($authorUrl) {
+                    $xml .= "            <url>" . htmlspecialchars((string)$authorUrl) . "</url>\n";
+                }
+                $xml .= "        </author>\n";
+                $xml .= "    </feature>\n";
+
+                if (isset($options['registry-out'])) {
+                    file_put_contents($options['registry-out'], $xml);
+                    echo "Registry XML snippet saved to: " . $options['registry-out'] . PHP_EOL;
+                } else {
+                    echo "\n--- Registry XML Snippet ---\n";
+                    echo $xml;
+                    echo "----------------------------\n";
+                }
+
                 exit(0);
             }
 
