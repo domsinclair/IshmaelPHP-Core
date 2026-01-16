@@ -157,9 +157,10 @@
      *
      * @param string $source Source directory
      * @param string $destination Destination directory
+     * @param bool $overwrite Whether to allow overwriting existing files
      * @return void
      */
-    function copyDirectoryRecursive(string $source, string $destination): void
+    function copyDirectoryRecursive(string $source, string $destination, bool $overwrite = false): void
     {
         if (!is_dir($source)) {
             throw new RuntimeException('Template directory not found: ' . $source);
@@ -178,7 +179,7 @@
                 if ($contents === false) {
                     throw new RuntimeException('Failed to read template file: ' . $item->getPathname());
                 }
-                writeFile($destPath, $contents);
+                writeFile($destPath, $contents, $overwrite);
             }
         }
     }
@@ -237,6 +238,13 @@ PHP;
 
     // 1) Resolve app root and autoload
     $appRoot = getcwd();
+
+    // Early option parsing to check for --app-root before resolving autoload
+    $tempOptions = parseOptions(array_slice($argv, 2));
+    if (isset($tempOptions['app-root'])) {
+        $appRoot = realpath((string)$tempOptions['app-root']) ?: (string)$tempOptions['app-root'];
+    }
+
     // Hint base_path() to use the host application's root rather than the vendor package path
     if (!defined('ISH_APP_BASE')) {
         define('ISH_APP_BASE', $appRoot);
@@ -260,7 +268,8 @@ PHP;
     $nonDbCommands = [
             'help','make:module','make:resource','make:view','make:views','make:controller','make:service',
             'examples:list','examples:install','pack','make:routes',
-            'modules:cache','modules:clear','route:cache','route:clear'
+            'modules:cache','modules:clear','route:cache','route:clear',
+            'feature:pack', 'feature:install'
     ];
     if (!in_array($command, $nonDbCommands, true)) {
         $configPath = isset($options['config']) ? (string)$options['config'] : ($appRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php');
@@ -522,6 +531,23 @@ PHP;
                                 ['name' => '--modules', 'description' => 'Path to modules directory'],
                         ],
                 ],
+                [
+                        'name' => 'feature:pack',
+                        'description' => 'Package a single module into a ZIP for distribution based on its module.php export list.',
+                        'options' => [
+                                ['name' => '<Module>', 'description' => 'Name of the module to pack (positional)'],
+                                ['name' => '--out', 'description' => 'Output directory for the ZIP file (defaults to current dir)'],
+                        ],
+                ],
+                [
+                        'name' => 'feature:install',
+                        'description' => 'Install a module from a ZIP file into the Modules directory.',
+                        'options' => [
+                                ['name' => '<PathToZip>', 'description' => 'Path to the module ZIP file (positional)'],
+                                ['name' => '--force', 'description' => 'Overwrite existing module if it exists'],
+                                ['name' => '--no-migrate', 'description' => 'Do not prompt to run migrations/seeders after installation'],
+                        ],
+                ],
         ];
     }
 
@@ -565,6 +591,8 @@ Usage:
   ish make:routes --module=Name [--api]
   ish modules:check [--modules=PATH]
   ish pack --env=production [--include-dev] [--target=webhost|container] [--out=./dist] [--dry-run]
+  ish feature:pack <Module> [--out=PATH]
+  ish feature:install <PathToZip> [--force] [--no-migrate]
 
 Options:
   --config=PATH      Path to database config (defaults to <appRoot>/config/database.php)
@@ -1617,6 +1645,189 @@ TPL;
                 } else {
                     echo "Bundle created successfully. Manifest: " . ($manifest['env'] ?? $env) . ", files: " . count($manifest['files'] ?? []) . "\n";
                 }
+                exit(0);
+            }
+
+            case 'feature:pack': {
+                $moduleArg = $argv[2] ?? '';
+                if ($moduleArg === '') {
+                    throw new InvalidArgumentException('Usage: ish feature:pack <Module> [--out=PATH]');
+                }
+                $moduleStudly = toStudlyCase($moduleArg);
+                $moduleDir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly;
+                $manifestPath = $moduleDir . DIRECTORY_SEPARATOR . 'module.php';
+
+                if (!is_dir($moduleDir)) {
+                    throw new RuntimeException("Module directory not found: {$moduleDir}");
+                }
+                if (!is_file($manifestPath)) {
+                    throw new RuntimeException("Module manifest not found: {$manifestPath}");
+                }
+
+                // Metadata validation (quality gate)
+                $contextMd = $moduleDir . DIRECTORY_SEPARATOR . '.ish-context.md';
+                if (!is_file($contextMd)) {
+                    echo "WARNING: .ish-context.md missing in module directory. It is recommended for AI-ready modules.\n";
+                }
+
+                $manifest = include $manifestPath;
+                if (!is_array($manifest)) {
+                    throw new RuntimeException("Invalid module manifest: {$manifestPath} must return an array.");
+                }
+
+                $exportList = $manifest['export'] ?? [];
+                if (empty($exportList)) {
+                    throw new RuntimeException("Module manifest does not define an 'export' list.");
+                }
+
+                $outDir = isset($options['out']) ? (string)$options['out'] : getcwd();
+                $zipName = strtolower($moduleStudly) . '.zip';
+                $zipPath = $outDir . DIRECTORY_SEPARATOR . $zipName;
+
+                if (!extension_loaded('zip')) {
+                    throw new RuntimeException("PHP zip extension is required.");
+                }
+
+                $zip = new ZipArchive();
+                if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
+                    throw new RuntimeException("Cannot create ZIP file: {$zipPath}");
+                }
+
+                foreach ($exportList as $item) {
+                    $itemPath = realpath($item);
+                    if ($itemPath === false || !str_starts_with($itemPath, realpath($moduleDir))) {
+                        // Try relative to module dir if realpath failed or is outside
+                        $itemPath = realpath($moduleDir . DIRECTORY_SEPARATOR . ltrim(str_replace($moduleDir, '', $item), DIRECTORY_SEPARATOR));
+                    }
+
+                    if ($itemPath === false || !file_exists($itemPath)) {
+                        echo "WARNING: Export item not found, skipping: {$item}\n";
+                        continue;
+                    }
+
+                    $relativePathInZip = 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . ltrim(str_replace(realpath($moduleDir), '', $itemPath), DIRECTORY_SEPARATOR);
+
+                    if (is_dir($itemPath)) {
+                        $files = new RecursiveIteratorIterator(
+                            new RecursiveDirectoryIterator($itemPath, RecursiveDirectoryIterator::SKIP_DOTS),
+                            RecursiveIteratorIterator::SELF_FIRST
+                        );
+                        foreach ($files as $file) {
+                            $filePath = $file->getRealPath();
+                            $zipSubPath = 'Modules' . DIRECTORY_SEPARATOR . $moduleStudly . DIRECTORY_SEPARATOR . ltrim(str_replace(realpath($moduleDir), '', $filePath), DIRECTORY_SEPARATOR);
+                            if ($file->isDir()) {
+                                $zip->addEmptyDir($zipSubPath);
+                            } else {
+                                $zip->addFile($filePath, $zipSubPath);
+                            }
+                        }
+                    } else {
+                        $zip->addFile($itemPath, $relativePathInZip);
+                    }
+                }
+
+                $zip->close();
+                echo "Feature packed successfully: {$zipPath}" . PHP_EOL;
+                exit(0);
+            }
+
+            case 'feature:install': {
+                $zipArg = $argv[2] ?? '';
+                if ($zipArg === '') {
+                    throw new InvalidArgumentException('Usage: ish feature:install <PathToZip> [--force] [--no-migrate]');
+                }
+                $zipPath = realpath($zipArg);
+                if ($zipPath === false || !is_file($zipPath)) {
+                    throw new RuntimeException("ZIP file not found: {$zipArg}");
+                }
+
+                if (!extension_loaded('zip')) {
+                    throw new RuntimeException("PHP zip extension is required.");
+                }
+
+                $zip = new ZipArchive();
+                if ($zip->open($zipPath) !== true) {
+                    throw new RuntimeException("Failed to open ZIP file: {$zipPath}");
+                }
+
+                // Extract to temp to verify structure
+                $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_install_' . uniqid();
+                ensureDirectory($tempDir);
+                $zip->extractTo($tempDir);
+                $zip->close();
+
+                // Find the module folder inside temp
+                $modulesDirInTemp = $tempDir . DIRECTORY_SEPARATOR . 'Modules';
+                if (!is_dir($modulesDirInTemp)) {
+                    throw new RuntimeException("Invalid module ZIP structure: 'Modules/' directory not found at root.");
+                }
+
+                $dirs = array_filter(glob($modulesDirInTemp . DIRECTORY_SEPARATOR . '*'), 'is_dir');
+                if (empty($dirs)) {
+                    throw new RuntimeException("Invalid module ZIP structure: No module directory found inside 'Modules/'.");
+                }
+                $sourceModuleDir = $dirs[0];
+                $moduleName = basename($sourceModuleDir);
+                $targetModuleDir = $appRoot . DIRECTORY_SEPARATOR . 'Modules' . DIRECTORY_SEPARATOR . $moduleName;
+
+                // Conflict protection
+                $force = isset($options['force']);
+                $allowOverwrite = $force;
+                if (is_dir($targetModuleDir) && !$force) {
+                    echo "Module '{$moduleName}' already exists. Overwrite? (y/n): ";
+                    $handle = fopen("php://stdin", "r");
+                    $line = fgets($handle);
+                    if (trim(strtolower($line)) === 'y') {
+                        $allowOverwrite = true;
+                    } else {
+                        echo "Installation aborted.\n";
+                        exit(0);
+                    }
+                }
+
+                ensureDirectory($appRoot . DIRECTORY_SEPARATOR . 'Modules');
+                copyDirectoryRecursive($sourceModuleDir, $targetModuleDir, $allowOverwrite);
+
+                echo "Module '{$moduleName}' installed to {$targetModuleDir}\n";
+
+                // Post-install automation
+                $noMigrate = isset($options['no-migrate']);
+                if (!$noMigrate) {
+                    $hasMigrations = is_dir($targetModuleDir . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Migrations');
+                    $hasSeeders = is_dir($targetModuleDir . DIRECTORY_SEPARATOR . 'Database' . DIRECTORY_SEPARATOR . 'Seeders');
+
+                    if ($hasMigrations || $hasSeeders) {
+                        echo "I've installed the '{$moduleName}' module. Would you like me to run the database migrations and seeders for it now? (y/n): ";
+                        $handle = fopen("php://stdin", "r");
+                        $line = fgets($handle);
+                        if (trim(strtolower($line)) === 'y') {
+                            if ($hasMigrations) {
+                                echo "Running migrations...\n";
+                                $migrator = new Migrator(Database::adapter());
+                                $migrator->migrate($moduleName);
+                            }
+                            if ($hasSeeders) {
+                                echo "Running seeders...\n";
+                                $seeder = new SeedManager(Database::adapter());
+                                $seeder->seed($moduleName);
+                            }
+                            echo "Database setup complete.\n";
+                        }
+                    }
+                }
+
+                // Cleanup temp
+                $files = new RecursiveIteratorIterator(
+                    new RecursiveDirectoryIterator($tempDir, RecursiveDirectoryIterator::SKIP_DOTS),
+                    RecursiveIteratorIterator::CHILD_FIRST
+                );
+                foreach ($files as $fileinfo) {
+                    $todo = ($fileinfo->isDir() ? 'rmdir' : 'unlink');
+                    $todo($fileinfo->getRealPath());
+                }
+                rmdir($tempDir);
+
+                echo "Installation complete." . PHP_EOL;
                 exit(0);
             }
 

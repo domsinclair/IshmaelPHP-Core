@@ -14,6 +14,7 @@ Ishmael is designed to be a "Zero-Friction, High-Intelligence" framework. It fav
 ### 1.2 Module-First Architecture
 *   **Directive**: All business logic should reside within a Module (`Modules/`).
 *   **Reason**: Ishmael is strictly modular. The `app/` directory is for framework-level overrides and core bootstrap, not for feature logic.
+*   **Distribution**: Prefer standard ZIP-based distribution for sharing feature packs. Use `ish feature:pack` to bundle and `ish feature:install` to integrate them.
 *   **Interdependency**: Modules must explicitly declare their dependencies in `module.php` or `module.json`. Avoid "Shadow Dependencies" (using code from another module without declaring it).
 *   **Pattern**: If you need a new feature, start with `ish make:module <Name> --dependencies=Core,Auth`.
 
