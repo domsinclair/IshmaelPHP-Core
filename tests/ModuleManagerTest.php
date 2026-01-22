@@ -251,4 +251,34 @@ PHP;
         @rmdir($docDir);
         @rmdir($baseDir);
     }
+
+    public function testModuleCapabilityDiscovery(): void
+    {
+        $baseDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_modules_cap_' . uniqid();
+        $modDir = $baseDir . DIRECTORY_SEPARATOR . 'CapModule';
+        @mkdir($modDir, 0777, true);
+
+        $manifest = [
+            'name' => 'CapModule',
+            'capabilities' => [
+                ['id' => 'basic-export', 'type' => 'community'],
+                ['id' => 'cloud-sync', 'type' => 'premium']
+            ]
+        ];
+        file_put_contents($modDir . DIRECTORY_SEPARATOR . 'module.php', "<?php return " . var_export($manifest, true) . ";");
+
+        $this->resetModules();
+        ModuleManager::discover($baseDir);
+
+        $info = ModuleManager::get('CapModule');
+        $this->assertIsArray($info);
+        $this->assertArrayHasKey('capabilities', $info);
+        $this->assertEquals('community', $info['capabilities']['basic-export']);
+        $this->assertEquals('premium', $info['capabilities']['cloud-sync']);
+
+        // Cleanup
+        @unlink($modDir . DIRECTORY_SEPARATOR . 'module.php');
+        @rmdir($modDir);
+        @rmdir($baseDir);
+    }
 }

@@ -5,6 +5,8 @@ Auto-generated stubs for public types in Ishmael Core.
 | Name | Namespace | Type |
 |---|---|---|
 | [App](App.md) | `Ishmael\Core` | class |
+| [Capability](Capability.md) | `Ishmael\Core` | class |
+| [CapabilityException](CapabilityException.md) | `Ishmael\Core` | class |
 | [ArrayCacheStore](ArrayCacheStore.md) | `Ishmael\Core\Cache` | class |
 | [Authenticate](Authenticate.md) | `Ishmael\Core\Http\Middleware` | class |
 | [AuthManager](AuthManager.md) | `Ishmael\Core\Auth` | class |

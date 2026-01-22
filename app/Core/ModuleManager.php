@@ -89,6 +89,7 @@ final class ModuleManager
                 'routes' => $routes,
                 'routeClosure' => $routeClosure,
                 'dependencies' => $manifest['dependencies'] ?? [],
+                'capabilities' => self::normalizeCapabilities($manifest),
                 'intent' => self::resolveIntent($manifest),
             ];
         }
@@ -284,6 +285,29 @@ final class ModuleManager
     public static function get(string $moduleName): ?array
     {
         return self::$modules[$moduleName] ?? null;
+    }
+
+    /**
+     * Normalize the capabilities block from the manifest.
+     * Ensures quick lookup of capability types (community vs. premium).
+     *
+     * @param array<string,mixed> $manifest
+     * @return array<string,string> Map of capability ID to type
+     */
+    private static function normalizeCapabilities(array $manifest): array
+    {
+        $normalized = [];
+        $capabilities = $manifest['capabilities'] ?? [];
+
+        if (is_array($capabilities)) {
+            foreach ($capabilities as $cap) {
+                if (isset($cap['id'])) {
+                    $normalized[$cap['id']] = $cap['type'] ?? 'community';
+                }
+            }
+        }
+
+        return $normalized;
     }
 
     /**

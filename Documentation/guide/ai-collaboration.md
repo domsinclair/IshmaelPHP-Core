@@ -60,3 +60,22 @@ To minimize token usage and provide cleaner answers:
 - **Reference, Don't Replicate**: Use `ish` CLI commands to handle scaffolding. Don't ask the AI to write out the entire directory structure if a command like `ish make:module` does it automatically.
 - **Incremental Implementation**: Focus on one layer at a time (Migration -> Model -> Service -> Controller -> View).
 - **Use Resources**: Direct the AI to read `ish://cli/commands` if it seems unsure about available flags.
+
+## 6. Building Professional Feature Packs
+
+When an AI agent is asked to help create or enhance a Feature Pack, it must follow these principles:
+
+### Template-First Approach
+Authors should always be directed to use the [Ishmael Feature Pack Template](D:\JetBrainsProjects\PhpStorm\Ishmael Features\ishmaelphp-feature). The AI should help the user navigate this template, not suggest alternative structures.
+
+### Module-Native Design
+Feature Packs are portable modules. They must live in the `modules/` directory and use the `Modules\<Vendor>\<Name>` namespace. The AI should verify that any suggested code adheres to this structure.
+
+### Mentorship over Enforcement
+The AI is a mentor, not a DRM engine. When helping with licensing:
+- **Suggest Dual Models**: If a user wants to monetize, suggest providing a functional "Community" core and gating "Premium" tools.
+- **Identify Capabilities**: Help the user define logical `capability` IDs in their manifest.
+- **Protect Runtime Neutrality**: Explicitly refuse to add license checks to controllers or models. Direct the user to gate CLI commands or Admin UI screens instead.
+
+### Documentation as a First-Class Citizen
+The AI should proactively suggest documenting new services or integration points in the module's `Docs/` directory.
