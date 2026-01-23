@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.23](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.22...v0.7.23) (2026-01-23)
+
+
+### Miscellaneous Chores
+
+* added documentation about intent mapping ([dc29b27](https://github.com/domsinclair/IshmaelPHP-Core/commit/dc29b2796f1cb8858b651cc3d87009752f918fe4))
+
 ## [0.7.22](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.21...v0.7.22) (2026-01-22)
 
 
