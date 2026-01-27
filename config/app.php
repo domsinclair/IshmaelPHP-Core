@@ -17,8 +17,8 @@
         'url'       => env('APP_URL', 'http://ishmaelphp.test'),
 
         // Ishmael Registry Service
-        //'registry_url' => env('REGISTRY_URL', 'https://registry.vtlsoftware.co.uk/registry/feature-packs.xml'),
-        'registry_url' => env('REGISTRY_URL', 'http://vtl-ishmael-registry.test/registry/feature-packs.xml'),
+        //'registry_url' => env('REGISTRY_URL', 'https://registry.vtlsoftware.co.uk/registry/feature-packs.json'),
+        'registry_url' => env('REGISTRY_URL', 'http://vtl-ishmael-registry.test/registry/feature-packs.json'),
 
         // Routing options
         'routing' => [
