@@ -16,6 +16,10 @@
         'debug'     => env('APP_DEBUG', true),
         'url'       => env('APP_URL', 'http://ishmaelphp.test'),
 
+        // Ishmael Registry Service
+        //'registry_url' => env('REGISTRY_URL', 'https://registry.vtlsoftware.co.uk/registry/feature-packs.xml'),
+        'registry_url' => env('REGISTRY_URL', 'http://vtl-ishmael-registry.test/registry/feature-packs.xml'),
+
         // Routing options
         'routing' => [
             // If true, requests to <appName>.test are treated as base (Laravel Herd style)

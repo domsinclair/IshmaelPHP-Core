@@ -24,6 +24,19 @@ final class LicenseManager
     }
 
     /**
+     * Get the license tier for a given module (v0.1 groundwork).
+     *
+     * @param string $moduleName
+     * @return string 'community'|'commercial'
+     */
+    public static function getTier(string $moduleName): string
+    {
+        // For now, we look for a 'license' key in the module's manifest
+        $manifest = ModuleManager::$modules[$moduleName]['manifest'] ?? [];
+        return (string)($manifest['license']['tier'] ?? 'community');
+    }
+
+    /**
      * Check if a trial period is currently active for a given module.
      *
      * @param string $moduleName

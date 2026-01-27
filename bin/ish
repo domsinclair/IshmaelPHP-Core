@@ -24,6 +24,7 @@
     use Ishmael\Core\Database\Migrations\Migrator;
     use Ishmael\Core\Database\Seeding\SeedManager;
     use Ishmael\Core\ModuleManager;
+    use Ishmael\Core\RegistryClient;
 
     $previewMode = false;
 
@@ -540,10 +541,17 @@ PHP;
                         ],
                 ],
                 [
-                        'name' => 'feature:install',
-                        'description' => 'Install a module from a ZIP file into the Modules directory.',
+                        'name' => 'feature:search',
+                        'description' => 'Discover feature packs from the Ishmael Registry Service.',
                         'options' => [
-                                ['name' => '<PathToZip>', 'description' => 'Path to the module ZIP file (positional)'],
+                                ['name' => '<query>', 'description' => 'Term to search for in IDs or capabilities (positional)'],
+                        ],
+                ],
+                [
+                        'name' => 'feature:install',
+                        'description' => 'Install a module from a ZIP file or a Registry ID.',
+                        'options' => [
+                                ['name' => '<ID|PathToZip>', 'description' => 'Registry ID or path to the module ZIP file (positional)'],
                                 ['name' => '--force', 'description' => 'Overwrite existing module if it exists'],
                                 ['name' => '--no-migrate', 'description' => 'Do not prompt to run migrations/seeders after installation'],
                         ],
@@ -592,7 +600,8 @@ Usage:
   ish modules:check [--modules=PATH]
   ish pack --env=production [--include-dev] [--target=webhost|container] [--out=./dist] [--dry-run]
   ish feature:pack <Module> [--out=PATH]
-  ish feature:install <PathToZip> [--force] [--no-migrate]
+  ish feature:search <query>
+  ish feature:install <ID|PathToZip> [--force] [--no-migrate]
 
 Options:
   --config=PATH      Path to database config (defaults to <appRoot>/config/database.php)
@@ -1798,18 +1807,71 @@ TPL;
                 exit(0);
             }
 
+            case 'feature:search': {
+                $query = $argv[2] ?? '';
+                if ($query === '') {
+                    throw new InvalidArgumentException('Usage: ish feature:search <query>');
+                }
+
+                $client = new RegistryClient();
+                $results = $client->search($query);
+
+                if (empty($results)) {
+                    echo "No feature packs found matching '{$query}'.\n";
+                    exit(0);
+                }
+
+                echo str_pad("ID", 20) . str_pad("Vendor", 20) . str_pad("License (Tier)", 25) . "Capabilities" . PHP_EOL;
+                echo str_repeat("-", 85) . PHP_EOL;
+
+                foreach ($results as $pack) {
+                    $tierDisplay = $pack['license'] . " (" . ucfirst($pack['tier']) . ")";
+                    $caps = implode(", ", $pack['capabilities']);
+                    echo str_pad($pack['id'], 20) . str_pad($pack['vendor'], 20) . str_pad($tierDisplay, 25) . $caps . PHP_EOL;
+                }
+
+                exit(0);
+            }
+
             case 'feature:install': {
                 $zipArg = $argv[2] ?? '';
                 if ($zipArg === '') {
-                    throw new InvalidArgumentException('Usage: ish feature:install <PathToZip> [--force] [--no-migrate]');
+                    throw new InvalidArgumentException('Usage: ish feature:install <ID|PathToZip> [--force] [--no-migrate]');
                 }
+
                 $zipPath = realpath($zipArg);
-                if ($zipPath === false || !is_file($zipPath)) {
-                    throw new RuntimeException("ZIP file not found: {$zipArg}");
+                $isLocalFile = ($zipPath !== false && is_file($zipPath));
+                $downloadUrl = null;
+
+                if (!$isLocalFile) {
+                    // Treat as Registry ID
+                    echo "Checking registry for pack: {$zipArg}...\n";
+                    $client = new RegistryClient();
+                    $pack = $client->find($zipArg);
+                    if ($pack) {
+                        $downloadUrl = $pack['download'];
+                        echo "Found pack '{$pack['id']}' v{$pack['version']} ({$pack['tier']}).\n";
+                    } else {
+                        throw new RuntimeException("Argument is not a local file and was not found in the registry: {$zipArg}");
+                    }
                 }
 
                 if (!extension_loaded('zip')) {
                     throw new RuntimeException("PHP zip extension is required.");
+                }
+
+                $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_install_' . uniqid();
+                ensureDirectory($tempDir);
+
+                if ($downloadUrl) {
+                    $localZip = $tempDir . DIRECTORY_SEPARATOR . 'downloaded_pack.zip';
+                    echo "Downloading from {$downloadUrl}...\n";
+                    $content = @file_get_contents($downloadUrl);
+                    if ($content === false) {
+                        throw new RuntimeException("Failed to download pack from {$downloadUrl}");
+                    }
+                    file_put_contents($localZip, $content);
+                    $zipPath = $localZip;
                 }
 
                 $zip = new ZipArchive();
@@ -1817,9 +1879,6 @@ TPL;
                     throw new RuntimeException("Failed to open ZIP file: {$zipPath}");
                 }
 
-                // Extract to temp to verify structure
-                $tempDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_install_' . uniqid();
-                ensureDirectory($tempDir);
                 $zip->extractTo($tempDir);
                 $zip->close();
 
@@ -1854,6 +1913,17 @@ TPL;
 
                 ensureDirectory($appRoot . DIRECTORY_SEPARATOR . 'Modules');
                 copyDirectoryRecursive($sourceModuleDir, $targetModuleDir, $allowOverwrite);
+
+                // Record registry metadata if available
+                if (isset($pack) && isset($pack['tier'])) {
+                    $manifestPath = $targetModuleDir . DIRECTORY_SEPARATOR . 'module.json';
+                    if (is_file($manifestPath)) {
+                        $manifest = json_decode((string)file_get_contents($manifestPath), true);
+                        $manifest['license'] = $manifest['license'] ?? [];
+                        $manifest['license']['tier'] = $pack['tier'];
+                        file_put_contents($manifestPath, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                    }
+                }
 
                 echo "Module '{$moduleName}' installed to {$targetModuleDir}\n";
 
