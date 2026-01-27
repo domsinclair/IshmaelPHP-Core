@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.24](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.23...v0.7.24) (2026-01-27)
+
+
+### Bug Fixes
+
+* added connections to registry server ([6f13c27](https://github.com/domsinclair/IshmaelPHP-Core/commit/6f13c273849a77e6b2c0c387dc254f879ff43afe))
+
 ## [0.7.23](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.22...v0.7.23) (2026-01-23)
 
 
