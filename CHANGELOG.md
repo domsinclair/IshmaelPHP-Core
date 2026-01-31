@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.26](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.25...v0.7.26) (2026-01-31)
+
+
+### Miscellaneous Chores
+
+* added documentation for Semantic framework map ([18c159e](https://github.com/domsinclair/IshmaelPHP-Core/commit/18c159e7d0108407f1ff8aafa1e800e653c06ff9))
+
 ## [0.7.25](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.24...v0.7.25) (2026-01-27)
 
 
