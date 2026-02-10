@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.27](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.26...v0.7.27) (2026-02-10)
+
+
+### Bug Fixes
+
+* added documentation for mcp roles ([1ccdcf9](https://github.com/domsinclair/IshmaelPHP-Core/commit/1ccdcf941fdaa3c3963e658448681b377a788406))
+
 ## [0.7.26](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.25...v0.7.26) (2026-01-31)
 
 
