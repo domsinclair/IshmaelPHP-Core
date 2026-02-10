@@ -14,6 +14,8 @@ Ishmael is designed to be a "Zero-Friction, High-Intelligence" framework. It fav
 ### 1.2 Module-First Architecture
 *   **Directive**: All business logic should reside within a Module (`Modules/`).
 *   **Reason**: Ishmael is strictly modular. The `app/` directory is for framework-level overrides and core bootstrap, not for feature logic.
+*   **Discovery**: Before building a new feature from scratch, use `ish:featurePack:list` or `ish:featurePack:registry` to check for existing solutions. 
+    *   **Intelligent Suggestions**: Provide the registry with project context (e.g., `project_type`, `ui_required`) to get scored recommendations that fit the current application.
 *   **Distribution**: Prefer standard ZIP-based distribution for sharing feature packs. Use `ish feature:pack` to bundle and `ish feature:install` to integrate them.
 *   **Interdependency**: Modules must explicitly declare their dependencies in `module.php` or `module.json`. Avoid "Shadow Dependencies" (using code from another module without declaring it).
 *   **Pattern**: If you need a new feature, start with `ish make:module <Name> --dependencies=Core,Auth`.
@@ -40,10 +42,12 @@ To prevent data loss, environment corruption, or runtime errors, follow these pr
 
 ### 2.3 Database Safety
 *   **Directive**: Never execute raw SQL for schema changes. Always use migrations (`make:migration`).
+*   **Introspection**: Before suggesting queries or repository logic, always read the live schema from `ish://database/schema`.
+    *   **Reason**: This ensures you are working with the actual database state, including column types, nullability, and foreign keys, rather than assuming based on conventions or old migrations.
 *   **Migration Analysis**: Before running migrations on any non-development environment, run `ish:migrate:analyze`. 
     *   **Action**: If "high" or "medium" severity risks are identified (e.g., data loss, table locks), present them to the user and suggest safer strategies (like multi-step deployments).
 *   **Pre-Migration**: Run `ish:migrate --pretend` to preview changes if the environment is sensitive.
-*   **Verification**: After migrating, verify the schema using `ish://stubs/Project/Tables.php`.
+*   **Verification**: After migrating, verify the schema using `ish://database/schema` and `ish://stubs/Project/Tables.php`.
 
 ### 2.4 Route Integrity
 *   **Directive**: After adding or modifying routes, verify them using `ish:listRoutes`.
@@ -108,7 +112,9 @@ To ensure consistency across the Ishmael ecosystem, the following conventions ar
 The MCP server is your "Internal Consultant". 
 
 *   **Introspect Before Acting**: Use `ish://config/manifest` to see available classes and methods before suggesting a code change.
-*   **Use Stubs for Accuracy**: Reference `ish://stubs/Project/Config.php` and `ish://stubs/Project/Tables.php` to avoid "guessing" configuration keys or table names.
+*   **Live Database Grounding**: Use `ish://database/schema` to ground your database logic in the "live truth" of the current environment. Never guess column names or types.
+*   **DI & Framework DNA**: Use `ish:container:describe` and `ish://framework/introspection` to understand active service bindings and core framework capabilities (Middleware, Helpers, Attributes).
+*   **Use Stubs for Accuracy**: Reference `ish://stubs/Project/Config.php` and `ish://stubs/Project/Tables.php` for IDE-friendly constant completion.
 *   **Workflow**: When asked to build a feature, start with `ishmael:plan-feature` to ensure the architectural approach aligns with the Ishmael way.
 
 ## 5. IDE Integration
@@ -139,4 +145,4 @@ To use the Ishmael MCP server with your AI assistant:
 3.  **Claude Desktop**: Add the same configuration to your `claude_desktop_config.json`.
 
 ---
-*Version 1.2.0*
+*Version 1.3.0*
