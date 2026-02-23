@@ -17,8 +17,17 @@
         'url'       => env('APP_URL', 'http://ishmaelphp.test'),
 
         // Ishmael Registry Service
-        //'registry_url' => env('REGISTRY_URL', 'https://registry.vtlsoftware.co.uk/registry/feature-packs.json'),
-        'registry_url' => env('REGISTRY_URL', 'http://vtl-ishmael-registry.test/registry/feature-packs.json'),
+    'registry_base_url' => env('REGISTRY_BASE_URL', 'https://vtl-ishmael-registry.test'),
+    'registry_url'      => env('REGISTRY_URL', 'https://vtl-ishmael-registry.test/registry/feature-packs.json'),
+
+    // Vendor Onboarding & Auth
+    'registry_register_url' => env('REGISTRY_REGISTER_URL', 'https://vtl-ishmael-registry.test/auth/register'),
+    'registry_auth_url'     => env('REGISTRY_AUTH_URL', 'https://vtl-ishmael-registry.test/auth/publish'),
+    'registry_upgrade_url'  => env('REGISTRY_UPGRADE_URL', 'https://vtl-ishmael-registry.test/auth/keys/setup?upgrade=1'),
+    'registry_upload_url'   => env('REGISTRY_UPLOAD_URL', 'https://vtl-ishmael-registry.test/api/publish/upload'),
+
+    // Local Callback Settings
+    'registry_listener_port' => (int) env('REGISTRY_LISTENER_PORT', 8080),
 
         // Routing options
         'routing' => [
