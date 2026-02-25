@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.29](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.28...v0.7.29) (2026-02-25)
+
+
+### Miscellaneous Chores
+
+* added event bus ([b79de52](https://github.com/domsinclair/IshmaelPHP-Core/commit/b79de52cd0bb9118e886c6408964d3ca7d31b670))
+
 ## [0.7.28](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.27...v0.7.28) (2026-02-23)
 
 
