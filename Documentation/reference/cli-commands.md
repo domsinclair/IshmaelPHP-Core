@@ -80,4 +80,15 @@ Run outstanding migrations.
 | `--steps` | Limit number of steps | N |
 | `--pretend` | Dry-run without executing |  |
 
+## events:list
+
+List all events and listeners registered in the system.
+
+**AI Context**: This is the source of truth for the current event wiring. Use it to discover what events a module emits or who is listening to a particular event.
+
+| Option | Description | Accepts |
+|---|---|---|
+| `--json` | Output the event registry as JSON for discovery tools |  |
+| `--modules` | Override modules path | PATH |
+
 ... (rest of commands omitted for brevity in this example, but would be fully replicated in production) ...

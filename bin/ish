@@ -556,6 +556,13 @@ PHP;
                                 ['name' => '--no-migrate', 'description' => 'Do not prompt to run migrations/seeders after installation'],
                         ],
                 ],
+                [
+                        'name' => 'events:list',
+                        'description' => 'List all events and listeners registered in the system.',
+                        'options' => [
+                                ['name' => '--json', 'description' => 'Output the event registry as JSON for discovery tools'],
+                        ],
+                ],
         ];
     }
 
@@ -602,6 +609,7 @@ Usage:
   ish feature:pack <Module> [--out=PATH]
   ish feature:search <query>
   ish feature:install <ID|PathToZip> [--force] [--no-migrate]
+  ish events:list [--json]
 
 Options:
   --config=PATH      Path to database config (defaults to <appRoot>/config/database.php)
@@ -1965,6 +1973,71 @@ TPL;
                 rmdir($tempDir);
 
                 echo "Installation complete." . PHP_EOL;
+                exit(0);
+            }
+
+            case 'events:list': {
+                // Ensure modules are discovered
+                $modulesPath = $appRoot . DIRECTORY_SEPARATOR . 'Modules';
+                if (isset($options['modules'])) {
+                    $modulesPath = realpath($options['modules']) ?: $options['modules'];
+                }
+                ModuleManager::discover($modulesPath);
+
+                $registry = [];
+                foreach (ModuleManager::$modules as $module) {
+                    $manifest = $module['manifest'] ?? [];
+                    $moduleName = $manifest['name'] ?? basename($module['path']);
+
+                    $emits = $manifest['emits'] ?? [];
+                    $listeners = $manifest['listeners'] ?? [];
+
+                    foreach ($emits as $event => $info) {
+                        if (!isset($registry[$event])) {
+                            $registry[$event] = ['event' => $event, 'description' => '', 'payload' => [], 'listeners' => [], 'emitted_by' => []];
+                        }
+                        $registry[$event]['description'] = $info['description'] ?? '';
+                        $registry[$event]['payload'] = $info['payload'] ?? [];
+                        $registry[$event]['emitted_by'][] = $moduleName;
+                    }
+
+                    foreach ($listeners as $event => $eventListeners) {
+                        if (!isset($registry[$event])) {
+                            $registry[$event] = ['event' => $event, 'description' => '', 'payload' => [], 'listeners' => [], 'emitted_by' => []];
+                        }
+                        $eventListeners = is_array($eventListeners) ? $eventListeners : [$eventListeners];
+                        foreach ($eventListeners as $l) {
+                            $registry[$event]['listeners'][] = [
+                                'module' => $moduleName,
+                                'listener' => is_string($l) ? $l : 'Closure'
+                            ];
+                        }
+                    }
+                }
+
+                if (isset($options['json'])) {
+                    echo json_encode(['events' => array_values($registry)], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+                    exit(0);
+                }
+
+                if (empty($registry)) {
+                    echo "No events or listeners found.\n";
+                    exit(0);
+                }
+
+                echo str_pad("Event", 45) . str_pad("Emitted By", 20) . "Listeners" . PHP_EOL;
+                echo str_repeat("-", 85) . PHP_EOL;
+
+                foreach ($registry as $event => $info) {
+                    $emittedBy = implode(', ', $info['emitted_by']) ?: 'Unknown';
+                    $listenerCount = count($info['listeners']);
+                    echo str_pad(substr($event, 0, 43), 45) . str_pad(substr($emittedBy, 0, 18), 20) . $listenerCount . PHP_EOL;
+                    if ($listenerCount > 0 && isset($options['v'])) {
+                        foreach ($info['listeners'] as $l) {
+                            echo "  -> [{$l['module']}] {$l['listener']}\n";
+                        }
+                    }
+                }
                 exit(0);
             }
 

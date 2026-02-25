@@ -32,7 +32,9 @@ final class App
 
         // Load environment and core config
         load_env();
-        $this->config = require base_path('config/app.php');
+        if (empty($this->config)) {
+            $this->config = require base_path('config/app.php');
+        }
 // Normalize debug flag to boolean in case env returns string values
         if (array_key_exists('debug', $this->config)) {
             $this->config['debug'] = filter_var((string)$this->config['debug'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
@@ -45,16 +47,40 @@ final class App
         $loggerCfg = $logging['channels']['single'] ?? ['path' => sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'ish_logs' . DIRECTORY_SEPARATOR . 'app.log'];
         Logger::init($loggerCfg);
         Logger::info('Kernel booting');
-// Discover modules once
+
+        // Prepare config repo if not set
+        if (!app('config_repo')) {
+            app(['config_repo' => $this->config]);
+        }
+
+        // Discover modules once
         $modulesPath = $this->config['paths']['modules'] ?? base_path('modules');
         ModuleManager::discover($modulesPath);
 
         // Initialize container and register module services
         $container = new Container();
+
+        // Initialize Event Bus and register in container
+        $dispatcher = new \Ishmael\Core\Events\Dispatcher($container);
+        \Ishmael\Core\Event::setInstance($dispatcher);
+        $container->bind(\Ishmael\Core\Events\EventBusInterface::class, $dispatcher);
+
         foreach (ModuleManager::$modules as $module) {
             $services = $module['manifest']['services'] ?? [];
             foreach ($services as $abstract => $concrete) {
                 $container->bind($abstract, $concrete);
+            }
+
+            // Register event listeners from manifest
+            $listeners = $module['manifest']['listeners'] ?? [];
+            foreach ($listeners as $eventName => $eventListeners) {
+                if (is_array($eventListeners)) {
+                    foreach ($eventListeners as $listener) {
+                        $dispatcher->subscribe($eventName, $listener);
+                    }
+                } else {
+                    $dispatcher->subscribe($eventName, $eventListeners);
+                }
             }
         }
 
@@ -129,10 +155,10 @@ final class App
     }
 
     /**
-     * Termination hook for post-response tasks (no-op initially).
+     * Termination hook for post-response tasks.
      */
     public function terminate(Request $request, Response $response): void
     {
-        // No-op for now; reserved for logging/cleanup in future phases.
+        Event::dispatch('app.terminate', ['request' => $request, 'response' => $response]);
     }
 }
