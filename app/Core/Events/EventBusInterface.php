@@ -23,7 +23,8 @@ interface EventBusInterface
      *
      * @param string $eventName The event name or class name.
      * @param callable|string|array $listener The listener callback or FQCN.
+     * @param int $priority Priority for the listener (higher runs first).
      * @return void
      */
-    public function subscribe(string $eventName, $listener): void;
+    public function subscribe(string $eventName, $listener, int $priority = 0): void;
 }

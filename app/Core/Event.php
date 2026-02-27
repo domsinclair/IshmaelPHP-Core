@@ -47,11 +47,12 @@ class Event
      *
      * @param string $eventName
      * @param callable|string|array $listener
+     * @param int $priority
      */
-    public static function subscribe(string $eventName, $listener): void
+    public static function subscribe(string $eventName, $listener, int $priority = 0): void
     {
         if (self::$instance) {
-            self::$instance->subscribe($eventName, $listener);
+            self::$instance->subscribe($eventName, $listener, $priority);
         }
     }
 }

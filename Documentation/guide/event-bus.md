@@ -141,3 +141,88 @@ Ishmael Core emits several lifecycle events that you can hook into:
 | `app.boot` | Fired when the application finishes booting. | `null` |
 | `app.terminate` | Fired after the response has been sent to the client. | `['request' => Request, 'response' => Response]` |
 | `router.matched` | Fired when a route is successfully matched. | `['route' => Route, 'params' => array]` |
+
+## Advanced Features
+
+### Wildcard Support
+You can listen to a group of events using the `*` notation.
+
+```php
+// Listen to all user events
+Event::subscribe('user.*', function($event) {
+    // ...
+});
+```
+
+### Listener Prioritization
+Ensure critical listeners run first by providing a priority (higher numbers run first, default is 0).
+
+```php
+Event::subscribe('order.placed', 'Modules\Security\Listeners\FraudCheck', 100);
+Event::subscribe('order.placed', 'Modules\Sales\Listeners\UpdateStats', 10);
+```
+
+### Asynchronous Event Handling
+
+For heavy tasks (e.g., resizing images, sending emails, or calling external APIs), you can offload listener execution to a background worker.
+
+#### 1. Mark the Listener as Queued
+A listener is automatically queued if it implements the `Ishmael\Core\Events\QueuedEventListenerInterface`.
+
+```php
+namespace Modules\Upload\Listeners;
+
+use Ishmael\Core\Events\QueuedEventListenerInterface;
+use Modules\Upload\Events\FileUploaded;
+
+class ResizeImage implements QueuedEventListenerInterface
+{
+    /**
+     * This method will be executed by a background worker.
+     */
+    public function handle(FileUploaded $event): void
+    {
+        // Heavy image processing logic here
+    }
+}
+```
+
+#### 2. Implement the Queue Driver
+Ishmael provides the `QueueInterface`, but you must provide an implementation that handles the actual queuing logic (e.g., using Redis, a database, or a cloud service).
+
+```php
+namespace App\Services;
+
+use Ishmael\Core\Events\QueueInterface;
+use Ishmael\Core\Logger;
+
+class MyDatabaseQueue implements QueueInterface
+{
+    public function push(mixed $listener, mixed $eventData): void
+    {
+        // 1. Serialize the listener and event data
+        // 2. Insert into your 'jobs' table
+        Logger::info("Job queued: " . (is_string($listener) ? $listener : get_class($listener)));
+    }
+}
+```
+
+#### 3. Register the Queue Driver
+You must register your queue driver with the `Dispatcher` during the application bootstrap. This is typically done in a service provider or directly in `app/Core/App.php` for simpler setups.
+
+```php
+use Ishmael\Core\Event;
+use App\Services\MyDatabaseQueue;
+
+// Get the dispatcher from the facade or container
+$dispatcher = Event::getInstance();
+
+if ($dispatcher) {
+    $dispatcher->setQueue(new MyDatabaseQueue());
+}
+```
+
+#### Important Considerations for Queued Listeners
+*   **Serialization**: Both the listener and the event payload must be serializable. Avoid passing complex objects with non-serializable resources (like database connections or open file handles).
+*   **Listener References**: When registering queued listeners in the manifest, use **Class Strings** (e.g., `ResizeImage::class`) rather than Closures, as Closures cannot be easily serialized and pushed to a queue.
+*   **Worker Process**: You will need a separate CLI process (a "worker") that monitors your queue and executes the `handle()` method of the queued listeners.

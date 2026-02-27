@@ -134,15 +134,15 @@ return [
 ];
 ```
 
-### 2.2) Lifecycle hooks (preview)
+### 2.2) Lifecycle hooks
 
-Hooks prepare modules for a future Event Bus without enforcing runtime behavior today. The loader will parse and store the `hooks` section as-is. Execution is deferred until the Event Bus phase ships.
+Modules can declare lifecycle hooks and event listeners in their manifest.
 
 What you can declare
 
 - boot: callable reference to run early in the module lifecycle (after DI, before routes are finalized)
 - shutdown: callable reference to run during graceful termination
-- onEvents: map of `eventName => handler reference` (subscribed in a future phase)
+- listeners: map of `eventName => handler reference` (automatically subscribed during application boot)
 
 Handler reference formats
 
@@ -158,26 +158,22 @@ Example (module.php)
 declare(strict_types=1);
 
 /**
- * Hooks preview for future Event Bus.
+ * Module hooks and listeners.
  * @return array<string, mixed>
  */
 return [
     'name' => 'Blog',
     'env' => 'shared',
     'routes' => __DIR__ . '/routes.php',
-    'hooks' => [
-        'boot' => [Modules\\Blog\\Bootstrap::class, 'boot'],
-        'shutdown' => 'Modules\\Blog\\Bootstrap@shutdown',
-        'onEvents' => [
-            'user.registered' => [Modules\\Blog\\Listeners\\SendWelcomeEmail::class, 'handle']
-        ]
+    'listeners' => [
+        'user.registered' => [Modules\Blog\Listeners\SendWelcomeEmail::class, 'handle']
     ]
 ];
 ```
 
 Constraints
 
-- Hooks are optional and currently inert (not executed). They will be activated in a future phase.
+- Hooks and listeners are optional.
 - Keep handlers small and idempotent; avoid heavy work in boot/shutdown.
 - Follow PascalCase for classes and camelCase for methods; include PHPDoc in your examples.
 

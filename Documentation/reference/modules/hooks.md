@@ -1,12 +1,12 @@
-# Module Lifecycle Hooks (preview)
+# Module Lifecycle Hooks
 
-This page defines the `hooks` section for module manifests. Hooks are parsed and stored by the Module Loader, but they are not executed yet. Actual Event Bus integration will activate these in a future phase.
+This page defines the `hooks` and `listeners` sections for module manifests.
 
 What are hooks?
 
-- boot: runs early in the module lifecycle (after DI is ready, before routes are finalized)
+- boot: runs early in the module lifecycle (after DI is ready, before routes are finalised)
 - shutdown: runs late during application termination
-- onEvents: mapping of `eventName => handler reference` to subscribe to events when the Event Bus is available
+- listeners: mapping of `eventName => handler reference` to subscribe to events. These are automatically registered to the `Dispatcher` during application boot.
 
 Handler reference formats
 
@@ -24,7 +24,7 @@ declare(strict_types=1);
 use Psr\Log\LoggerInterface;
 
 /**
- * Blog module with hooks (preview).
+ * Blog module with hooks.
  * @return array<string, mixed>
  */
 return [
@@ -32,13 +32,9 @@ return [
     'version' => '1.1.0',
     'env' => 'shared',
     'routes' => __DIR__ . '/routes.php',
-    'hooks' => [
-        'boot' => [Modules\\Blog\\Bootstrap::class, 'boot'],
-        'shutdown' => 'Modules\\Blog\\Bootstrap@shutdown',
-        'onEvents' => [
-            'user.registered' => [Modules\\Blog\\Listeners\\SendWelcomeEmail::class, 'handle'],
-            'posts.cleared' => Modules\\Blog\\Listeners\\InvalidateCache::class
-        ]
+    'listeners' => [
+        'user.registered' => [Modules\Blog\Listeners\SendWelcomeEmail::class, 'handle'],
+        'posts.cleared' => Modules\Blog\Listeners\InvalidateCache::class
     ]
 ];
 
@@ -71,7 +67,7 @@ namespace Modules\\Blog\\Listeners;
 final class SendWelcomeEmail
 {
     /**
-     * Example event handler (wired in a future phase).
+     * Example event handler.
      * @param array<string, mixed> $payload Event payload
      * @return void
      */
@@ -103,21 +99,17 @@ Example manifest (module.json)
   "version": "1.2.0",
   "env": "production",
   "routes": "<MODULE_DIR>/routes.php",
-  "hooks": {
-    "boot": "Modules\\Payments\\Bootstrap@boot",
-    "shutdown": ["Modules\\Payments\\Bootstrap", "shutdown"],
-    "onEvents": {
-      "payments.captured": ["Modules\\Payments\\Listeners\\NotifyAccounting", "handle"]
-    }
+  "listeners": {
+    "payments.captured": ["Modules\\Payments\\Listeners\\NotifyAccounting", "handle"]
   }
 }
 ```
 
 Constraints and guidance
 
-- Hooks are optional. Declaring them has no effect until the Event Bus phase activates execution.
+- Hooks and listeners are optional.
 - Keep handlers small and idempotent; avoid heavy work in boot/shutdown.
 - Use PascalCase for classes, camelCase for methods. Include PHPDoc in handlers.
 - Prefer keeping handler classes within the module boundary.
 
-Status: Preview only — subject to refinement when the Event Bus lands.
+Status: Active.

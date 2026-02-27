@@ -65,6 +65,8 @@ final class App
         \Ishmael\Core\Event::setInstance($dispatcher);
         $container->bind(\Ishmael\Core\Events\EventBusInterface::class, $dispatcher);
 
+        \Ishmael\Core\Event::dispatch('app.boot');
+
         foreach (ModuleManager::$modules as $module) {
             $services = $module['manifest']['services'] ?? [];
             foreach ($services as $abstract => $concrete) {
