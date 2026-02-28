@@ -6,6 +6,8 @@ namespace Ishmael\Core;
 
 use Ishmael\Core\Http\Request;
 use Ishmael\Core\Http\Response;
+use Ishmael\Core\Events\Core\ApplicationBooted;
+use Ishmael\Core\Events\Core\RequestFailed;
 
 /**
  * Kernel v1 - tiny application wrapper responsible for bootstrapping
@@ -65,7 +67,7 @@ final class App
         \Ishmael\Core\Event::setInstance($dispatcher);
         $container->bind(\Ishmael\Core\Events\EventBusInterface::class, $dispatcher);
 
-        \Ishmael\Core\Event::dispatch('app.boot');
+        $bootStart = defined('ISH_START') ? ISH_START : microtime(true);
 
         foreach (ModuleManager::$modules as $module) {
             $services = $module['manifest']['services'] ?? [];
@@ -99,6 +101,8 @@ final class App
         }
 
         $this->booted = true;
+        $bootTime = (microtime(true) - $bootStart) * 1000;
+        Event::dispatch(new ApplicationBooted($bootTime));
     }
 
     /**
@@ -117,6 +121,7 @@ final class App
             $this->router?->dispatch($uri);
         } catch (\Throwable $e) {
             $thrown = $e;
+            Event::dispatch(new RequestFailed($e, $request));
             Logger::error('Kernel handle exception: ' . $e->getMessage());
             // Build an error response
             $debug = ($this->config['debug'] ?? false) === true;

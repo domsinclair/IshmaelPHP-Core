@@ -6,7 +6,13 @@ This document defines the expected behavior for AI assistants and MCP servers wh
 
 The most critical rule for any AI assistant working with IshmaelPHP is: **Consult before you Code.**
 
-Ishmael is a flexible framework that supports various architectural choices. Before generating code, migrations, or architectural plans, the AI **must** inquire about the following:
+### 1.1 Intent Routing
+The Ishmael MCP server provides a dedicated **Semantic Intent Router** (`ishmael:intent-router`) designed to normalize natural language requests into canonical framework tasks. 
+
+Instead of guessing, the AI should use the router to identify the correct [**Intent-Aware Collaboration**](intent-routing.md) path. This ensures that the user is asked the correct clarifying questions and that the AI follows the specific behavior contracts defined for that task.
+
+### 1.2 Architectural Consultation
+Ishmael is a flexible framework that supports various architectural choices. Before generating code, migrations, or architectural plans, the AI **must** inquire about the following (either via the intent router or manually):
 
 ### Database & Persistence
 - **Database Engine**: Are you using SQLite (recommended for dev), MySQL, or PostgreSQL? (Ishmael defaults to SQLite for local development, but can scale to MySQL/Postgres for deployment).

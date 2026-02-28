@@ -12,6 +12,8 @@ use Throwable;
 use Ishmael\Core\Database\Result;
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterFactory;
 use Ishmael\Core\DatabaseAdapters\DatabaseAdapterInterface;
+use Ishmael\Core\Events\Core\DatabaseTransactionCommitted;
+use Ishmael\Core\Events\Core\DatabaseTransactionRolledBack;
 
 class Database
 {
@@ -130,11 +132,13 @@ class Database
         try {
             $result = $fn();
             $adapter->commit();
+            Event::dispatch(new DatabaseTransactionCommitted());
             return $result;
         } catch (Throwable $e) {
-        // Best-effort rollback; if rollback throws, prefer original exception.
+            // Best-effort rollback; if rollback throws, prefer original exception.
             try {
                 $adapter->rollBack();
+                Event::dispatch(new DatabaseTransactionRolledBack(reason: $e));
             } catch (Throwable $ignored) {
             }
             throw $e;

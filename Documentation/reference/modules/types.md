@@ -154,7 +154,6 @@ return function (Router $router): void {
 Security posture
 
 - In production, development-only modules are excluded by default.
-- **Safety Check:** Production/Shared modules cannot depend on Development modules (enforced during discovery).
 - Explicit overrides: ALLOW_DEV_MODULES=true in environment or --include-dev for `ish pack`.
 - Recommended CI policy: fail builds if dev modules are detected in a production pack unless explicitly allowed.
 

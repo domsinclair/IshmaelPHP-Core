@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Ishmael\Core\Auth;
 
 use Ishmael\Core\Session\SessionManager;
+use Ishmael\Core\Event;
+use Ishmael\Core\Events\Core\AuthenticationSucceeded;
+use Ishmael\Core\Events\Core\AuthenticationFailed;
 
 /**
  * AuthManager provides a minimal session-backed authentication API with optional
@@ -45,9 +48,11 @@ final class AuthManager
     {
         $user = $this->provider->retrieveByCredentials($credentials);
         if (!$user) {
+            Event::dispatch(new AuthenticationFailed($credentials));
             return false;
         }
         if (!$this->provider->validateCredentials($user, $credentials)) {
+            Event::dispatch(new AuthenticationFailed($credentials));
             return false;
         }
         $this->login($user, $remember);
@@ -69,6 +74,7 @@ final class AuthManager
         if ($remember) {
             $_SERVER['ISH_AUTH_REMEMBER_SET'] = $this->createRememberToken((string)$id);
         }
+        Event::dispatch(new AuthenticationSucceeded($user));
     }
 
     /** Logout the current user, clearing session and remember-me cookie. */

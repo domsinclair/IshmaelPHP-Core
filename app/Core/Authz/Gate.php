@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Ishmael\Core\Authz;
 
 use Ishmael\Core\Auth\AuthManager;
+use Ishmael\Core\Event;
+use Ishmael\Core\Events\Core\AuthorizationFailed;
 
 /**
  * Gate provides a minimal authorization API to define abilities and
@@ -69,6 +71,7 @@ final class Gate
     public function authorize(string $ability, mixed $resource = null, string $message = 'Forbidden'): void
     {
         if ($this->denies($ability, $resource)) {
+            Event::dispatch(new AuthorizationFailed($this->currentUser(), $ability, $resource));
             throw new AuthorizationException($ability, $resource, $message);
         }
     }

@@ -270,7 +270,7 @@ PHP;
             'help','make:module','make:resource','make:view','make:views','make:controller','make:service',
             'examples:list','examples:install','pack','make:routes',
             'modules:cache','modules:clear','route:cache','route:clear',
-            'feature:pack', 'feature:install'
+            'feature:pack', 'feature:install', 'events:list'
     ];
     if (!in_array($command, $nonDbCommands, true)) {
         $configPath = isset($options['config']) ? (string)$options['config'] : ($appRoot . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php');
@@ -607,9 +607,9 @@ Usage:
   ish modules:check [--modules=PATH]
   ish pack --env=production [--include-dev] [--target=webhost|container] [--out=./dist] [--dry-run]
   ish feature:pack <Module> [--out=PATH]
+  ish events:list [--json] [-v]
   ish feature:search <query>
   ish feature:install <ID|PathToZip> [--force] [--no-migrate]
-  ish events:list [--json]
 
 Options:
   --config=PATH      Path to database config (defaults to <appRoot>/config/database.php)
@@ -1984,7 +1984,98 @@ TPL;
                 }
                 ModuleManager::discover($modulesPath);
 
-                $registry = [];
+                // Initialize registry with core framework events for better discoverability
+                $registry = [
+                    'Ishmael\\Core\\Events\\Core\\ApplicationBooted' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\ApplicationBooted',
+                        'description' => 'Emitted when the framework has fully initialized and is ready to serve requests.',
+                        'payload' => ['bootTimeMs' => 'float'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\ModuleRegistered' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\ModuleRegistered',
+                        'description' => 'Emitted after a module has been successfully registered and its services wired.',
+                        'payload' => ['name' => 'string', 'path' => 'string', 'manifest' => 'array'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\DatabaseTransactionCommitted' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\DatabaseTransactionCommitted',
+                        'description' => 'Emitted when a database transaction is successfully committed.',
+                        'payload' => [],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\DatabaseTransactionRolledBack' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\DatabaseTransactionRolledBack',
+                        'description' => 'Emitted when a database transaction is rolled back.',
+                        'payload' => ['reason' => 'Throwable|null'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\AuthenticationSucceeded' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\AuthenticationSucceeded',
+                        'description' => 'Emitted when a user successfully authenticates.',
+                        'payload' => ['user' => 'array'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\AuthenticationFailed' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\AuthenticationFailed',
+                        'description' => 'Emitted when an authentication attempt fails.',
+                        'payload' => ['credentials' => 'array'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\AuthorizationFailed' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\AuthorizationFailed',
+                        'description' => 'Emitted when a user attempts an action without sufficient permissions.',
+                        'payload' => ['user' => 'array|null', 'ability' => 'string', 'resource' => 'mixed'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\RequestFailed' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\RequestFailed',
+                        'description' => 'Emitted when an unhandled exception occurs during request processing.',
+                        'payload' => ['exception' => 'Throwable', 'request' => 'Request'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\ConfigurationChanged' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\ConfigurationChanged',
+                        'description' => 'Emitted when a runtime configuration value or feature flag is changed.',
+                        'payload' => ['key' => 'string', 'oldValue' => 'mixed', 'newValue' => 'mixed'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\FeaturePackInstalled' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\FeaturePackInstalled',
+                        'description' => 'Emitted when a feature pack has been installed and any migrations have completed.',
+                        'payload' => ['name' => 'string', 'version' => 'string'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                    'Ishmael\\Core\\Events\\Core\\FeaturePackUninstalled' => [
+                        'event' => 'Ishmael\\Core\\Events\\Core\\FeaturePackUninstalled',
+                        'description' => 'Emitted when a feature pack has been removed from the system.',
+                        'payload' => ['name' => 'string'],
+                        'listeners' => [],
+                        'emitted_by' => ['Core'],
+                        'source_type' => 'core'
+                    ],
+                ];
+
                 foreach (ModuleManager::$modules as $module) {
                     $manifest = $module['manifest'] ?? [];
                     $moduleName = $manifest['name'] ?? basename($module['path']);
@@ -1992,18 +2083,37 @@ TPL;
                     $emits = $manifest['emits'] ?? [];
                     $listeners = $manifest['listeners'] ?? [];
 
-                    foreach ($emits as $event => $info) {
+                    foreach ($emits as $eventKey => $info) {
+                        $event = is_numeric($eventKey) && is_string($info) ? $info : $eventKey;
                         if (!isset($registry[$event])) {
-                            $registry[$event] = ['event' => $event, 'description' => '', 'payload' => [], 'listeners' => [], 'emitted_by' => []];
+                            $registry[$event] = [
+                                'event' => $event,
+                                'description' => '',
+                                'payload' => [],
+                                'listeners' => [],
+                                'emitted_by' => [],
+                                'source_type' => 'module'
+                            ];
                         }
-                        $registry[$event]['description'] = $info['description'] ?? '';
-                        $registry[$event]['payload'] = $info['payload'] ?? [];
-                        $registry[$event]['emitted_by'][] = $moduleName;
+                        if (is_array($info)) {
+                            $registry[$event]['description'] = $info['description'] ?? '';
+                            $registry[$event]['payload'] = $info['payload'] ?? [];
+                        }
+                        if (!in_array($moduleName, $registry[$event]['emitted_by'])) {
+                            $registry[$event]['emitted_by'][] = $moduleName;
+                        }
                     }
 
                     foreach ($listeners as $event => $eventListeners) {
                         if (!isset($registry[$event])) {
-                            $registry[$event] = ['event' => $event, 'description' => '', 'payload' => [], 'listeners' => [], 'emitted_by' => []];
+                            $registry[$event] = [
+                                'event' => $event,
+                                'description' => '',
+                                'payload' => [],
+                                'listeners' => [],
+                                'emitted_by' => [],
+                                'source_type' => 'module'
+                            ];
                         }
                         $eventListeners = is_array($eventListeners) ? $eventListeners : [$eventListeners];
                         foreach ($eventListeners as $l) {

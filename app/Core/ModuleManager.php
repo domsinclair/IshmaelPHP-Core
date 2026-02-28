@@ -4,6 +4,8 @@
 
 namespace Ishmael\Core;
 
+use Ishmael\Core\Events\Core\ModuleRegistered;
+
 final class ModuleManager
 {
     public static array $modules = [];
@@ -103,6 +105,7 @@ final class ModuleManager
 
         foreach (self::$modules as $name => $module) {
             Logger::info("✅ Discovered module: {$name} (routes: " . count($module['routes']) . ")");
+            Event::dispatch(new ModuleRegistered($name, $module['path'], $module['manifest']));
         }
 
         // Optional: write cache snapshot
@@ -177,12 +180,18 @@ final class ModuleManager
     {
         $routesFile = $moduleDir . '/routes.php';
         if (file_exists($routesFile)) {
-            $result = require $routesFile;
-            if (is_array($result)) {
-                return [$result, null];
-            }
-            if ($result instanceof \Closure) {
-                return [[], $result];
+            try {
+                $result = require $routesFile;
+                if (is_array($result)) {
+                    return [$result, null];
+                }
+                if ($result instanceof \Closure) {
+                    return [[], $result];
+                }
+            } catch (\Throwable $e) {
+                // Silently ignore routing load errors during discovery (common in standalone module dev)
+                Logger::info("ℹ️ Skipping route discovery for {$moduleDir}: " . $e->getMessage());
+                return [[], null];
             }
 
             Logger::error("❌ Invalid routes.php in {$moduleDir} — must return an array or a Closure.");
