@@ -1692,6 +1692,23 @@ TPL;
                     throw new RuntimeException("Invalid module manifest: {$manifestPath} must return an array.");
                 }
 
+                // --- Registry Metadata Loading (composer.json preference) ---
+                $composerPath = $moduleDir . DIRECTORY_SEPARATOR . 'composer.json';
+                $registryMeta = [];
+                if (is_file($composerPath)) {
+                    $composerData = json_decode((string)file_get_contents($composerPath), true);
+                    if (is_array($composerData)) {
+                        $registryMeta = $composerData['extra']['ishmael-registry'] ?? [];
+                        // Merge standard composer fields if not in registry block
+                        $registryMeta['name'] = $registryMeta['name'] ?? $composerData['name'] ?? null;
+                        $registryMeta['description'] = $registryMeta['description'] ?? $composerData['description'] ?? null;
+                        $registryMeta['license'] = $registryMeta['license'] ?? $composerData['license'] ?? null;
+                        if (!isset($registryMeta['author']) && isset($composerData['authors'][0])) {
+                            $registryMeta['author'] = $composerData['authors'][0];
+                        }
+                    }
+                }
+
                 $exportList = $manifest['export'] ?? [];
                 if (empty($exportList)) {
                     throw new RuntimeException("Module manifest does not define an 'export' list.");
@@ -1746,27 +1763,37 @@ TPL;
                 $zip->close();
                 echo "Feature packed successfully: {$zipPath}" . PHP_EOL;
 
-                // --- Registry XML Generation ---
-                $type = $options['type'] ?? $manifest['license_type'] ?? 'community';
+                // --- Registry XML/JSON Generation ---
+                $type = $options['type'] ?? $registryMeta['license'] ?? $manifest['license_type'] ?? 'community';
                 $type = strtolower((string)$type);
                 if (!in_array($type, ['community', 'commercial'])) {
                     $type = 'community';
                 }
 
-                $name = $manifest['name'] ?? strtolower($moduleStudly);
-                $title = $manifest['title'] ?? $moduleStudly;
-                $category = $manifest['category'] ?? 'General';
-                $synopsis = $manifest['synopsis'] ?? ($manifest['description'] ?? "A feature pack for IshmaelPHP.");
+                $name = $registryMeta['name'] ?? $manifest['name'] ?? strtolower($moduleStudly);
+                $title = $registryMeta['title'] ?? $manifest['title'] ?? $moduleStudly;
+                $category = $registryMeta['category'] ?? $manifest['category'] ?? 'General';
+                $synopsis = $registryMeta['description'] ?? $manifest['synopsis'] ?? ($manifest['description'] ?? "A feature pack for IshmaelPHP.");
                 $installCmd = $manifest['install-command'] ?? "ish feature:install " . $zipName;
 
-                $capabilities = $manifest['capabilities'] ?? [];
+                $capabilities = $registryMeta['capabilities'] ?? $manifest['capabilities'] ?? [];
                 if (empty($capabilities) && isset($manifest['type'])) {
                     $capabilities[] = $manifest['type'];
                 }
 
-                $authorName = $manifest['author']['name'] ?? 'Unknown Author';
-                $authorEmail = $manifest['author']['email'] ?? '';
-                $authorUrl = $manifest['author']['url'] ?? '';
+                $authorName = $registryMeta['author']['name'] ?? $manifest['author']['name'] ?? 'Unknown Author';
+                $authorEmail = $registryMeta['author']['email'] ?? $manifest['author']['email'] ?? '';
+                $authorUrl = $registryMeta['author']['url'] ?? $manifest['author']['url'] ?? '';
+
+                $enforcement = $registryMeta['license_enforcement'] ?? $manifest['license_enforcement'] ?? ($type === 'commercial' ? 'development' : 'none');
+
+                // Validation for mandatory fields
+                $mandatory = ['title', 'category', 'capabilities'];
+                foreach ($mandatory as $field) {
+                    if (empty($$field)) {
+                        echo "WARNING: Mandatory registry field '{$field}' is missing. Pack may be rejected by registry.\n";
+                    }
+                }
 
                 $xml = "    <!-- Entry for a " . ucfirst($type) . " Feature Pack -->\n";
                 $xml .= "    <feature name=\"" . htmlspecialchars((string)$name) . "\">\n";
@@ -1775,11 +1802,10 @@ TPL;
                 $xml .= "        <synopsis>" . htmlspecialchars((string)$synopsis) . "</synopsis>\n";
 
                 if ($type === 'commercial') {
-                    $enforcement = $manifest['license_enforcement'] ?? 'development';
                     $trial = ($manifest['license_trial'] ?? true) ? 'true' : 'false';
                     $xml .= "        <license type=\"commercial\" enforcement=\"" . htmlspecialchars((string)$enforcement) . "\" trial=\"" . $trial . "\" />\n";
                 } else {
-                    $xml .= "        <license type=\"community\" enforcement=\"none\" />\n";
+                    $xml .= "        <license type=\"community\" enforcement=\"" . htmlspecialchars((string)$enforcement) . "\" />\n";
                 }
 
                 $xml .= "        <install-command>" . htmlspecialchars((string)$installCmd) . "</install-command>\n";
@@ -1804,8 +1830,27 @@ TPL;
                 $xml .= "    </feature>\n";
 
                 if (isset($options['registry-out'])) {
-                    file_put_contents($options['registry-out'], $xml);
-                    echo "Registry XML snippet saved to: " . $options['registry-out'] . PHP_EOL;
+                    $json = [
+                        'slug' => $name,
+                        'title' => $title,
+                        'synopsis' => $synopsis,
+                        'category' => $category,
+                        'license_type' => $type,
+                        'license_enforcement' => $enforcement,
+                        'capabilities' => $capabilities,
+                        'vendor' => [
+                            'name' => $authorName,
+                            'email' => $authorEmail,
+                            'url' => $authorUrl
+                        ]
+                    ];
+                    if (str_ends_with($options['registry-out'], '.json')) {
+                        file_put_contents($options['registry-out'], json_encode($json, JSON_PRETTY_PRINT));
+                        echo "Registry JSON saved to: " . $options['registry-out'] . PHP_EOL;
+                    } else {
+                        file_put_contents($options['registry-out'], $xml);
+                        echo "Registry XML snippet saved to: " . $options['registry-out'] . PHP_EOL;
+                    }
                 } else {
                     echo "\n--- Registry XML Snippet ---\n";
                     echo $xml;
