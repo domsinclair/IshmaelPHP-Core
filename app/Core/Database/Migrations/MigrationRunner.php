@@ -510,7 +510,7 @@ final class MigrationRunner
     {
         $before = get_declared_classes();
         $ret = (static function ($__f) {
-            return require $__f;
+            return require_once $__f;
         })($file);
 // If file returns an instance (e.g., anonymous class extending BaseMigration), use it directly
         if ($ret instanceof BaseMigration) {
