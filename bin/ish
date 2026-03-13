@@ -1714,7 +1714,16 @@ TPL;
                     throw new RuntimeException("Module manifest does not define an 'export' list.");
                 }
 
+//                $outDir = isset($options['out']) ? (string)$options['out'] : getcwd();
+//                $zipName = strtolower($moduleStudly) . '.zip';
+//                $zipPath = $outDir . DIRECTORY_SEPARATOR . $zipName;
+
                 $outDir = isset($options['out']) ? (string)$options['out'] : getcwd();
+                if (!is_dir($outDir)) {
+                    if (!mkdir($outDir, 0755, true)) {
+                        throw new RuntimeException("Cannot create output directory: {$outDir}");
+                    }
+                }
                 $zipName = strtolower($moduleStudly) . '.zip';
                 $zipPath = $outDir . DIRECTORY_SEPARATOR . $zipName;
 
