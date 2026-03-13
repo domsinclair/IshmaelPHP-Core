@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file.
 The format is based on Keep a Changelog and this project adheres to Semantic Versioning.
 
+## [0.7.34](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.33...v0.7.34) (2026-03-13)
+
+
+### Miscellaneous Chores
+
+* Fix to help feature pack publishing ([aa78d52](https://github.com/domsinclair/IshmaelPHP-Core/commit/aa78d529b3f41e15722c3337783b3736ea2cd217))
+
 ## [0.7.33](https://github.com/domsinclair/IshmaelPHP-Core/compare/v0.7.32...v0.7.33) (2026-03-06)
 
 
