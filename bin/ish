@@ -1769,6 +1769,10 @@ TPL;
                     }
                 }
 
+                // Also add composer.json at ZIP root for registry compatibility
+                if (is_file($composerPath)) {
+                    $zip->addFile($composerPath, 'composer.json');
+                }
                 $zip->close();
                 echo "Feature packed successfully: {$zipPath}" . PHP_EOL;
 
